@@ -15,6 +15,7 @@ import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -33,10 +34,15 @@ public class YsmMapperPayloadManager {
     private final Function<Player, YsmPacketProxy> packetProxyCreator;
 
     private final Map<Player, Integer> player2EntityIds = new ConcurrentHashMap<>();
+    private final Set<Player> ysmInstalledPlayers = ConcurrentHashMap.newKeySet();
 
     public YsmMapperPayloadManager(Function<Player, YsmPacketProxy> packetProxyCreator) {
         this.packetProxyCreator = packetProxyCreator;
         this.backend2Players.put(Cyanidin.BACKEND_ADDRESS_MC,1);
+    }
+
+    public void onClientYsmPacketReply(Player target){
+        this.ysmInstalledPlayers.add(target);
     }
 
     public void onPacketProxyReady(Player player){
@@ -86,7 +92,12 @@ public class YsmMapperPayloadManager {
         this.createMapperSession(player, Objects.requireNonNull(this.selectLessPlayer()));
     }
 
+    public boolean isPlayerInstalledYsm(Player target){
+        return this.ysmInstalledPlayers.contains(target);
+    }
+
     public void onPlayerDisconnect(Player player){
+        this.ysmInstalledPlayers.remove(player);
         this.player2EntityIds.remove(player);
 
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(player);

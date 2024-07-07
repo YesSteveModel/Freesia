@@ -2,6 +2,7 @@ package gg.earthme.cyanidin.cyanidin.network.ysm;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.kyori.adventure.key.Key;
@@ -94,6 +95,7 @@ public class MapperSessionProcessor implements SessionListener{
 
                 try {
                     if (this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData), directPacketDataBuffer) == EnumPacketProxyResult.FORWARD){
+                        directPacketDataBuffer.resetReaderIndex();
                         final byte[] processedData = new byte[directPacketDataBuffer.readableBytes()];
                         directPacketDataBuffer.readBytes(processedData);
 
@@ -108,7 +110,6 @@ public class MapperSessionProcessor implements SessionListener{
         if (packet instanceof ClientboundPingPacket pingPacket){
             session.send(new ServerboundPongPacket(pingPacket.getId()));
         }
-
     }
 
     @Override
@@ -138,6 +139,8 @@ public class MapperSessionProcessor implements SessionListener{
 
     @Override
     public void disconnected(DisconnectedEvent event) {
+        Cyanidin.LOGGER.info("Mapper has disconnected: {}", event.getReason());
+        System.out.println(event.getCause());
         this.mapperPayloadManager.onWorkerSessionDisconnect(this, this.kickMasterWhenDisconnect);
         this.session = null;
     }

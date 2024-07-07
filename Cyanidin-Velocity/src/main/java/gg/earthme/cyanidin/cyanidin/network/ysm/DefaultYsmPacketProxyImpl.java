@@ -41,19 +41,20 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
         final FriendlyByteBuf directMCBuffer = new FriendlyByteBuf(direct);
 
-        final byte packetId = mcBuffer.readByte();
+        directMCBuffer.writeBytes(mcBuffer);
+
+        final byte packetId = directMCBuffer.readByte();
 
         switch (packetId){
             case 51 -> {
-                directMCBuffer.writeBytes(mcBuffer); //Copy original data because we need to forward it
-
-                final String backendVersion = mcBuffer.readUtf();
-                final boolean canSwitchModel = mcBuffer.readBoolean();
+                final String backendVersion = directMCBuffer.readUtf();
+                final boolean canSwitchModel = directMCBuffer.readBoolean();
                 Cyanidin.LOGGER.info("Replying ysm client with server version {}.Can switch model? : {}", backendVersion, canSwitchModel);
                 return EnumPacketProxyResult.FORWARD;
             }
 
             case 4 -> {
+                directMCBuffer.clear();
                 directMCBuffer.writeByte(4);
                 final int originalEntityId = mcBuffer.readVarInt();
                 final int entityId = Cyanidin.mapperManager.getPlayerEntityId(this.player);
@@ -83,15 +84,19 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                             resultNbt = this.nbtRemapper.remapToWorkerVer(original);
                         }
 
-                        final FriendlyByteBuf subBuffer = new FriendlyByteBuf(Unpooled.buffer());
-                        subBuffer.writeByte(4); //Pkt id
-                        subBuffer.writeVarInt(entityId); //Entity id
-                        subBuffer.writeBytes(resultNbt);
+                        final FriendlyByteBuf subBuffer = new FriendlyByteBuf(Unpooled.directBuffer());
+                        try {
+                            subBuffer.writeByte(4); //Pkt id
+                            subBuffer.writeVarInt(entityId); //Entity id
+                            subBuffer.writeBytes(resultNbt);
 
-                        byte[] fullPacketData = new byte[subBuffer.readableBytes()];
-                        subBuffer.readBytes(fullPacketData);
+                            byte[] fullPacketData = new byte[subBuffer.readableBytes()];
+                            subBuffer.readBytes(fullPacketData);
 
-                        target.sendPluginMessage(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, fullPacketData); //Send
+                            target.sendPluginMessage(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, fullPacketData); //Send
+                        }finally {
+                            subBuffer.release();
+                        }
                     }
                 }catch (Exception e){
                     Cyanidin.LOGGER.error("Error while in processing nbt data!", e);
@@ -116,6 +121,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
                 final String clientYsmVersion = mcBuffer.readUtf();
                 Cyanidin.LOGGER.info("Player {} is connection to the backend with ysm version {}", this.player.getUsername(), clientYsmVersion);
+                Cyanidin.mapperManager.onClientYsmPacketReply(this.player);
                 return EnumPacketProxyResult.FORWARD;
             }
         }
