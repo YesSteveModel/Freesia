@@ -5,3 +5,4 @@ plugins {
 rootProject.name = 'Cyanidin'
 
 include("Cyanidin-Velocity")
+include("Cyanidin-Backend")

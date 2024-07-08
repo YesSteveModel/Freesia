@@ -32,6 +32,10 @@ allprojects {
             url 'https://repo.opencollab.dev/maven-releases/'
         }
         maven {
+            name = "sonatype"
+            url = "https://oss.sonatype.org/content/groups/public/"
+        }
+        maven {
             url 'https://repo.codemc.io/repository/maven-releases/'
         }
     }

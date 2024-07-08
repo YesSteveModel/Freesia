@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 
 public class CyanidinPlayerTracker {
     private static final MinecraftChannelIdentifier SYNC_CHANNEL_KEY = MinecraftChannelIdentifier.create("cyanidin", "tracker_sync");
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     private final Set<BiConsumer<Player, Player>> listeners = ConcurrentHashMap.newKeySet();
     private final Map<Integer, Consumer<Set<Player>>> pendingCanSeeTasks = new ConcurrentHashMap<>();
