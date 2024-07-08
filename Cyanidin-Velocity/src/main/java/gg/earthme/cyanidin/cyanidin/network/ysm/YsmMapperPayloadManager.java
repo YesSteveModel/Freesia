@@ -166,6 +166,12 @@ public class YsmMapperPayloadManager {
         this.player2Mappers.put(player, mapperSession);
     }
 
+    public void onPlayerTrackerUpdate(Player owner, Player watching){
+        final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
+
+        ((DefaultYsmPacketProxyImpl) mapperSession.getPacketProxy()).sendEntityStateTo(watching);
+    }
+
     @Nullable
     private InetSocketAddress selectLessPlayer(){
         this.backendIpsAccessLock.readLock().lock();

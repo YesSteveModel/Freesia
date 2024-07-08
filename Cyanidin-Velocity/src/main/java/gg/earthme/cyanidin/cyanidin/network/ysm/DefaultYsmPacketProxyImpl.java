@@ -12,17 +12,17 @@ import io.netty.buffer.Unpooled;
 import net.kyori.adventure.key.Key;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.locks.LockSupport;
 
 public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     private final Player player;
-    private final int masterProtocolVer;
     private final NbtRemapper nbtRemapper;
+    private volatile NBTCompound lastYsmEntityStatus = null;
 
     public DefaultYsmPacketProxyImpl(@NotNull Player player) {
         this.player = player;
-        this.masterProtocolVer = PacketEvents.getAPI().getProtocolManager().getClientVersion(PacketEvents.getAPI().getProtocolManager().getChannel(player.getUniqueId())).getProtocolVersion();
         this.nbtRemapper = new StandardNbtRemapperImpl();
     }
 
@@ -36,11 +36,38 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         Cyanidin.mapperManager.onPacketProxyReady(this.player);
     }
 
+    public void sendEntityStateTo(@NotNull Player target){
+        final int currentEntityId = Cyanidin.mapperManager.getPlayerEntityId(this.player);
+        final NBTCompound lastEntityStatusTemp = this.lastYsmEntityStatus;
+
+        if (lastEntityStatusTemp == null || currentEntityId == -1){
+            return;
+        }
+
+        try {
+            final int targetProtocolVer = PacketEvents.getAPI().getProtocolManager().getClientVersion(PacketEvents.getAPI().getProtocolManager().getChannel(target.getUniqueId())).getProtocolVersion();
+            final FriendlyByteBuf wrappedPacketData = new FriendlyByteBuf(Unpooled.buffer());
+
+            wrappedPacketData.writeByte(4);
+            wrappedPacketData.writeVarInt(currentEntityId);
+            wrappedPacketData.writeBytes(this.nbtRemapper.shouldRemap(targetProtocolVer) ? this.nbtRemapper.remapToMasterVer(lastEntityStatusTemp) : this.nbtRemapper.remapToWorkerVer(lastEntityStatusTemp));
+
+            target.sendPluginMessage(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData.array());
+        }catch (Exception e){
+            Cyanidin.LOGGER.error("Error in encoding nbt or sending packet!", e);
+        }
+    }
+
     @Override
     public ProxyComputeResult processS2C(Key key, ByteBuf copiedPacketData) {
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
 
         final byte packetId = mcBuffer.readByte();
+
+        if (packetId >= 3){
+            System.out.println(packetId);
+            System.out.println(mcBuffer.copy().toString(StandardCharsets.UTF_8));
+        }
 
         switch (packetId){
             case 51 -> {
@@ -51,56 +78,23 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
             }
 
             case 4 -> {
-                final FriendlyByteBuf finalDataThisPlayer = new FriendlyByteBuf(Unpooled.buffer());
-                finalDataThisPlayer.writeByte(4);
-                final int originalEntityId = mcBuffer.readVarInt();
-                final int entityId = Cyanidin.mapperManager.getPlayerEntityId(this.player);
-
-                Cyanidin.LOGGER.info("Tracker status changed for entityId {} to {} as mapped on backends", originalEntityId, entityId);
-                finalDataThisPlayer.writeVarInt(entityId);
-
                 try {
                     final NBTCompound original = this.nbtRemapper.readBound(mcBuffer);
 
-                    byte[] remapped;
-                    if (this.nbtRemapper.shouldRemap(this.masterProtocolVer)){ //If target's protocol version is lower than 1.20.1
-                        remapped = this.nbtRemapper.remapToMasterVer(original);
-                    }else{
-                        remapped = this.nbtRemapper.remapToWorkerVer(original);
-                    }
-                    finalDataThisPlayer.writeBytes(remapped);
+                    this.lastYsmEntityStatus = original;
+
+                    this.sendEntityStateTo(this.player);
 
                     final Set<Player> beingWatched = Cyanidin.tracker.getCanSee(this.player);
                     for (Player target : beingWatched){
-                        final int targetProtocolId = PacketEvents.getAPI().getProtocolManager().getClientVersion(PacketEvents.getAPI().getProtocolManager().getChannel(target.getUniqueId())).getProtocolVersion();
-
-                        byte[] resultNbt; //1.20.1 format
-                        if (this.nbtRemapper.shouldRemap(targetProtocolId)){ //If target's protocol version is lower than 1.20.1
-                            resultNbt = this.nbtRemapper.remapToMasterVer(original);
-                        }else {
-                            resultNbt = this.nbtRemapper.remapToWorkerVer(original);
-                        }
-
-                        final FriendlyByteBuf subBuffer = new FriendlyByteBuf(Unpooled.directBuffer());
-                        try {
-                            subBuffer.writeByte(4); //Pkt id
-                            subBuffer.writeVarInt(entityId); //Entity id
-                            subBuffer.writeBytes(resultNbt);
-
-                            byte[] fullPacketData = new byte[subBuffer.readableBytes()];
-                            subBuffer.readBytes(fullPacketData);
-
-                            target.sendPluginMessage(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, fullPacketData); //Send
-                        }finally {
-                            subBuffer.release();
-                        }
+                        this.sendEntityStateTo(target);
                     }
                 }catch (Exception e){
                     Cyanidin.LOGGER.error("Error while in processing nbt data!", e);
                     return ProxyComputeResult.ofDrop();
                 }
 
-                return ProxyComputeResult.ofModify(finalDataThisPlayer);
+                return ProxyComputeResult.ofDrop();
             }
         }
 

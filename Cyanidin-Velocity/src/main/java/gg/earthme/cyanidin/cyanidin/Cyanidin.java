@@ -53,6 +53,8 @@ public class Cyanidin implements PacketListener {
 
         PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.HIGHEST);
         this.proxyServer.getChannelRegistrar().register(YSM_CHANNEL_MARKER);
+        tracker.init();
+        tracker.addTrackerEventListener(mapperManager::onPlayerTrackerUpdate);
     }
 
     @Subscribe
