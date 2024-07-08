@@ -5,9 +5,9 @@ import net.kyori.adventure.key.Key;
 
 
 public interface YsmPacketProxy {
-    EnumPacketProxyResult processS2C(Key channelKey, ByteBuf copiedPacketData, ByteBuf direct);
+    ProxyComputeResult processS2C(Key channelKey, ByteBuf copiedPacketData);
 
-    EnumPacketProxyResult processC2S(Key channelKey, ByteBuf copiedPacketData, ByteBuf direct);
+    ProxyComputeResult processC2S(Key channelKey, ByteBuf copiedPacketData);
 
     void blockUntilProxyReady();
 }

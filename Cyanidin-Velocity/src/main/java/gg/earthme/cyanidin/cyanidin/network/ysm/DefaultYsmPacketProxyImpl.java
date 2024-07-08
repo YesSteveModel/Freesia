@@ -37,30 +37,27 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     }
 
     @Override
-    public EnumPacketProxyResult processS2C(Key key, ByteBuf copiedPacketData, ByteBuf direct) {
+    public ProxyComputeResult processS2C(Key key, ByteBuf copiedPacketData) {
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
-        final FriendlyByteBuf directMCBuffer = new FriendlyByteBuf(direct);
 
-        directMCBuffer.writeBytes(mcBuffer);
-
-        final byte packetId = directMCBuffer.readByte();
+        final byte packetId = mcBuffer.readByte();
 
         switch (packetId){
             case 51 -> {
-                final String backendVersion = directMCBuffer.readUtf();
-                final boolean canSwitchModel = directMCBuffer.readBoolean();
+                final String backendVersion = mcBuffer.readUtf();
+                final boolean canSwitchModel = mcBuffer.readBoolean();
                 Cyanidin.LOGGER.info("Replying ysm client with server version {}.Can switch model? : {}", backendVersion, canSwitchModel);
-                return EnumPacketProxyResult.FORWARD;
+                return ProxyComputeResult.ofPass();
             }
 
             case 4 -> {
-                directMCBuffer.clear();
-                directMCBuffer.writeByte(4);
+                final FriendlyByteBuf finalDataThisPlayer = new FriendlyByteBuf(Unpooled.buffer());
+                finalDataThisPlayer.writeByte(4);
                 final int originalEntityId = mcBuffer.readVarInt();
                 final int entityId = Cyanidin.mapperManager.getPlayerEntityId(this.player);
 
                 Cyanidin.LOGGER.info("Tracker status changed for entityId {} to {} as mapped on backends", originalEntityId, entityId);
-                directMCBuffer.writeVarInt(entityId);
+                finalDataThisPlayer.writeVarInt(entityId);
 
                 try {
                     final NBTCompound original = this.nbtRemapper.readBound(mcBuffer);
@@ -71,7 +68,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                     }else{
                         remapped = this.nbtRemapper.remapToWorkerVer(original);
                     }
-                    directMCBuffer.writeBytes(remapped);
+                    finalDataThisPlayer.writeBytes(remapped);
 
                     final Set<Player> beingWatched = Cyanidin.tracker.getCanSee(this.player);
                     for (Player target : beingWatched){
@@ -100,31 +97,30 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                     }
                 }catch (Exception e){
                     Cyanidin.LOGGER.error("Error while in processing nbt data!", e);
-                    return EnumPacketProxyResult.DROP;
+                    return ProxyComputeResult.ofDrop();
                 }
-                return EnumPacketProxyResult.FORWARD;
+
+                return ProxyComputeResult.ofModify(finalDataThisPlayer);
             }
         }
-        return EnumPacketProxyResult.FORWARD;
+
+        return ProxyComputeResult.ofPass();
     }
 
     @Override
-    public EnumPacketProxyResult processC2S(Key key, ByteBuf copiedPacketData, ByteBuf direct) {
+    public ProxyComputeResult processC2S(Key key, ByteBuf copiedPacketData) {
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
-        final FriendlyByteBuf directMCBuffer = new FriendlyByteBuf(direct);
 
         final byte packetId = mcBuffer.readByte();
 
         switch (packetId){
             case  52 -> {
-                directMCBuffer.writeBytes(mcBuffer); //Copy original data because we need to forward it
-
                 final String clientYsmVersion = mcBuffer.readUtf();
                 Cyanidin.LOGGER.info("Player {} is connection to the backend with ysm version {}", this.player.getUsername(), clientYsmVersion);
                 Cyanidin.mapperManager.onClientYsmPacketReply(this.player);
-                return EnumPacketProxyResult.FORWARD;
             }
         }
-        return EnumPacketProxyResult.FORWARD;
+
+        return ProxyComputeResult.ofPass();
     }
 }

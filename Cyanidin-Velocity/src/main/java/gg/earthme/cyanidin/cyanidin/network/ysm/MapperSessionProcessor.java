@@ -5,6 +5,7 @@ import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledHeapByteBuf;
 import net.kyori.adventure.key.Key;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.*;
@@ -15,7 +16,6 @@ import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.Serverbound
 import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundPongPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 
-import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.locks.LockSupport;
@@ -68,9 +68,25 @@ public class MapperSessionProcessor implements SessionListener{
             return;
         }
 
-        final ByteBuf directPacketDataBuffer = Unpooled.copiedBuffer(Arrays.copyOf(packetData, packetData.length));
-        if (this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData), directPacketDataBuffer) == EnumPacketProxyResult.FORWARD){
-            this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, directPacketDataBuffer.array()));
+        final ProxyComputeResult processed = this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData));
+
+        switch (processed.result()){
+            case MODIFY -> {
+                final ByteBuf finalData = processed.data();
+
+                byte[] data;
+                if (!(finalData instanceof UnpooledHeapByteBuf heapBuffer)){
+                    finalData.resetReaderIndex();
+                    data = new byte[finalData.readableBytes()];
+                    finalData.readBytes(data);
+                }else{
+                    data = heapBuffer.array();
+                }
+
+                this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, data));
+            }
+
+            case PASS -> this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, packetData));
         }
     }
 
@@ -91,18 +107,25 @@ public class MapperSessionProcessor implements SessionListener{
             final byte[] packetData = payloadPacket.getData();
 
             if (channelKey.toString().equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE.toString())){
-                final ByteBuf directPacketDataBuffer = Unpooled.directBuffer();
+                final ProxyComputeResult processed = this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData));
 
-                try {
-                    if (this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData), directPacketDataBuffer) == EnumPacketProxyResult.FORWARD){
-                        directPacketDataBuffer.resetReaderIndex();
-                        final byte[] processedData = new byte[directPacketDataBuffer.readableBytes()];
-                        directPacketDataBuffer.readBytes(processedData);
+                switch (processed.result()){
+                    case MODIFY -> {
+                        final ByteBuf finalData = processed.data();
 
-                        this.bindPlayer.sendPluginMessage(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), processedData);
+                        byte[] data;
+                        if (!(finalData instanceof UnpooledHeapByteBuf heapBuffer)){
+                            finalData.resetReaderIndex();
+                            data = new byte[finalData.readableBytes()];
+                            finalData.readBytes(data);
+                        }else{
+                            data = heapBuffer.array();
+                        }
+
+                        this.bindPlayer.sendPluginMessage(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), data);
                     }
-                }finally {
-                    directPacketDataBuffer.release();
+
+                    case PASS -> this.bindPlayer.sendPluginMessage(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
                 }
             }
         }
