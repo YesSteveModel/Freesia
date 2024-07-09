@@ -1,0 +1,6 @@
+name: Cyanidin-Backend
+version: '${version}'
+main: gg.earthme.cyanidin.cyanidinbackend.CyanidinBackend
+api-version: '1.16'
+
+folia-supported: true
