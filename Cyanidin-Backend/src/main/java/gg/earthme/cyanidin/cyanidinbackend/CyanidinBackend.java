@@ -13,6 +13,7 @@ public final class CyanidinBackend extends JavaPlugin {
     public void onEnable() {
         INSTANCE = this;
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "cyanidin:tracker_sync", this.trackerProcessor);
+        Bukkit.getMessenger().registerOutgoingPluginChannel(this, "cyanidin:tracker_sync");
         Bukkit.getPluginManager().registerEvents(this.trackerProcessor, this);
     }
 

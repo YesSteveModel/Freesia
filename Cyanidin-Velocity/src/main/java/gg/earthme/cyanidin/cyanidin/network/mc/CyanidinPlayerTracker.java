@@ -8,6 +8,7 @@ import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import gg.earthme.cyanidin.cyanidin.utils.FriendlyByteBuf;
 import io.netty.buffer.Unpooled;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -18,12 +19,10 @@ import java.util.function.Consumer;
 
 public class CyanidinPlayerTracker {
     private static final MinecraftChannelIdentifier SYNC_CHANNEL_KEY = MinecraftChannelIdentifier.create("cyanidin", "tracker_sync");
-    private static final boolean DEBUG = false;
 
     private final Set<BiConsumer<Player, Player>> listeners = ConcurrentHashMap.newKeySet();
     private final Map<Integer, Consumer<Set<Player>>> pendingCanSeeTasks = new ConcurrentHashMap<>();
     private final AtomicInteger idGenerator = new AtomicInteger(0);
-
 
     public void init(){
         Cyanidin.PROXY_SERVER.getChannelRegistrar().register(SYNC_CHANNEL_KEY);
@@ -31,52 +30,54 @@ public class CyanidinPlayerTracker {
     }
 
     @Subscribe
-    public void onChannelMsg(PluginMessageEvent event){
-        if (event.getIdentifier() != SYNC_CHANNEL_KEY){
+    public void onChannelMsg(@NotNull PluginMessageEvent event){
+        if (!(event.getSource() instanceof ServerConnection)){
             return;
         }
 
-        if (event.getSource() instanceof ServerConnection server){
-            final FriendlyByteBuf packetData = new FriendlyByteBuf(Unpooled.wrappedBuffer(event.getData()));
+        if (!event.getIdentifier().getId().equals(SYNC_CHANNEL_KEY.getId())){
+            return;
+        }
 
-            switch (packetData.readVarInt()){
-                case 0 -> {
-                    final int taskId = packetData.readVarInt();
-                    final int collectionSize = packetData.readVarInt();
-                    final Set<Player> result = new HashSet<>(collectionSize);
+        final FriendlyByteBuf packetData = new FriendlyByteBuf(Unpooled.wrappedBuffer(event.getData()));
 
-                    for (int i = 0; i < collectionSize; i++) {
-                        final Optional<Player> target = Cyanidin.PROXY_SERVER.getPlayer(packetData.readUUID());
+        switch (packetData.readVarInt()){
+            case 0 -> {
+                final int taskId = packetData.readVarInt();
+                final int collectionSize = packetData.readVarInt();
+                final Set<Player> result = new HashSet<>(collectionSize);
 
-                        target.ifPresent(result::add);
-                    }
+                for (int i = 0; i < collectionSize; i++) {
+                    final Optional<Player> target = Cyanidin.PROXY_SERVER.getPlayer(packetData.readUUID());
 
-                    final Consumer<Set<Player>> targetTask = this.pendingCanSeeTasks.remove(taskId);
-
-                    try {
-                        targetTask.accept(result);
-                    }catch (Exception e){
-                        Cyanidin.LOGGER.error("Can not process tracker callback task !", e);
-                    }
+                    target.ifPresent(result::add);
                 }
 
-                case 2 -> {
-                    final UUID beSeeing = packetData.readUUID();
-                    final UUID watcher = packetData.readUUID();
+                final Consumer<Set<Player>> targetTask = this.pendingCanSeeTasks.remove(taskId);
 
-                    final Optional<Player> watcherPlayerNullable = Cyanidin.PROXY_SERVER.getPlayer(watcher);
-                    final Optional<Player> beSeeingPlayerNullable = Cyanidin.PROXY_SERVER.getPlayer(beSeeing);
+                try {
+                    targetTask.accept(result);
+                }catch (Exception e){
+                    Cyanidin.LOGGER.error("Can not process tracker callback task !", e);
+                }
+            }
 
-                    if (watcherPlayerNullable.isPresent() && beSeeingPlayerNullable.isPresent()){
-                        final Player watcherPlayer = watcherPlayerNullable.get();
-                        final Player beSeeingPlayer = beSeeingPlayerNullable.get();
+            case 2 -> {
+                final UUID beSeeing = packetData.readUUID();
+                final UUID watcher = packetData.readUUID();
 
-                        for (BiConsumer<Player, Player> listener : this.listeners){
-                            try {
-                                listener.accept(beSeeingPlayer, watcherPlayer);
-                            }catch (Exception e){
-                                Cyanidin.LOGGER.error("Can not process tracker update!", e);
-                            }
+                final Optional<Player> watcherPlayerNullable = Cyanidin.PROXY_SERVER.getPlayer(watcher);
+                final Optional<Player> beSeeingPlayerNullable = Cyanidin.PROXY_SERVER.getPlayer(beSeeing);
+
+                if (watcherPlayerNullable.isPresent() && beSeeingPlayerNullable.isPresent()){
+                    final Player watcherPlayer = watcherPlayerNullable.get();
+                    final Player beSeeingPlayer = beSeeingPlayerNullable.get();
+
+                    for (BiConsumer<Player, Player> listener : this.listeners){
+                        try {
+                            listener.accept(beSeeingPlayer, watcherPlayer);
+                        }catch (Exception e){
+                            Cyanidin.LOGGER.error("Can not process tracker update!", e);
                         }
                     }
                 }
@@ -84,19 +85,7 @@ public class CyanidinPlayerTracker {
         }
     }
 
-    public Set<Player> getCanSee(Player target) {
-        if (DEBUG){
-            final Set<Player> result = new HashSet<>();
-
-            for (Player player : Cyanidin.PROXY_SERVER.getAllPlayers()) {
-                if (player != target && Cyanidin.mapperManager.isPlayerInstalledYsm(player)) {
-                    result.add(player);
-                }
-            }
-
-            return result;
-        }
-
+    public Set<Player> getCanSee(@NotNull Player target) {
         CompletableFuture<Set<Player>> callback = new CompletableFuture<>();
         final int callbackId = this.idGenerator.getAndIncrement();
 
@@ -109,7 +98,7 @@ public class CyanidinPlayerTracker {
         callbackRequest.writeUUID(target.getUniqueId());
 
         target.getCurrentServer().ifPresentOrElse(server -> {
-            server.sendPluginMessage(SYNC_CHANNEL_KEY, callbackRequest.array());
+            server.getServer().sendPluginMessage(SYNC_CHANNEL_KEY, callbackRequest.array());
         }, () -> { throw new IllegalStateException(); });
 
         return callback.join();

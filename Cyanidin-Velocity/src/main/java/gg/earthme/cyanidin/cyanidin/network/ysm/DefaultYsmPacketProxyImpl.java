@@ -19,7 +19,7 @@ import java.util.concurrent.locks.LockSupport;
 public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     private final Player player;
     private final NbtRemapper nbtRemapper;
-    private volatile NBTCompound lastYsmEntityStatus = null;
+    private volatile NBTCompound lastYsmEntityStatus = null; //TODO Get default
 
     public DefaultYsmPacketProxyImpl(@NotNull Player player) {
         this.player = player;
@@ -38,6 +38,9 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     public void sendEntityStateTo(@NotNull Player target){
         final int currentEntityId = Cyanidin.mapperManager.getPlayerEntityId(this.player);
+        final int targetEntityID = Cyanidin.mapperManager.getPlayerEntityId(target);
+
+        Cyanidin.LOGGER.info("Current : {}, Target: {}", currentEntityId, targetEntityID);
         final NBTCompound lastEntityStatusTemp = this.lastYsmEntityStatus;
 
         if (lastEntityStatusTemp == null || currentEntityId == -1){
@@ -61,13 +64,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     @Override
     public ProxyComputeResult processS2C(Key key, ByteBuf copiedPacketData) {
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
-
         final byte packetId = mcBuffer.readByte();
-
-        if (packetId >= 3){
-            System.out.println(packetId);
-            System.out.println(mcBuffer.copy().toString(StandardCharsets.UTF_8));
-        }
 
         switch (packetId){
             case 51 -> {
@@ -78,6 +75,8 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
             }
 
             case 4 -> {
+                mcBuffer.readVarInt(); //Skip entity id
+
                 try {
                     final NBTCompound original = this.nbtRemapper.readBound(mcBuffer);
 
@@ -104,7 +103,6 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     @Override
     public ProxyComputeResult processC2S(Key key, ByteBuf copiedPacketData) {
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
-
         final byte packetId = mcBuffer.readByte();
 
         switch (packetId){
