@@ -4,7 +4,7 @@
   "package": "gg.earthme.cyanidin.cyanidinworker.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "ServerLevelMixin",
+    "MinecraftServerMixin",
     "ServerLoginPacketListenerImplMixin"
   ],
   "client": [
