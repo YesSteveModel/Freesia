@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "fabric_worker",
+  "version": "${version}",
+  "name": "Fabric-Worker",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/fabric_worker/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "server": ["gg.earthme.cyanidin.cyanidinworker.ServerLoader"]
+  },
+  "mixins": [
+    "cyanidin-worker.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
