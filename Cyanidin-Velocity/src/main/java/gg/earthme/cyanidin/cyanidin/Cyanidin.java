@@ -81,7 +81,7 @@ public class Cyanidin implements PacketListener {
 
     @Subscribe
     public void onServerPreConnect(ServerPreConnectEvent event){
-        mapperManager.updatePlayerEntityId(event.getPlayer(), -1);
+        mapperManager.updateServerPlayerEntityId(event.getPlayer(), -1);
     }
 
     @Subscribe
@@ -101,7 +101,7 @@ public class Cyanidin implements PacketListener {
             final Player target = (Player) event.getPlayer();
 
             logger.info("Entity id update for player {} to {}", target.getUsername(), playerSpawnPacket.getEntityId());
-            mapperManager.updatePlayerEntityId(target, playerSpawnPacket.getEntityId());
+            mapperManager.updateServerPlayerEntityId(target, playerSpawnPacket.getEntityId());
         }
     }
 }

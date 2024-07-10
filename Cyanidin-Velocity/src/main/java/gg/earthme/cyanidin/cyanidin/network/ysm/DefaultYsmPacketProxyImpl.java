@@ -12,7 +12,6 @@ import io.netty.buffer.Unpooled;
 import net.kyori.adventure.key.Key;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.locks.LockSupport;
 
@@ -28,7 +27,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public void blockUntilProxyReady(){
-        while (Cyanidin.mapperManager.getPlayerEntityId(this.player) == -1){
+        while (Cyanidin.mapperManager.getServerPlayerEntityId(this.player) == -1){
             Thread.yield();
             LockSupport.parkNanos(1_000);
         }
@@ -36,11 +35,19 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         Cyanidin.mapperManager.onPacketProxyReady(this.player);
     }
 
-    public void sendEntityStateTo(@NotNull Player target){
-        final int currentEntityId = Cyanidin.mapperManager.getPlayerEntityId(this.player);
-        final int targetEntityID = Cyanidin.mapperManager.getPlayerEntityId(target);
+    private boolean isEntityStateOfSelf(int entityId){
+        final int currentWorkerEntityId = Cyanidin.mapperManager.getWorkerPlayerEntityId(this.player);
 
-        Cyanidin.LOGGER.info("Current : {}, Target: {}", currentEntityId, targetEntityID);
+        if (currentWorkerEntityId == -1){
+            return false;
+        }
+
+        return currentWorkerEntityId == entityId;
+    }
+
+    public void sendEntityStateTo(@NotNull Player target){
+        final int currentEntityId = Cyanidin.mapperManager.getServerPlayerEntityId(this.player);
+
         final NBTCompound lastEntityStatusTemp = this.lastYsmEntityStatus;
 
         if (lastEntityStatusTemp == null || currentEntityId == -1){
@@ -75,9 +82,13 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
             }
 
             case 4 -> {
-                mcBuffer.readVarInt(); //Skip entity id
+                final int workerEntityId = mcBuffer.readVarInt(); //Skip entity id
 
                 try {
+                    if (!this.isEntityStateOfSelf(workerEntityId)){
+                        return ProxyComputeResult.ofDrop(); //Do not process the entity state if it is not ours
+                    }
+
                     final NBTCompound original = this.nbtRemapper.readBound(mcBuffer);
 
                     this.lastYsmEntityStatus = original;

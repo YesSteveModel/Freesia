@@ -96,7 +96,8 @@ public class MapperSessionProcessor implements SessionListener{
 
     @Override
     public void packetReceived(Session session, Packet packet) {
-        if (packet instanceof ClientboundLoginPacket){
+        if (packet instanceof ClientboundLoginPacket loginPacket){
+            Cyanidin.mapperManager.updateWorkerPlayerEntityId(this.bindPlayer, loginPacket.getEntityId());
             this.readyForReceivingPackets = true;
         }
 

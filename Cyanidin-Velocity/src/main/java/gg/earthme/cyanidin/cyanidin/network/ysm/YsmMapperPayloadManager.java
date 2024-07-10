@@ -33,7 +33,8 @@ public class YsmMapperPayloadManager {
     private final Map<InetSocketAddress, Integer> backend2Players = new LinkedHashMap<>();
     private final Function<Player, YsmPacketProxy> packetProxyCreator;
 
-    private final Map<Player, Integer> player2EntityIds = new ConcurrentHashMap<>();
+    private final Map<Player, Integer> player2WorkerEntityIds = new ConcurrentHashMap<>();
+    private final Map<Player, Integer> player2ServerEntityIds = new ConcurrentHashMap<>();
     private final Set<Player> ysmInstalledPlayers = ConcurrentHashMap.newKeySet();
 
     public YsmMapperPayloadManager(Function<Player, YsmPacketProxy> packetProxyCreator) {
@@ -49,21 +50,38 @@ public class YsmMapperPayloadManager {
         this.mapperSessions.get(player).onProxyReady();
     }
 
-    public void updatePlayerEntityId(Player target, int entityId){
-        if (!this.player2EntityIds.containsKey(target)){
-            this.player2EntityIds.put(target, entityId);
+    public void updateWorkerPlayerEntityId(Player target, int entityId){
+        if (!this.player2WorkerEntityIds.containsKey(target)){
+            this.player2WorkerEntityIds.put(target, entityId);
             return;
         }
 
-        this.player2EntityIds.replace(target, entityId);
+        this.player2WorkerEntityIds.replace(target, entityId);
     }
 
-    public int getPlayerEntityId(Player target){
-        if (!this.player2EntityIds.containsKey(target)){
+    public int getWorkerPlayerEntityId(Player target){
+        if (!this.player2WorkerEntityIds.containsKey(target)){
             return -1;
         }
 
-        return this.player2EntityIds.get(target);
+        return this.player2WorkerEntityIds.get(target);
+    }
+
+    public void updateServerPlayerEntityId(Player target, int entityId){
+        if (!this.player2ServerEntityIds.containsKey(target)){
+            this.player2ServerEntityIds.put(target, entityId);
+            return;
+        }
+
+        this.player2ServerEntityIds.replace(target, entityId);
+    }
+
+    public int getServerPlayerEntityId(Player target){
+        if (!this.player2ServerEntityIds.containsKey(target)){
+            return -1;
+        }
+
+        return this.player2ServerEntityIds.get(target);
     }
 
     public void reconnectWorker(@NotNull Player master, @NotNull InetSocketAddress target){
@@ -98,7 +116,8 @@ public class YsmMapperPayloadManager {
 
     public void onPlayerDisconnect(Player player){
         this.ysmInstalledPlayers.remove(player);
-        this.player2EntityIds.remove(player);
+        this.player2ServerEntityIds.remove(player);
+        this.player2WorkerEntityIds.remove(player);
 
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(player);
 
