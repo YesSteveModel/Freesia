@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "fabric_worker",
+  "id": "cyanidin_worker",
   "version": "${version}",
-  "name": "Fabric-Worker",
+  "name": "Cyanidin-Worker",
   "description": "",
   "authors": [],
   "contact": {},
