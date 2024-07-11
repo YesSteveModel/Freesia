@@ -21,9 +21,9 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
       - name: Build plugin models
-        run: ./gradlew shadowJar
+        run: chmod 777 gradlew && ./gradlew shadowJar
       - name: Build mod models
-        run: cd Cyanidin-Worker && ./gradlew build && cd ..
+        run: cd Cyanidin-Worker && chmod 777 gradlew && ./gradlew build && cd ..
       - name: Copy built jar
         run: mkdir build_out && cp Cyanidin-Velocity/build/libs/*.jar ./build_out && cp Cyanidin-Worker/build/libs/*.jar ./build_out && cp Cyanidin-Backend/build/libs/*.jar ./build_out
       - name: Upload Artifact
