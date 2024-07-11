@@ -150,9 +150,8 @@ public class MapperSessionProcessor implements SessionListener{
 
     @Override
     public void disconnected(DisconnectedEvent event) {
-        Cyanidin.LOGGER.info("Mapper has disconnected: {}", event.getReason());
-        System.out.println(event.getCause());
-        this.mapperPayloadManager.onWorkerSessionDisconnect(this, this.kickMasterWhenDisconnect);
+        Cyanidin.LOGGER.info("Mapper session has disconnected for reason(non-deserialized): {}", event.getReason());
+        this.mapperPayloadManager.onWorkerSessionDisconnect(this, this.kickMasterWhenDisconnect, event.getReason());
         this.session = null;
     }
 

@@ -129,8 +129,8 @@ public class YsmMapperPayloadManager {
         this.mapperSessions.remove(player);
     }
 
-    protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster){
-        if (kickMaster) mapperSession.getBindPlayer().disconnect(Component.text("Backend disconnected")); //TODO I18N
+    protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster, Component reason){
+        if (kickMaster) mapperSession.getBindPlayer().disconnect(Component.text("Backend disconnected, Reason:").append(reason)); //TODO I18N
         this.player2Mappers.remove(mapperSession.getBindPlayer());
         this.mapperSessions.remove(mapperSession.getBindPlayer());
     }
