@@ -1,7 +1,10 @@
 package gg.earthme.cyanidin.cyanidin.network.ysm;
 
+import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.key.Key;
+import org.jetbrains.annotations.NotNull;
 
 
 public interface YsmPacketProxy {
@@ -10,4 +13,28 @@ public interface YsmPacketProxy {
     ProxyComputeResult processC2S(Key channelKey, ByteBuf copiedPacketData);
 
     void blockUntilProxyReady();
+
+    Player getOwner();
+
+    default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, byte[] data){
+        this.sendPluginMessageTo(this.getOwner(), channel, data);
+    }
+
+    default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, @NotNull ByteBuf data){
+        final byte[] dataArray = new byte[data.readableBytes()];
+        data.readBytes(dataArray);
+
+        this.sendPluginMessageToOwner(channel, dataArray);
+    }
+
+    default void sendPluginMessageTo(@NotNull Player target, @NotNull MinecraftChannelIdentifier channel, @NotNull ByteBuf data){
+        final byte[] dataArray = new byte[data.readableBytes()];
+        data.readBytes(dataArray);
+
+        this.sendPluginMessageTo(target, channel, dataArray);
+    }
+
+    default void sendPluginMessageTo(@NotNull Player target, @NotNull MinecraftChannelIdentifier channel, byte[] data){
+        target.sendPluginMessage(channel, data);
+    }
 }

@@ -5,7 +5,6 @@ import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.buffer.UnpooledHeapByteBuf;
 import net.kyori.adventure.key.Key;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.*;
@@ -74,14 +73,9 @@ public class MapperSessionProcessor implements SessionListener{
             case MODIFY -> {
                 final ByteBuf finalData = processed.data();
 
-                byte[] data;
-                if (!(finalData instanceof UnpooledHeapByteBuf heapBuffer)){
-                    finalData.resetReaderIndex();
-                    data = new byte[finalData.readableBytes()];
-                    finalData.readBytes(data);
-                }else{
-                    data = heapBuffer.array();
-                }
+                finalData.resetReaderIndex();
+                byte[] data = new byte[finalData.readableBytes()];
+                finalData.readBytes(data);
 
                 this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, data));
             }
@@ -114,19 +108,12 @@ public class MapperSessionProcessor implements SessionListener{
                     case MODIFY -> {
                         final ByteBuf finalData = processed.data();
 
-                        byte[] data;
-                        if (!(finalData instanceof UnpooledHeapByteBuf heapBuffer)){
-                            finalData.resetReaderIndex();
-                            data = new byte[finalData.readableBytes()];
-                            finalData.readBytes(data);
-                        }else{
-                            data = heapBuffer.array();
-                        }
+                        finalData.resetReaderIndex();
 
-                        this.bindPlayer.sendPluginMessage(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), data);
+                        this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), finalData);
                     }
 
-                    case PASS -> this.bindPlayer.sendPluginMessage(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
+                    case PASS -> this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
                 }
             }
         }

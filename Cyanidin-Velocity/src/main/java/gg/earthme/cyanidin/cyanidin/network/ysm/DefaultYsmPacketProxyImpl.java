@@ -35,6 +35,11 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         Cyanidin.mapperManager.onPacketProxyReady(this.player);
     }
 
+    @Override
+    public Player getOwner() {
+        return this.player;
+    }
+
     private boolean isEntityStateOfSelf(int entityId){
         final int currentWorkerEntityId = Cyanidin.mapperManager.getWorkerPlayerEntityId(this.player);
 
@@ -62,7 +67,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
             wrappedPacketData.writeVarInt(currentEntityId);
             wrappedPacketData.writeBytes(this.nbtRemapper.shouldRemap(targetProtocolVer) ? this.nbtRemapper.remapToMasterVer(lastEntityStatusTemp) : this.nbtRemapper.remapToWorkerVer(lastEntityStatusTemp));
 
-            target.sendPluginMessage(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData.array());
+            this.sendPluginMessageTo(target, YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData);
         }catch (Exception e){
             Cyanidin.LOGGER.error("Error in encoding nbt or sending packet!", e);
         }
