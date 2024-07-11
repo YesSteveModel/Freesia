@@ -2,7 +2,7 @@ package gg.earthme.cyanidin.cyanidin.network.ysm;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
-import gg.earthme.cyanidin.cyanidin.Cyanidin;
+import gg.earthme.cyanidin.cyanidin.CyanidinConfig;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.geysermc.mcprotocollib.auth.GameProfile;
@@ -39,7 +39,7 @@ public class YsmMapperPayloadManager {
 
     public YsmMapperPayloadManager(Function<Player, YsmPacketProxy> packetProxyCreator) {
         this.packetProxyCreator = packetProxyCreator;
-        this.backend2Players.put(Cyanidin.BACKEND_ADDRESS_MC,1);
+        this.backend2Players.put(CyanidinConfig.workerMSessionAddress ,1); //TODO Load balance
     }
 
     public void onClientYsmPacketReply(Player target){
