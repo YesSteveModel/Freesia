@@ -28,7 +28,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-@Plugin(id = "cyanidin", name = "Cyanidin", version = "1.0.0", authors = {"Earthme"}, dependencies = @Dependency(id = "packetevents"))
+@Plugin(id = "cyanidin", name = "Cyanidin", version = BuildConstants.VERSION, authors = {"Earthme"}, dependencies = @Dependency(id = "packetevents"))
 public class Cyanidin implements PacketListener {
     @Inject
     private Logger logger;
@@ -42,11 +42,29 @@ public class Cyanidin implements PacketListener {
     public static final YsmMapperPayloadManager mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new);
     public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
 
+    private static void printLogo(){
+        LOGGER.info("------------------------------------------------------------------------------");
+        LOGGER.info("   █████████                                   ███      █████  ███            ");
+        LOGGER.info("  ███░░░░░███                                 ░░░      ░░███  ░░░             ");
+        LOGGER.info(" ███     ░░░  █████ ████  ██████   ████████   ████   ███████  ████  ████████  ");
+        LOGGER.info("░███         ░░███ ░███  ░░░░░███ ░░███░░███ ░░███  ███░░███ ░░███ ░░███░░███ ");
+        LOGGER.info("░███          ░███ ░███   ███████  ░███ ░███  ░███ ░███ ░███  ░███  ░███ ░███ ");
+        LOGGER.info("░░███     ███ ░███ ░███  ███░░███  ░███ ░███  ░███ ░███ ░███  ░███  ░███ ░███ ");
+        LOGGER.info(" ░░█████████  ░░███████ ░░████████ ████ █████ █████░░████████ █████ ████ █████");
+        LOGGER.info("  ░░░░░░░░░    ░░░░░███  ░░░░░░░░ ░░░░ ░░░░░ ░░░░░  ░░░░░░░░ ░░░░░ ░░░░ ░░░░░ ");
+        LOGGER.info("               ███ ░███                                                       ");
+        LOGGER.info("              ░░██████                                                        ");
+        LOGGER.info("                    Powered by CyanidinMC, Version: {}", BuildConstants.VERSION);
+        LOGGER.info("------------------------------------------------------------------------------");
+    }
+
     @Subscribe
     public void onProxyStart(ProxyInitializeEvent event) {
         INSTANCE = this;
         LOGGER = this.logger;
         PROXY_SERVER = this.proxyServer;
+
+        printLogo();
 
         try {
             CyanidinConfig.init();
@@ -54,6 +72,7 @@ public class Cyanidin implements PacketListener {
             throw new RuntimeException(e);
         }
 
+        LOGGER.info("Registering events and packet listeners.");
         PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.HIGHEST);
         this.proxyServer.getChannelRegistrar().register(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY);
         tracker.init();

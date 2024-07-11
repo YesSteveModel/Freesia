@@ -35,8 +35,10 @@ public class CyanidinConfig {
     }
 
     public static void init() throws IOException {
+        Cyanidin.LOGGER.info("Loading config file.");
+
         if (!CONFIG_FILE.exists()){
-            Cyanidin.LOGGER.info("Config file not found! Creating new config file");
+            Cyanidin.LOGGER.info("Config file not found! Creating new config file.");
             CONFIG_FILE.createNewFile();
         }
 
