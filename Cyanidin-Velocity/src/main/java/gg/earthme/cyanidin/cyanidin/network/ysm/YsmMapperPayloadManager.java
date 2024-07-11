@@ -1,11 +1,11 @@
 package gg.earthme.cyanidin.cyanidin.network.ysm;
 
-import com.github.steveice10.mc.auth.data.GameProfile;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
+import org.geysermc.mcprotocollib.auth.GameProfile;
 import org.geysermc.mcprotocollib.network.tcp.TcpClientSession;
 import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
 import org.jetbrains.annotations.NotNull;

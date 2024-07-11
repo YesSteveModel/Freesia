@@ -2,7 +2,6 @@ plugins {
     id 'java'
     id 'eclipse'
     id "org.jetbrains.gradle.plugin.idea-ext" version "1.0.1"
-    id 'org.jetbrains.kotlin.jvm' version '1.8.21'
     id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
@@ -17,35 +16,35 @@ allprojects {
         plugin 'java'
         plugin 'eclipse'
         plugin 'com.github.johnrengelman.shadow'
-        plugin 'org.jetbrains.kotlin.jvm'
         plugin 'org.jetbrains.gradle.plugin.idea-ext'
     }
 
     repositories {
         mavenCentral()
+
         maven {
             name = "papermc-repo"
             url = "https://repo.papermc.io/repository/maven-public/"
         }
+
         maven {
             name 'opencollab'
             url 'https://repo.opencollab.dev/maven-releases/'
         }
+
+        maven {
+            name 'opencollab-snapshot'
+            url 'https://repo.opencollab.dev/maven-snapshots/'
+        }
+
         maven {
             name = "sonatype"
             url = "https://oss.sonatype.org/content/groups/public/"
         }
+
         maven {
             url 'https://repo.codemc.io/repository/maven-releases/'
         }
-    }
-
-    compileKotlin {
-        kotlinOptions.jvmTarget = '19'
-    }
-
-    compileTestKotlin {
-        kotlinOptions.jvmTarget = '19'
     }
 }
 
@@ -54,13 +53,8 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'org.jetbrains.kotlin:kotlin-test'
 }
 
 test {
     useJUnitPlatform()
-}
-
-kotlin {
-    jvmToolchain(19)
 }
