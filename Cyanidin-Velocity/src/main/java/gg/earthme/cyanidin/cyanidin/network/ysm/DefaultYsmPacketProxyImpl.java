@@ -87,7 +87,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
             }
 
             case 4 -> {
-                final int workerEntityId = mcBuffer.readVarInt(); //Skip entity id
+                final int workerEntityId = mcBuffer.readVarInt();
 
                 try {
                     if (!this.isEntityStateOfSelf(workerEntityId)){
