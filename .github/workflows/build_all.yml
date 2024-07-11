@@ -1,0 +1,33 @@
+name: Cyanidin CI - master
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions: write-all
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: default
+    steps:
+      - name: Checkout Git Repository
+        uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Build plugin models
+        run: ./gradlew shadowJar
+      - name: Build mod models
+        run: cd Cyanidin-Worker && ./gradlew build && cd ..
+      - name: Copy built jar
+        run: mkdir build_out && cp Cyanidin-Velocity/build/libs/*.jar ./build_out && cp Cyanidin-Worker/build/libs/*.jar ./build_out && cp Cyanidin-Backend/build/libs/*.jar ./build_out
+      - name: Upload Artifact
+        uses: "actions/upload-artifact@v4"
+        with:
+          name: "${{ env.project_id_b }} CI Artifacts"
+          path: "build_out/*.jar"
