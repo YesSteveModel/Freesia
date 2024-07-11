@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,6 +18,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TrackerProcessor implements PluginMessageListener, Listener {
     private static final String CHANNEL_NAME = "cyanidin:tracker_sync";
     private final Map<Player, Set<Player>> visibleMap = new ConcurrentHashMap<>();
+
+    @EventHandler
+    public void onPlayerLeft(@NotNull PlayerQuitEvent event){
+        this.visibleMap.remove(event.getPlayer());
+    }
 
     @EventHandler
     public void onPlayerMove(@NotNull PlayerMoveEvent event){
