@@ -151,6 +151,18 @@ public class YsmMapperPayloadManager {
         if (kickMaster) mapperSession.getBindPlayer().disconnect(Component.text("Backend disconnected, Reason:").append(reason)); //TODO I18N
         this.player2Mappers.remove(mapperSession.getBindPlayer());
         this.mapperSessions.remove(mapperSession.getBindPlayer());
+        this.ysmInstalledPlayers.remove(mapperSession.getBindPlayer());
+
+        final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.get(mapperSession.getBindPlayer());
+
+        Consumer<MapperSessionProcessor> unprocessed;
+        while ((unprocessed = removedQueue.poll()) != null){
+            try {
+                unprocessed.accept(mapperSession);
+            }catch (Exception e){
+                Cyanidin.LOGGER.error("Failed to retire connect callback!", e);
+            }
+        }
     }
 
     public void onPluginMessageIn(@NotNull Player player, @NotNull MinecraftChannelIdentifier channel, byte[] packetData){
