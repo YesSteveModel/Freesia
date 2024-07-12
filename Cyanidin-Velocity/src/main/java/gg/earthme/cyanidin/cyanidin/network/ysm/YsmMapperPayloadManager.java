@@ -129,9 +129,10 @@ public class YsmMapperPayloadManager {
         this.player2WorkerEntityIds.remove(player);
 
         final MapperSessionProcessor mapperSession = this.mapperSessions.remove(player);
+        final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.remove(player);
 
         Consumer<MapperSessionProcessor> unprocessed;
-        while ((unprocessed = this.mapperCreateCallbacks.get(player).poll()) != null){
+        while ((unprocessed = removedQueue.poll()) != null){
             try {
                 unprocessed.accept(mapperSession);
             }catch (Exception e){
@@ -144,7 +145,6 @@ public class YsmMapperPayloadManager {
         }
 
         this.player2Mappers.remove(player);
-        this.mapperSessions.remove(player);
     }
 
     protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster, Component reason){
