@@ -120,10 +120,11 @@ public class Cyanidin implements PacketListener {
     public void onPlayerConnected(@NotNull ServerConnectedEvent event){
         final Player targetPlayer = event.getPlayer();
 
+        mapperManager.onPlayerConnected(targetPlayer);
         this.proxyServer.getScheduler().buildTask(this, () -> {
             if (!mapperManager.hasPlayer(targetPlayer)){
                 this.logger.info("Initiating mapper session for player {}", targetPlayer.getUsername());
-                mapperManager.onPlayerBackendConnected(targetPlayer);
+                mapperManager.firstCreateMapper(targetPlayer);
                 return;
             }
 
