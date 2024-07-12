@@ -102,6 +102,10 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
                     final Set<Player> beingWatched = Cyanidin.tracker.getCanSee(this.player);
                     for (Player target : beingWatched){
+                        if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){
+                            continue;
+                        }
+
                         this.sendEntityStateTo(target);
                     }
                 }catch (Exception e){
