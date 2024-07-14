@@ -15,6 +15,7 @@
   "mixins": [
     "cyanidin-worker.mixins.json"
   ],
+  "accessWidener": "cyanidin_worker.accesswidener",
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric": "*",
