@@ -131,12 +131,14 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapperSession = this.mapperSessions.remove(player);
         final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.remove(player);
 
-        Consumer<MapperSessionProcessor> unprocessed;
-        while ((unprocessed = removedQueue.poll()) != null){
-            try {
-                unprocessed.accept(mapperSession);
-            }catch (Exception e){
-                Cyanidin.LOGGER.error("Failed to retire connect callback!", e);
+        if (removedQueue != null){
+            Consumer<MapperSessionProcessor> unprocessed;
+            while ((unprocessed = removedQueue.poll()) != null){
+                try {
+                    unprocessed.accept(mapperSession);
+                }catch (Exception e){
+                    Cyanidin.LOGGER.error("Failed to retire connect callback!", e);
+                }
             }
         }
 
@@ -155,12 +157,14 @@ public class YsmMapperPayloadManager {
 
         final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.get(mapperSession.getBindPlayer());
 
-        Consumer<MapperSessionProcessor> unprocessed;
-        while ((unprocessed = removedQueue.poll()) != null){
-            try {
-                unprocessed.accept(mapperSession);
-            }catch (Exception e){
-                Cyanidin.LOGGER.error("Failed to retire connect callback!", e);
+        if (removedQueue != null){
+            Consumer<MapperSessionProcessor> unprocessed;
+            while ((unprocessed = removedQueue.poll()) != null){
+                try {
+                    unprocessed.accept(mapperSession);
+                }catch (Exception e){
+                    Cyanidin.LOGGER.error("Failed to retire connect callback!", e);
+                }
             }
         }
     }
