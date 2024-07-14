@@ -70,7 +70,13 @@ public class Cyanidin implements PacketListener {
         if (CyanidinConfig.attachMotdModList){
             //modList.add(Pair.of("minecraft", "1.21"));
             //modList.add(Pair.of("forge", "51.0.23"));
+            modList.add(Pair.of("Yes_Steve_Model", "2.2.1"));
             modList.add(Pair.of("yes_steve_model", "2.2.1"));
+            modList.add(Pair.of("yes steve model", "2.2.1"));
+            modList.add(Pair.of("Yes Steve Model", "2.2.1"));
+            modList.add(Pair.of("yesstevemodel", "2.2.1"));
+            modList.add(Pair.of("ysm", "2.2.1"));
+            modList.add(Pair.of("YSM", "2.2.1"));
         }
     }
 
