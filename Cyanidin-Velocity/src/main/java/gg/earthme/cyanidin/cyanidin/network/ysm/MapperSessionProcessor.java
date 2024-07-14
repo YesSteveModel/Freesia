@@ -38,8 +38,8 @@ public class MapperSessionProcessor implements SessionListener{
         return this.packetProxy;
     }
 
-    public boolean isReadyForReceivingPackets(){
-        return this.readyForReceivingPackets;
+    public boolean isNotReady(){
+        return !this.readyForReceivingPackets;
     }
 
     public Session getSession() {
@@ -56,13 +56,13 @@ public class MapperSessionProcessor implements SessionListener{
             try {
                 callback.run();
             }catch (Exception e){
-                e.printStackTrace();
+                Cyanidin.LOGGER.error("Error while firing proxy callbacks!", e);
             }
         }
     }
 
     public void processPlayerPluginMessage(byte[] packetData){
-        if (!this.isReadyForReceivingPackets()){
+        if (this.isNotReady()){
             this.pendingPacketProcessQueue.offer(() -> this.processPlayerPluginMessage(packetData));
             return;
         }

@@ -181,7 +181,7 @@ public class YsmMapperPayloadManager {
 
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(player);
 
-        if (mapperSession == null || !mapperSession.isReadyForReceivingPackets()){
+        if (mapperSession == null || mapperSession.isNotReady()){
             throw new IllegalStateException("Mapper session not found or ready for player " + player.getUsername());
         }
 
@@ -209,11 +209,14 @@ public class YsmMapperPayloadManager {
         mapperSession.setConnectTimeout(3000);
         mapperSession.connect(true,false);
 
-        while (!packetProcessor.isReadyForReceivingPackets()){
+        while (packetProcessor.isNotReady()){
             LockSupport.parkNanos(1_000_000);
         }
 
         this.mapperSessions.put(player, packetProcessor);
+
+        packetProcessor.getPacketProxy().blockUntilProxyReady();
+
         Consumer<MapperSessionProcessor> callback;
         while ((callback = this.mapperCreateCallbacks.get(player).poll()) != null){
             try {
@@ -222,7 +225,6 @@ public class YsmMapperPayloadManager {
                 Cyanidin.LOGGER.info("Error occurs while processing connect callbacks!", e);
             }
         }
-        packetProcessor.getPacketProxy().blockUntilProxyReady();
 
         this.player2Mappers.put(player, mapperSession);
     }
