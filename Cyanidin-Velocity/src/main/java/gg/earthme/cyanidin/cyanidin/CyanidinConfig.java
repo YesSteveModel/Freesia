@@ -13,6 +13,7 @@ public class CyanidinConfig {
     private static CommentedFileConfig CONFIG_INSTANCE;
 
     public static InetSocketAddress workerMSessionAddress = new InetSocketAddress("127.0.0.1", 19199);
+    public static InetSocketAddress masterServiceAddress = new InetSocketAddress("127.0.0.1", 19200);
 
     static {
         CONFIG_FILE_DIR.mkdirs();
@@ -22,6 +23,10 @@ public class CyanidinConfig {
         workerMSessionAddress = new InetSocketAddress(
                 get("worker.worker_msession_ip", workerMSessionAddress.getHostName()),
                 get("worker.worker_msession_port", workerMSessionAddress.getPort())
+        );
+        masterServiceAddress = new InetSocketAddress(
+                get("worker.worker_master_ip", masterServiceAddress.getHostName()),
+                get("worker.worker_master_port", masterServiceAddress.getPort())
         );
     }
 

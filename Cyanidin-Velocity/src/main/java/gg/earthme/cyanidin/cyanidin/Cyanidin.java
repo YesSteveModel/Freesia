@@ -18,17 +18,19 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import gg.earthme.cyanidin.cyanidin.datastorage.DefaultDataStorageManagerImpl;
+import gg.earthme.cyanidin.cyanidin.datastorage.IDataStorageManager;
+import gg.earthme.cyanidin.cyanidin.network.backend.MasterServerMessageHandler;
 import gg.earthme.cyanidin.cyanidin.network.mc.CyanidinPlayerTracker;
 import gg.earthme.cyanidin.cyanidin.network.ysm.DefaultYsmPacketProxyImpl;
 import gg.earthme.cyanidin.cyanidin.network.ysm.YsmMapperPayloadManager;
-import it.unimi.dsi.fastutil.Pair;
+import i.mrhua269.cyanidin.common.EntryPoint;
+import i.mrhua269.cyanidin.common.communicating.NettySocketServer;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Plugin(id = "cyanidin", name = "Cyanidin", version = BuildConstants.VERSION, authors = {"Earthme"}, dependencies = @Dependency(id = "packetevents"))
@@ -44,7 +46,8 @@ public class Cyanidin implements PacketListener {
 
     public static final YsmMapperPayloadManager mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new);
     public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
-    private static final Set<Pair<String, String>> modList = ConcurrentHashMap.newKeySet();
+    public static final IDataStorageManager dataStorageManager = new DefaultDataStorageManagerImpl();
+    public static NettySocketServer masterServer;
 
     private static void printLogo(){
         LOGGER.info("------------------------------------------------------------------------------");
@@ -67,6 +70,7 @@ public class Cyanidin implements PacketListener {
         INSTANCE = this;
         LOGGER = this.logger;
         PROXY_SERVER = this.proxyServer;
+        EntryPoint.initLogger(this.logger);
 
         printLogo();
 
@@ -81,6 +85,9 @@ public class Cyanidin implements PacketListener {
         this.proxyServer.getChannelRegistrar().register(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY);
         tracker.init();
         tracker.addTrackerEventListener(mapperManager::onPlayerTrackerUpdate);
+
+        masterServer = new NettySocketServer(CyanidinConfig.masterServiceAddress, c -> new MasterServerMessageHandler());
+        masterServer.bind();
     }
 
     @Subscribe

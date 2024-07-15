@@ -7,15 +7,18 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class NettyServerChannelHandlerLayer extends SimpleChannelInboundHandler<IMessage<NettyServerChannelHandlerLayer>> {
+public abstract class NettyServerChannelHandlerLayer extends SimpleChannelInboundHandler<IMessage<NettyServerChannelHandlerLayer>> {
     private Channel channel;
-    private final Queue<IMessage<NettyServerChannelHandlerLayer>> pendingPackets = new ConcurrentLinkedQueue<>();
+    private final Queue<IMessage<NettyClientChannelHandlerLayer>> pendingPackets = new ConcurrentLinkedQueue<>();
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         this.channel = ctx.channel();
+        EntryPoint.LOGGER_INST.info("Worker connected {}", this.channel);
     }
 
     @Override
@@ -27,7 +30,7 @@ public class NettyServerChannelHandlerLayer extends SimpleChannelInboundHandler<
         }
     }
 
-    public void sendMessage(IMessage<NettyServerChannelHandlerLayer> packet){
+    public void sendMessage(IMessage<NettyClientChannelHandlerLayer> packet){
         if (!this.channel.isOpen()){
             return;
         }
@@ -43,7 +46,7 @@ public class NettyServerChannelHandlerLayer extends SimpleChannelInboundHandler<
         }
 
         if (!this.pendingPackets.isEmpty()){
-            IMessage<NettyServerChannelHandlerLayer> pending;
+            IMessage<NettyClientChannelHandlerLayer> pending;
             while ((pending = this.pendingPackets.poll()) != null){
                 this.channel.writeAndFlush(pending);
             }
@@ -51,4 +54,8 @@ public class NettyServerChannelHandlerLayer extends SimpleChannelInboundHandler<
 
         this.channel.writeAndFlush(packet);
     }
+
+    public abstract CompletableFuture<String> readPlayerData(UUID playerUUID);
+
+    public abstract CompletableFuture<Void> savePlayerData(UUID playerUUID, String content);
 }

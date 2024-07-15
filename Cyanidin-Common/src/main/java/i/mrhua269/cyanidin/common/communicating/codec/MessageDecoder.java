@@ -21,7 +21,7 @@ public class MessageDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
         final int packetId = byteBuf.readInt();
-        final Supplier<IMessage> packetCreator = this.side == EnumSide.S2C ? BuiltinMessageRegitres.getS2CMessageCreator(packetId) : BuiltinMessageRegitres.getC2SMessageCreator(packetId);
+        final Supplier<? extends IMessage> packetCreator = BuiltinMessageRegitres.getMessageCreator(packetId);
 
         try {
             final IMessage wrapped = packetCreator.get();

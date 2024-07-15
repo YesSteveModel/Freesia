@@ -8,21 +8,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public class W2MUpdatePlayerDataRequestMessage implements IMessage<NettyServerChannelHandlerLayer> {
-    private String nbtJson;
+    private String base64Content;
     private UUID playerUUID;
 
     public W2MUpdatePlayerDataRequestMessage(){}
 
-    public W2MUpdatePlayerDataRequestMessage(UUID playerUUID, String nbtJson){
+    public W2MUpdatePlayerDataRequestMessage(UUID playerUUID, String base64Content){
         this.playerUUID = playerUUID;
-        this.nbtJson = nbtJson;
+        this.base64Content = base64Content;
     }
 
     @Override
     public void writeMessageData(ByteBuf buffer) {
         buffer.writeLong(this.playerUUID.getLeastSignificantBits());
         buffer.writeLong(this.playerUUID.getMostSignificantBits());
-        buffer.writeBytes(this.nbtJson.getBytes(StandardCharsets.UTF_8));
+        buffer.writeBytes(this.base64Content.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
@@ -33,11 +33,11 @@ public class W2MUpdatePlayerDataRequestMessage implements IMessage<NettyServerCh
         buffer.readBytes(nbtJsonData);
 
         this.playerUUID = new UUID(lsb, msb);
-        this.nbtJson = new String(nbtJsonData, StandardCharsets.UTF_8);
+        this.base64Content = new String(nbtJsonData, StandardCharsets.UTF_8);
     }
 
     @Override
     public void process(NettyServerChannelHandlerLayer handler) {
-
+        handler.savePlayerData(this.playerUUID, this.base64Content);
     }
 }

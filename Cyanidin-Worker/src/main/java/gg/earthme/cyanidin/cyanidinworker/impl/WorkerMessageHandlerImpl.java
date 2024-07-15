@@ -9,6 +9,7 @@ import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MUpdatePlayerDataR
 import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.server.MinecraftServer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -30,10 +31,20 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
         ServerLoader.workerConnection = this;
     }
 
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        ServerLoader.SERVER_INST.execute(() -> {throw new RuntimeException("MASTER DISCONNECTED");}); //TODO Better handling?
+    }
+
     public void getPlayerData(UUID playerUUID, Consumer<CompoundTag> onGot){
         final int generatedTraceId = this.traceIdGenerator.getAndIncrement();
         final Consumer<String> wrappedDecoder = nbtStr -> {
             CompoundTag decoded = null;
+
+            if (nbtStr == null){
+                onGot.accept(null);
+                return;
+            }
 
             try {
                 final byte[] decodedNbtData = Base64.getDecoder().decode(nbtStr);

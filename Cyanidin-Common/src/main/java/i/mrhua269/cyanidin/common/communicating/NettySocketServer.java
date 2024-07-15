@@ -3,16 +3,20 @@ package i.mrhua269.cyanidin.common.communicating;
 import i.mrhua269.cyanidin.common.NettyUtils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
+
 import java.net.InetSocketAddress;
+import java.util.function.Function;
 
 public class NettySocketServer {
     private final InetSocketAddress bindAddress;
     private final EventLoopGroup masterLoopGroup = NettyUtils.eventLoopGroup();
     private final EventLoopGroup workerLoopGroup = NettyUtils.eventLoopGroup();
     private volatile ChannelFuture channelFuture;
+    private final Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator;
 
-    public NettySocketServer(InetSocketAddress bindAddress) {
+    public NettySocketServer(InetSocketAddress bindAddress, Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator) {
         this.bindAddress = bindAddress;
+        this.handlerCreator = handlerCreator;
     }
 
     public void bind(){
@@ -24,6 +28,7 @@ public class NettySocketServer {
                     @Override
                     protected void initChannel(Channel channel) {
                         DefaultChannelPipelineLoader.loadDefaultHandlers(channel, EnumSide.C2S);
+                        channel.pipeline().addLast(NettySocketServer.this.handlerCreator.apply(channel));
                     }
                 })
                 .bind(this.bindAddress.getHostName(), this.bindAddress.getPort())

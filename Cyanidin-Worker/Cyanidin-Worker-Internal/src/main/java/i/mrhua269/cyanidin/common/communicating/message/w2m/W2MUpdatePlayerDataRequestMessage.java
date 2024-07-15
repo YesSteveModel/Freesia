@@ -38,6 +38,6 @@ public class W2MUpdatePlayerDataRequestMessage implements IMessage<NettyServerCh
 
     @Override
     public void process(NettyServerChannelHandlerLayer handler) {
-
+        handler.savePlayerData(this.playerUUID, this.base64Content);
     }
 }

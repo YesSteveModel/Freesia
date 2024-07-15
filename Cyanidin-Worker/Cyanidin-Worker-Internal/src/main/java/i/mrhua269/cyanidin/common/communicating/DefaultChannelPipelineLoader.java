@@ -10,8 +10,8 @@ public class DefaultChannelPipelineLoader {
 
     public static void loadDefaultHandlers(Channel channel, EnumSide side){
         channel.pipeline()
+                .addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE,0,4,0,4))
                 .addLast(new LengthFieldPrepender(4))
-                .addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4))
                 .addLast(new MessageEncoder())
                 .addLast(new MessageDecoder(side));
     }

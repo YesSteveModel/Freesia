@@ -23,6 +23,7 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
     implementation project(":Cyanidin-Worker-Internal")
+    implementation "com.electronwill.night-config:toml:3.6.6"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Fabric API. This is technically optional, but you probably want it anyway.

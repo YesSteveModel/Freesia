@@ -9,6 +9,7 @@ import io.netty.channel.*;
 import java.net.InetSocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
 
 public class NettySocketClient {
     private final EventLoopGroup clientEventLoopGroup = NettyUtils.eventLoopGroup();
@@ -18,9 +19,11 @@ public class NettySocketClient {
     private volatile Channel channel;
     private volatile boolean isConnecting = false;
     private final Queue<IMessage<?>> packetFlushQueue = new ConcurrentLinkedQueue<>();
+    private final Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator;
 
-    public NettySocketClient(InetSocketAddress masterAddress) {
+    public NettySocketClient(InetSocketAddress masterAddress, Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator) {
         this.masterAddress = masterAddress;
+        this.handlerCreator = handlerCreator;
     }
 
     public void connect(){
@@ -35,6 +38,7 @@ public class NettySocketClient {
                         @Override
                         protected void initChannel(Channel channel) throws Exception {
                             DefaultChannelPipelineLoader.loadDefaultHandlers(channel, EnumSide.S2C);
+                            channel.pipeline().addLast(NettySocketClient.this.handlerCreator.apply(channel));
                         }
                     })
                     .connect(this.masterAddress.getHostName(), this.masterAddress.getPort())

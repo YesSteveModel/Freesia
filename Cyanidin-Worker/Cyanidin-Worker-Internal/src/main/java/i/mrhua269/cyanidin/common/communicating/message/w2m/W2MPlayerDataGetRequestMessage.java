@@ -2,6 +2,7 @@ package i.mrhua269.cyanidin.common.communicating.message.w2m;
 
 import i.mrhua269.cyanidin.common.communicating.handler.NettyServerChannelHandlerLayer;
 import i.mrhua269.cyanidin.common.communicating.message.IMessage;
+import i.mrhua269.cyanidin.common.communicating.message.m2w.M2WPlayerDataResponseMessage;
 import io.netty.buffer.ByteBuf;
 
 import java.util.UUID;
@@ -37,6 +38,6 @@ public class W2MPlayerDataGetRequestMessage implements IMessage<NettyServerChann
 
     @Override
     public void process(NettyServerChannelHandlerLayer handler) {
-
+        handler.readPlayerData(this.playerUUID).whenComplete((result, error) -> handler.sendMessage(new M2WPlayerDataResponseMessage(result, this.traceId)));
     }
 }

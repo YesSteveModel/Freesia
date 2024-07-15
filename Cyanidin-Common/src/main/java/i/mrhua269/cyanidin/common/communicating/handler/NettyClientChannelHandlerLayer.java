@@ -14,4 +14,6 @@ public abstract class NettyClientChannelHandlerLayer extends SimpleChannelInboun
             EntryPoint.LOGGER_INST.error("Failed to process packet! ", e);
         }
     }
+
+    public abstract void onMasterPlayerDataResponse(int traceId, String base64Content);
 }

@@ -23,6 +23,11 @@ public class M2WPlayerDataResponseMessage implements IMessage<NettyClientChannel
     public void writeMessageData(ByteBuf buffer) {
         buffer.writeInt(this.traceId);
         buffer.writeBoolean(this.base64Content != null);
+
+        if (this.base64Content == null){
+            return;
+        }
+
         final byte[] data = this.base64Content.getBytes(StandardCharsets.UTF_8);
         buffer.writeInt(data.length);
         buffer.writeBytes(data);
