@@ -13,7 +13,6 @@ public class CyanidinConfig {
     private static CommentedFileConfig CONFIG_INSTANCE;
 
     public static InetSocketAddress workerMSessionAddress = new InetSocketAddress("127.0.0.1", 19199);
-    public static boolean attachMotdModList = true;
 
     static {
         CONFIG_FILE_DIR.mkdirs();
@@ -24,7 +23,6 @@ public class CyanidinConfig {
                 get("worker.worker_msession_ip", workerMSessionAddress.getHostName()),
                 get("worker.worker_msession_port", workerMSessionAddress.getPort())
         );
-        attachMotdModList = get("misc.attach_motd_mod_list", attachMotdModList);
     }
 
     private static <T> T get(String key, T def){

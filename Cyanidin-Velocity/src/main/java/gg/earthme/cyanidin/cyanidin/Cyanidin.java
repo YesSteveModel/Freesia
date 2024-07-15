@@ -12,15 +12,12 @@ import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
-import com.velocitypowered.api.event.proxy.ProxyPingEvent;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
-import com.velocitypowered.api.proxy.server.ServerPing;
-import com.velocitypowered.api.util.ModInfo;
 import gg.earthme.cyanidin.cyanidin.network.mc.CyanidinPlayerTracker;
 import gg.earthme.cyanidin.cyanidin.network.ysm.DefaultYsmPacketProxyImpl;
 import gg.earthme.cyanidin.cyanidin.network.ysm.YsmMapperPayloadManager;
@@ -30,7 +27,6 @@ import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -66,20 +62,6 @@ public class Cyanidin implements PacketListener {
         LOGGER.info("------------------------------------------------------------------------------");
     }
 
-    public void addDefaultMods(){
-        if (CyanidinConfig.attachMotdModList){
-            //modList.add(Pair.of("minecraft", "1.21"));
-            //modList.add(Pair.of("forge", "51.0.23"));
-            modList.add(Pair.of("Yes_Steve_Model", "2.2.1"));
-            modList.add(Pair.of("yes_steve_model", "2.2.1"));
-            modList.add(Pair.of("yes steve model", "2.2.1"));
-            modList.add(Pair.of("Yes Steve Model", "2.2.1"));
-            modList.add(Pair.of("yesstevemodel", "2.2.1"));
-            modList.add(Pair.of("ysm", "2.2.1"));
-            modList.add(Pair.of("YSM", "2.2.1"));
-        }
-    }
-
     @Subscribe
     public void onProxyStart(ProxyInitializeEvent event) {
         INSTANCE = this;
@@ -95,25 +77,10 @@ public class Cyanidin implements PacketListener {
         }
 
         LOGGER.info("Registering events and packet listeners.");
-        this.addDefaultMods();
         PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.HIGHEST);
         this.proxyServer.getChannelRegistrar().register(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY);
         tracker.init();
         tracker.addTrackerEventListener(mapperManager::onPlayerTrackerUpdate);
-    }
-
-    @Subscribe
-    public void onPingEvent(@NotNull ProxyPingEvent event) {
-        final ArrayList<ModInfo.Mod> mods = new ArrayList<>();
-
-        for (Pair<String , String> modInfo : modList){
-            mods.add(new ModInfo.Mod(modInfo.first(), modInfo.second()));
-        }
-
-        final ModInfo wrapped = new ModInfo("FML", mods);
-        final ServerPing modified = event.getPing().asBuilder().mods(wrapped).build();
-
-        event.setPing(modified);
     }
 
     @Subscribe

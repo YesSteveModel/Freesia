@@ -7,4 +7,3 @@ rootProject.name = 'Cyanidin'
 include("Cyanidin-Velocity")
 include("Cyanidin-Backend")
 include("Cyanidin-Common")
-

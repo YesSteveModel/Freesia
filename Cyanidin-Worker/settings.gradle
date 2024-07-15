@@ -7,3 +7,6 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
+include 'Cyanidin-Worker-Internal'
+
