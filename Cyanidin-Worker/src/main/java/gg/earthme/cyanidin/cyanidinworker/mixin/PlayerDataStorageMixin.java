@@ -1,5 +1,7 @@
 package gg.earthme.cyanidin.cyanidinworker.mixin;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.mojang.datafixers.DataFixer;
 import gg.earthme.cyanidin.cyanidinworker.ServerLoader;
 import net.minecraft.nbt.CompoundTag;
@@ -15,13 +17,16 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Mixin(PlayerDataStorage.class)
 public abstract class PlayerDataStorageMixin {
+    private final Cache<Player, CompoundTag> loadCache = CacheBuilder.newBuilder()
+            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .build();
     @Shadow @Final protected DataFixer fixerUpper;
 
     @Inject(method = "save", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;saveWithoutId(Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/nbt/CompoundTag;", shift = At.Shift.BEFORE), cancellable = true)
@@ -29,6 +34,7 @@ public abstract class PlayerDataStorageMixin {
         ci.cancel();
 
         CompoundTag compoundTag = player.saveWithoutId(new CompoundTag());
+        this.loadCache.invalidate(player);
         ServerLoader.workerConnection.updatePlayerData(player.getUUID(), compoundTag);
     }
 
@@ -38,6 +44,12 @@ public abstract class PlayerDataStorageMixin {
      */
     @Overwrite
     public Optional<CompoundTag> load(@NotNull Player player){
+        final CompoundTag hit = this.loadCache.getIfPresent(player);
+
+        if (hit != null){
+            return Optional.of(hit);
+        }
+
         CompletableFuture<CompoundTag> callback = new CompletableFuture<>();
         ServerLoader.workerConnection.getPlayerData(player.getUUID(), callback::complete);
         CompoundTag got = callback.join();
@@ -49,6 +61,7 @@ public abstract class PlayerDataStorageMixin {
         int i = NbtUtils.getDataVersion(got, -1);
         got = DataFixTypes.PLAYER.updateToCurrentVersion(this.fixerUpper, got, i);
 
+        this.loadCache.put(player, got);
         player.load(got);
         return Optional.of(got);
     }
