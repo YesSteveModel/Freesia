@@ -45,8 +45,7 @@ public class NettySocketClient {
                     .syncUninterruptibly();
             this.channel = this.clientChannelFuture.channel();
         }catch (Exception e){
-            EntryPoint.LOGGER_INST.error("Failed to connect master controller service!");
-            throw new RuntimeException(e);
+            EntryPoint.LOGGER_INST.error("Failed to connect master controller service!", e);
         }finally {
             this.isConnecting = false;
         }

@@ -8,46 +8,44 @@ import java.nio.charset.StandardCharsets;
 
 public class M2WPlayerDataResponseMessage implements IMessage<NettyClientChannelHandlerLayer> {
     private int traceId;
-    private String base64Content;
+    private byte[] content;
 
     public M2WPlayerDataResponseMessage(){
 
     }
 
-    public M2WPlayerDataResponseMessage(String base64Content, int traceId){
-        this.base64Content = base64Content;
+    public M2WPlayerDataResponseMessage(byte[] content, int traceId){
+        this.content = content;
         this.traceId = traceId;
     }
 
     @Override
     public void writeMessageData(ByteBuf buffer) {
         buffer.writeInt(this.traceId);
-        buffer.writeBoolean(this.base64Content != null);
+        buffer.writeBoolean(this.content != null);
 
-        if (this.base64Content == null){
+        if (this.content == null){
             return;
         }
 
-        final byte[] data = this.base64Content.getBytes(StandardCharsets.UTF_8);
-        buffer.writeInt(data.length);
-        buffer.writeBytes(data);
+        buffer.writeInt(this.content.length);
+        buffer.writeBytes(this.content);
     }
 
     @Override
     public void readMessageData(ByteBuf buffer) {
         this.traceId = buffer.readInt();
         if (!buffer.readBoolean()){
-            this.base64Content = null;
+            this.content = null;
             return;
         }
 
-        final byte[] data = new byte[buffer.readInt()];
-        buffer.readBytes(data);
-        this.base64Content = new String(data, StandardCharsets.UTF_8);
+        this.content = new byte[buffer.readInt()];
+        buffer.readBytes(this.content);
     }
 
     @Override
     public void process(NettyClientChannelHandlerLayer handler) {
-        handler.onMasterPlayerDataResponse(this.traceId, this.base64Content);
+        handler.onMasterPlayerDataResponse(this.traceId, this.content);
     }
 }

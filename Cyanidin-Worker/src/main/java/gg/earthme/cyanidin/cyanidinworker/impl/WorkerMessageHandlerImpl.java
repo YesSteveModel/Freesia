@@ -6,24 +6,27 @@ import i.mrhua269.cyanidin.common.EntryPoint;
 import i.mrhua269.cyanidin.common.communicating.handler.NettyClientChannelHandlerLayer;
 import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MPlayerDataGetRequestMessage;
 import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MUpdatePlayerDataRequestMessage;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
+@ChannelHandler.Sharable
 public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     private final AtomicInteger traceIdGenerator = new AtomicInteger(0);
-    private final Map<Integer, Consumer<String>> playerDataGetCallbacks = Maps.newConcurrentMap();
+    private final Map<Integer, Consumer<byte[]>> playerDataGetCallbacks = Maps.newConcurrentMap();
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
@@ -31,23 +34,25 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        ServerLoader.SERVER_INST.execute(() -> {throw new RuntimeException("MASTER DISCONNECTED");}); //TODO Better handling?
+    public void channelInactive(ChannelHandlerContext ctx) {
+        ServerLoader.SERVER_INST.execute(() -> {
+            ServerLoader.connectToBackend();
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
+        });
     }
 
     public void getPlayerData(UUID playerUUID, Consumer<CompoundTag> onGot){
         final int generatedTraceId = this.traceIdGenerator.getAndIncrement();
-        final Consumer<String> wrappedDecoder = nbtStr -> {
+        final Consumer<byte[]> wrappedDecoder = content -> {
             CompoundTag decoded = null;
 
-            if (nbtStr == null){
+            if (content == null){
                 onGot.accept(null);
                 return;
             }
 
             try {
-                final byte[] decodedNbtData = Base64.getDecoder().decode(nbtStr);
-                decoded = NbtIo.read(new DataInputStream(new ByteArrayInputStream(decodedNbtData)));
+                decoded = (CompoundTag) NbtIo.readAnyTag(new DataInputStream(new ByteArrayInputStream(content)), NbtAccounter.unlimitedHeap());
             }catch (Exception e){
                 EntryPoint.LOGGER_INST.error("Failed to decode nbt!", e);
             }
@@ -61,8 +66,8 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     }
 
     @Override
-    public void onMasterPlayerDataResponse(int traceId, String base64Content){
-        final Consumer<String> removed = this.playerDataGetCallbacks.remove(traceId);
+    public void onMasterPlayerDataResponse(int traceId, byte[] content){
+        final Consumer<byte[]> removed = this.playerDataGetCallbacks.remove(traceId);
 
         if (removed == null){
             EntryPoint.LOGGER_INST.warn("Null traceId {} !", traceId);
@@ -70,7 +75,7 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
         }
 
         try {
-            removed.accept(base64Content);
+            removed.accept(content);
         }catch (Exception e){
             EntryPoint.LOGGER_INST.error("Failed to fire player data callback!", e);
         }
@@ -81,13 +86,12 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
             final ByteArrayOutputStream bos = new ByteArrayOutputStream();
             final DataOutputStream dos = new DataOutputStream(bos);
 
-            NbtIo.write(data, dos);
+            NbtIo.writeUnnamedTag(data, dos);
             dos.flush();
 
             final byte[] content = bos.toByteArray();
-            final String encoded = new String(Base64.getEncoder().encode(content), StandardCharsets.UTF_8);
 
-            ServerLoader.clientInstance.sendToMaster(new W2MUpdatePlayerDataRequestMessage(playerUUID, encoded));
+            ServerLoader.clientInstance.sendToMaster(new W2MUpdatePlayerDataRequestMessage(playerUUID, content));
         }catch (Exception e){
             EntryPoint.LOGGER_INST.error("Failed to encode nbt!", e);
         }

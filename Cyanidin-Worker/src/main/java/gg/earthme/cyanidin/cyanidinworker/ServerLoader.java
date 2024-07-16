@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerLoader implements DedicatedServerModInitializer {
     public static NettySocketClient clientInstance;
-    public static volatile WorkerMessageHandlerImpl workerConnection;
+    public static volatile WorkerMessageHandlerImpl workerConnection = new WorkerMessageHandlerImpl();
     public static MinecraftServer SERVER_INST;
 
     public static final Cache<UUID, CompoundTag> playerDataCache = CacheBuilder.newBuilder()
@@ -34,11 +34,13 @@ public class ServerLoader implements DedicatedServerModInitializer {
             throw new RuntimeException(e);
         }
 
-        clientInstance = new NettySocketClient(CyanidinWorkerConfig.masterServiceAddress, c -> {
-            workerConnection = new WorkerMessageHandlerImpl();
-            return workerConnection;
-        });
+        clientInstance = new NettySocketClient(CyanidinWorkerConfig.masterServiceAddress, c -> workerConnection);
 
+        connectToBackend();
+    }
+
+    public static void connectToBackend(){
+        EntryPoint.LOGGER_INST.info("Connecting to the master.");
         clientInstance.connect();
     }
 }

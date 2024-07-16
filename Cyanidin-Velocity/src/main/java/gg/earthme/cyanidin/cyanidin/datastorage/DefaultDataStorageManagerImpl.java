@@ -1,10 +1,19 @@
 package gg.earthme.cyanidin.cyanidin.datastorage;
 
+import com.github.retrooper.packetevents.protocol.nbt.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
+import org.cloudburstmc.nbt.NbtList;
+import org.cloudburstmc.nbt.NbtType;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -17,35 +26,34 @@ public class DefaultDataStorageManagerImpl implements IDataStorageManager{
     }
 
     @Override
-    public CompletableFuture<String> loadPlayerData(UUID playerUUID) {
+    public CompletableFuture<byte[]> loadPlayerData(UUID playerUUID) {
         return CompletableFuture.supplyAsync(() -> {
-            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + "_base64ed.txt");
+            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + "_json.nbt");
 
             if (!targetFile.exists()){
-                System.out.println("IGNORED");
                 return null;
             }
 
             try {
-                final String read = Files.readString(targetFile.toPath());
-                return read.isBlank() ? null : read;
+                return Files.readAllBytes(targetFile.toPath());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }, ioTask -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, ioTask).schedule());
     }
 
+
     @Override
-    public CompletableFuture<Void> save(UUID playerUUID, String content) {
+    public CompletableFuture<Void> save(UUID playerUUID, byte[] content) {
         return CompletableFuture.runAsync(() -> {
-            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + "_base64ed.txt");
+            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + "_json.nbt");
 
             try {
                 if (!targetFile.exists()){
                     targetFile.createNewFile();
                 }
 
-                Files.writeString(targetFile.toPath(), content);
+                Files.write(targetFile.toPath(), content);
             }catch (IOException e){
                 throw new RuntimeException(e);
             }

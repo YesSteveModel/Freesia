@@ -15,5 +15,5 @@ public abstract class NettyClientChannelHandlerLayer extends SimpleChannelInboun
         }
     }
 
-    public abstract void onMasterPlayerDataResponse(int traceId, String base64Content);
+    public abstract void onMasterPlayerDataResponse(int traceId, byte[] content);
 }

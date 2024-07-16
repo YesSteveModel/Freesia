@@ -55,7 +55,7 @@ public abstract class NettyServerChannelHandlerLayer extends SimpleChannelInboun
         this.channel.writeAndFlush(packet);
     }
 
-    public abstract CompletableFuture<String> readPlayerData(UUID playerUUID);
+    public abstract CompletableFuture<byte[]> readPlayerData(UUID playerUUID);
 
-    public abstract CompletableFuture<Void> savePlayerData(UUID playerUUID, String content);
+    public abstract CompletableFuture<Void> savePlayerData(UUID playerUUID, byte[] content);
 }

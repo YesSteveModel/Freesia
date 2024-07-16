@@ -8,12 +8,12 @@ import java.util.concurrent.CompletableFuture;
 
 public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
     @Override
-    public CompletableFuture<String> readPlayerData(UUID playerUUID) {
+    public CompletableFuture<byte[]> readPlayerData(UUID playerUUID) {
         return Cyanidin.dataStorageManager.loadPlayerData(playerUUID);
     }
 
     @Override
-    public CompletableFuture<Void> savePlayerData(UUID playerUUID, String content) {
+    public CompletableFuture<Void> savePlayerData(UUID playerUUID, byte[] content) {
         return Cyanidin.dataStorageManager.save(playerUUID, content);
     }
 }
