@@ -28,7 +28,7 @@ public class DefaultDataStorageManagerImpl implements IDataStorageManager{
     @Override
     public CompletableFuture<byte[]> loadPlayerData(UUID playerUUID) {
         return CompletableFuture.supplyAsync(() -> {
-            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + "_json.nbt");
+            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".nbt");
 
             if (!targetFile.exists()){
                 return null;
@@ -46,7 +46,7 @@ public class DefaultDataStorageManagerImpl implements IDataStorageManager{
     @Override
     public CompletableFuture<Void> save(UUID playerUUID, byte[] content) {
         return CompletableFuture.runAsync(() -> {
-            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + "_json.nbt");
+            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".nbt");
 
             try {
                 if (!targetFile.exists()){

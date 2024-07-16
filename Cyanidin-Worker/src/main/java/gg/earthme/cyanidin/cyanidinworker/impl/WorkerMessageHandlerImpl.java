@@ -86,7 +86,7 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
             final ByteArrayOutputStream bos = new ByteArrayOutputStream();
             final DataOutputStream dos = new DataOutputStream(bos);
 
-            NbtIo.writeUnnamedTag(data, dos);
+            NbtIo.writeAnyTag(data, dos);
             dos.flush();
 
             final byte[] content = bos.toByteArray();
