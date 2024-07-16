@@ -9,7 +9,6 @@ import i.mrhua269.cyanidin.common.communicating.NettySocketClient;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.entity.player.Player;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -34,7 +33,7 @@ public class ServerLoader implements DedicatedServerModInitializer {
             throw new RuntimeException(e);
         }
 
-        clientInstance = new NettySocketClient(CyanidinWorkerConfig.masterServiceAddress, c -> workerConnection);
+        clientInstance = new NettySocketClient(CyanidinWorkerConfig.masterServiceAddress, c -> workerConnection, CyanidinWorkerConfig.reconnectInterval);
 
         connectToBackend();
     }

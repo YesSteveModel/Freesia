@@ -3,6 +3,7 @@ package gg.earthme.cyanidin.cyanidinworker.impl;
 import com.google.common.collect.Maps;
 import gg.earthme.cyanidin.cyanidinworker.ServerLoader;
 import i.mrhua269.cyanidin.common.EntryPoint;
+import i.mrhua269.cyanidin.common.communicating.NettySocketClient;
 import i.mrhua269.cyanidin.common.communicating.handler.NettyClientChannelHandlerLayer;
 import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MPlayerDataGetRequestMessage;
 import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MUpdatePlayerDataRequestMessage;
@@ -18,9 +19,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
 @ChannelHandler.Sharable
@@ -35,10 +34,8 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        ServerLoader.SERVER_INST.execute(() -> {
-            ServerLoader.connectToBackend();
-            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
-        });
+        super.channelInactive(ctx);
+        ServerLoader.SERVER_INST.execute(ServerLoader::connectToBackend);
     }
 
     public void getPlayerData(UUID playerUUID, Consumer<CompoundTag> onGot){
@@ -63,6 +60,11 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
         this.playerDataGetCallbacks.put(generatedTraceId, wrappedDecoder);
 
         ServerLoader.clientInstance.sendToMaster(new W2MPlayerDataGetRequestMessage(playerUUID, generatedTraceId));
+    }
+
+    @Override
+    public NettySocketClient getClient() {
+        return ServerLoader.clientInstance;
     }
 
     @Override

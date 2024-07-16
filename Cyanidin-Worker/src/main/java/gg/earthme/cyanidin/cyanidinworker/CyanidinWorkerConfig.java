@@ -15,6 +15,7 @@ public class CyanidinWorkerConfig {
     private static CommentedFileConfig CONFIG_INSTANCE;
 
     public static InetSocketAddress masterServiceAddress = new InetSocketAddress("127.0.0.1", 19200);
+    public static int reconnectInterval = 1;
 
     static {
         CONFIG_FILE_DIR.mkdirs();
@@ -25,6 +26,7 @@ public class CyanidinWorkerConfig {
                 get("worker.worker_master_ip", masterServiceAddress.getHostName()),
                 get("worker.worker_master_port", masterServiceAddress.getPort())
         );
+        reconnectInterval = get("worker.controller_reconnect_interval", reconnectInterval);
     }
 
     private static <T> T get(String key, T def){

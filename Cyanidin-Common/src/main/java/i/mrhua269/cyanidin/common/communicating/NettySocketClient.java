@@ -9,6 +9,8 @@ import io.netty.channel.*;
 import java.net.InetSocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 
 public class NettySocketClient {
@@ -20,10 +22,13 @@ public class NettySocketClient {
     private volatile boolean isConnecting = false;
     private final Queue<IMessage<?>> packetFlushQueue = new ConcurrentLinkedQueue<>();
     private final Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator;
+    private final int reconnectInterval;
+    private volatile boolean isConnected = false;
 
-    public NettySocketClient(InetSocketAddress masterAddress, Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator) {
+    public NettySocketClient(InetSocketAddress masterAddress, Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator, int reconnectInterval) {
         this.masterAddress = masterAddress;
         this.handlerCreator = handlerCreator;
+        this.reconnectInterval = reconnectInterval;
     }
 
     public void connect(){
@@ -34,22 +39,33 @@ public class NettySocketClient {
                     .group(this.clientEventLoopGroup)
                     .channel(this.clientChannelType)
                     .option(ChannelOption.TCP_NODELAY, true)
-                    .handler(new ChannelInitializer<Channel>() {
+                    .handler(new ChannelInitializer<>() {
                         @Override
-                        protected void initChannel(Channel channel) throws Exception {
-                            DefaultChannelPipelineLoader.loadDefaultHandlers(channel, EnumSide.S2C);
+                        protected void initChannel(Channel channel) {
+                            DefaultChannelPipelineLoader.loadDefaultHandlers(channel);
                             channel.pipeline().addLast(NettySocketClient.this.handlerCreator.apply(channel));
                         }
                     })
                     .connect(this.masterAddress.getHostName(), this.masterAddress.getPort())
                     .syncUninterruptibly();
             this.channel = this.clientChannelFuture.channel();
+            this.isConnected = true;
         }catch (Exception e){
-            EntryPoint.LOGGER_INST.error("Failed to connect master controller service!");
-            throw new RuntimeException(e);
+            EntryPoint.LOGGER_INST.error("Failed to connect master controller service!", e);
         }finally {
             this.isConnecting = false;
         }
+
+        if (!this.isConnected){
+            EntryPoint.LOGGER_INST.info("Trying to reconnect to the controller!");
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(this.reconnectInterval));
+            this.connect();
+        }
+    }
+
+    public void onChannelInactive(){
+        EntryPoint.LOGGER_INST.warn("Master controller has been disconnected!");
+        this.isConnected = false;
     }
 
     public void sendToMaster(IMessage<?> message){

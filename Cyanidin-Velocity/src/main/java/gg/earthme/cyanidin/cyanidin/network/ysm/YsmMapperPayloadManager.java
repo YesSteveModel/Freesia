@@ -210,7 +210,8 @@ public class YsmMapperPayloadManager {
         mapperSession.connect(true,false);
 
         while (packetProcessor.isNotReady()){
-            LockSupport.parkNanos(1_000_000);
+            Thread.yield();
+            LockSupport.parkNanos(1_000);
         }
 
         this.mapperSessions.put(player, packetProcessor);

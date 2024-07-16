@@ -12,12 +12,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public class MessageDecoder extends ByteToMessageDecoder {
-    private final EnumSide side;
-
-    public MessageDecoder(EnumSide side) {
-        this.side = side;
-    }
-
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
         final int packetId = byteBuf.readInt();
