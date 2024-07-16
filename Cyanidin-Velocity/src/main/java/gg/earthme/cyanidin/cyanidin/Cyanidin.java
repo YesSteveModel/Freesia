@@ -124,6 +124,8 @@ public class Cyanidin implements PacketListener {
         final byte[] data = event.getData();
 
         if ((identifier instanceof MinecraftChannelIdentifier mineId) && (event.getSource() instanceof Player player)){
+            event.setResult(PluginMessageEvent.ForwardResult.handled());
+
             mapperManager.onPluginMessageIn(player, mineId, data);
         }
     }

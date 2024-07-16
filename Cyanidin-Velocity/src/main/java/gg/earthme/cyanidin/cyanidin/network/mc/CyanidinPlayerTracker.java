@@ -39,6 +39,8 @@ public class CyanidinPlayerTracker {
             return;
         }
 
+        event.setResult(PluginMessageEvent.ForwardResult.handled());
+
         final FriendlyByteBuf packetData = new FriendlyByteBuf(Unpooled.wrappedBuffer(event.getData()));
 
         switch (packetData.readVarInt()){

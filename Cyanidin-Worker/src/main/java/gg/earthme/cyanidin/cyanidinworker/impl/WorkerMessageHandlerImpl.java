@@ -9,7 +9,6 @@ import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MUpdatePlayerDataR
 import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.server.MinecraftServer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

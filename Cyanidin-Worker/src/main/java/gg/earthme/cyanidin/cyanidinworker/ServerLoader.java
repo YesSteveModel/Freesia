@@ -1,18 +1,28 @@
 package gg.earthme.cyanidin.cyanidinworker;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.mojang.logging.LogUtils;
 import gg.earthme.cyanidin.cyanidinworker.impl.WorkerMessageHandlerImpl;
 import i.mrhua269.cyanidin.common.EntryPoint;
 import i.mrhua269.cyanidin.common.communicating.NettySocketClient;
 import net.fabricmc.api.DedicatedServerModInitializer;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.entity.player.Player;
 
 import java.io.IOException;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class ServerLoader implements DedicatedServerModInitializer {
     public static NettySocketClient clientInstance;
     public static volatile WorkerMessageHandlerImpl workerConnection;
     public static MinecraftServer SERVER_INST;
+
+    public static final Cache<UUID, CompoundTag> playerDataCache = CacheBuilder.newBuilder()
+            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .build();
 
     @Override
     public void onInitializeServer() {

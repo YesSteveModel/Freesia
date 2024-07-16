@@ -18,7 +18,7 @@ public class ServerCommonPacketListenerImplMixin {
 
     @Shadow private boolean keepAlivePending;
 
-    @Inject(method = "handleKeepAlive", at = @At(value = "HEAD"))
+    @Inject(method = "handleKeepAlive", at = @At(value = "HEAD"), cancellable = true)
     public void onKeepaliveHandle(ServerboundKeepAlivePacket serverboundKeepAlivePacket, @NotNull CallbackInfo ci){
         int i = (int)(Util.getMillis() - this.keepAliveTime);
         this.latency = (this.latency * 3 + i) / 4;
