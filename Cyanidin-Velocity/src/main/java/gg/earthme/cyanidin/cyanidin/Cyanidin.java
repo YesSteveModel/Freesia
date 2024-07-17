@@ -20,6 +20,7 @@ import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.datastorage.DefaultDataStorageManagerImpl;
 import gg.earthme.cyanidin.cyanidin.datastorage.IDataStorageManager;
+import gg.earthme.cyanidin.cyanidin.i18n.I18NManager;
 import gg.earthme.cyanidin.cyanidin.network.backend.MasterServerMessageHandler;
 import gg.earthme.cyanidin.cyanidin.network.mc.CyanidinPlayerTracker;
 import gg.earthme.cyanidin.cyanidin.network.ysm.DefaultYsmPacketProxyImpl;
@@ -47,6 +48,7 @@ public class Cyanidin implements PacketListener {
     public static final YsmMapperPayloadManager mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new);
     public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
     public static final IDataStorageManager dataStorageManager = new DefaultDataStorageManagerImpl();
+    public static final I18NManager languageManager = new I18NManager();
     public static NettySocketServer masterServer;
 
     private static void printLogo(){
@@ -76,6 +78,7 @@ public class Cyanidin implements PacketListener {
 
         try {
             CyanidinConfig.init();
+            languageManager.loadLanguageFile(CyanidinConfig.languageName);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -12,13 +12,12 @@ import io.netty.buffer.Unpooled;
 import net.kyori.adventure.key.Key;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Set;
 import java.util.concurrent.locks.LockSupport;
 
 public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     private final Player player;
     private final NbtRemapper nbtRemapper;
-    private volatile NBTCompound lastYsmEntityStatus = null; //TODO Get default
+    private volatile NBTCompound lastYsmEntityStatus = null;
 
     public DefaultYsmPacketProxyImpl(@NotNull Player player) {
         this.player = player;

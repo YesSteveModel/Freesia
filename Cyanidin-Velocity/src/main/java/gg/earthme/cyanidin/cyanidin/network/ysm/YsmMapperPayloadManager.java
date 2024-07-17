@@ -150,7 +150,7 @@ public class YsmMapperPayloadManager {
     }
 
     protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster, Component reason){
-        if (kickMaster) mapperSession.getBindPlayer().disconnect(Component.text("Backend disconnected, Reason:").append(reason)); //TODO I18N
+        if (kickMaster) mapperSession.getBindPlayer().disconnect(Cyanidin.languageManager.i18n("cyanidin.backend.disconnected", List.of("reason"), List.of(reason)));
         this.player2Mappers.remove(mapperSession.getBindPlayer());
         this.mapperSessions.remove(mapperSession.getBindPlayer());
         this.ysmInstalledPlayers.remove(mapperSession.getBindPlayer());
@@ -175,7 +175,7 @@ public class YsmMapperPayloadManager {
         }
 
         if (!this.player2Mappers.containsKey(player)){
-            player.disconnect(Component.text("You are not connected to the backend.Please contact the administrators!")); //TODO I18N
+            player.disconnect(Cyanidin.languageManager.i18n("cyanidin.backend.not_connected", Collections.emptyList(), Collections.emptyList()));
             return;
         }
 

@@ -1,0 +1,2 @@
+cyanidin.backend.disconnected=<#d20f39>Ysm后端worker断开了连接,原因:<reason>
+cyanidin.backend.not_connected=<#d20f39>你没有连接到Ysm后端worker.如果反复遇到该问题,请汇报管理员!
