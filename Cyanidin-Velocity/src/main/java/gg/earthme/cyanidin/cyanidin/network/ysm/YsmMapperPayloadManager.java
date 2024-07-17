@@ -204,9 +204,8 @@ public class YsmMapperPayloadManager {
 
         mapperSession.addListener(packetProcessor);
 
-        mapperSession.setWriteTimeout(30000);
-        mapperSession.setReadTimeout(30000);
-        mapperSession.setConnectTimeout(3000);
+        mapperSession.setWriteTimeout(30_000);
+        mapperSession.setReadTimeout(30_000);
         mapperSession.connect(true,false);
 
         while (packetProcessor.isNotReady()){

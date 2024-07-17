@@ -100,16 +100,17 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
                     this.sendEntityStateTo(this.player);
 
-                    final Set<Player> beingWatched = Cyanidin.tracker.getCanSee(this.player);
-                    for (Player target : beingWatched){
-                        if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){
-                            continue;
-                        }
+                    Cyanidin.tracker.getCanSeeAsync(this.player).whenComplete((beingWatched, exception) -> {
+                        for (Player target : beingWatched){
+                            if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){
+                                continue;
+                            }
 
-                        this.sendEntityStateTo(target);
-                    }
+                            this.sendEntityStateTo(target);
+                        }
+                    });
                 }catch (Exception e){
-                    Cyanidin.LOGGER.error("Error while in processing nbt data!", e);
+                    Cyanidin.LOGGER.error("Error while in processing tracker!", e);
                     return ProxyComputeResult.ofDrop();
                 }
 

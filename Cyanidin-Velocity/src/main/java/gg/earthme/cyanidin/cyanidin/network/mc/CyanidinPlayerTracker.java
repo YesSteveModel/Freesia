@@ -87,6 +87,23 @@ public class CyanidinPlayerTracker {
         }
     }
 
+    public CompletableFuture<Set<Player>> getCanSeeAsync(@NotNull Player target){
+        CompletableFuture<Set<Player>> callback = new CompletableFuture<>();
+        final int callbackId = this.idGenerator.getAndIncrement();
+
+        this.pendingCanSeeTasks.put(callbackId, callback::complete);
+
+        final FriendlyByteBuf callbackRequest = new FriendlyByteBuf(Unpooled.buffer());
+
+        callbackRequest.writeVarInt(1);
+        callbackRequest.writeVarInt(callbackId);
+        callbackRequest.writeUUID(target.getUniqueId());
+
+        target.getCurrentServer().ifPresentOrElse(server -> server.getServer().sendPluginMessage(SYNC_CHANNEL_KEY, callbackRequest.array()), () -> { throw new IllegalStateException(); });
+
+        return callback;
+    }
+
     public Set<Player> getCanSee(@NotNull Player target) {
         CompletableFuture<Set<Player>> callback = new CompletableFuture<>();
         final int callbackId = this.idGenerator.getAndIncrement();
@@ -99,9 +116,7 @@ public class CyanidinPlayerTracker {
         callbackRequest.writeVarInt(callbackId);
         callbackRequest.writeUUID(target.getUniqueId());
 
-        target.getCurrentServer().ifPresentOrElse(server -> {
-            server.getServer().sendPluginMessage(SYNC_CHANNEL_KEY, callbackRequest.array());
-        }, () -> { throw new IllegalStateException(); });
+        target.getCurrentServer().ifPresentOrElse(server -> server.getServer().sendPluginMessage(SYNC_CHANNEL_KEY, callbackRequest.array()), () -> { throw new IllegalStateException(); });
 
         return callback.join();
     }
