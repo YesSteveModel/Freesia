@@ -2,7 +2,9 @@ package i.mrhua269.cyanidin.common.communicating;
 
 import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import i.mrhua269.cyanidin.common.communicating.message.m2w.M2WPlayerDataResponseMessage;
+import i.mrhua269.cyanidin.common.communicating.message.m2w.M2WReloadModelsCommandMessage;
 import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MPlayerDataGetRequestMessage;
+import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MReloadModelsResultMessage;
 import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MUpdatePlayerDataRequestMessage;
 
 import java.util.Map;
@@ -19,6 +21,8 @@ public class BuiltinMessageRegitres {
         registerMessage(W2MPlayerDataGetRequestMessage.class, W2MPlayerDataGetRequestMessage::new);
         registerMessage(W2MUpdatePlayerDataRequestMessage.class, W2MUpdatePlayerDataRequestMessage::new);
         registerMessage(M2WPlayerDataResponseMessage.class, M2WPlayerDataResponseMessage::new);
+        registerMessage(M2WReloadModelsCommandMessage.class, M2WReloadModelsCommandMessage::new);
+        registerMessage(W2MReloadModelsResultMessage.class, W2MReloadModelsResultMessage::new);
     }
 
     public static void registerMessage(Class<? extends IMessage> clazz, Supplier<IMessage> creator){

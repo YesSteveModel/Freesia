@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.messaging.PluginMessageListener;
@@ -25,21 +26,30 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
     }
 
     @EventHandler
+    public void onPlayerJoin(@NotNull PlayerJoinEvent event){
+        this.visibleMap.put(event.getPlayer(), new HashSet<>());
+        this.visibleMap.get(event.getPlayer()).add(event.getPlayer());
+    }
+
+    @EventHandler
     public void onPlayerMove(@NotNull PlayerMoveEvent event){
         final Player player = event.getPlayer();
-        for (Player singlePlayer : Bukkit.getOnlinePlayers()) {
-            if (!this.visibleMap.containsKey(player)) {
-                this.visibleMap.put(player, new HashSet<>());
-                this.visibleMap.get(player).add(player);
-            }
+        Set<Player> visiblePlayers = new HashSet<>();
 
-            if (player.canSee(singlePlayer) && !this.visibleMap.get(player).contains(singlePlayer)) {
-                this.visibleMap.get(player).add(singlePlayer);
-                this.playerTrackedPlayer(player,singlePlayer);
-            }else if (!player.canSee(singlePlayer)){
-                this.visibleMap.get(player).remove(singlePlayer);
+        visiblePlayers.add(player);
+
+        for (Player singlePlayer : Bukkit.getOnlinePlayers()) {
+            if (player.canSee(singlePlayer)) {
+                visiblePlayers.add(singlePlayer);
+                this.playerTrackedPlayer(player, singlePlayer);
+            } else {
+                if (this.visibleMap.containsKey(player) && this.visibleMap.get(player).contains(singlePlayer)) {
+                    this.visibleMap.get(player).remove(singlePlayer);
+                }
             }
         }
+
+        this.visibleMap.replace(player, visiblePlayers);
     }
 
     private void playerTrackedPlayer(@NotNull Player watcher, @NotNull Player beSeeing){

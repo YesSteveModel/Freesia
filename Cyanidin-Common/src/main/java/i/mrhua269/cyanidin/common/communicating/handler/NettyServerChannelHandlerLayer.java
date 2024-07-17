@@ -58,4 +58,6 @@ public abstract class NettyServerChannelHandlerLayer extends SimpleChannelInboun
     public abstract CompletableFuture<byte[]> readPlayerData(UUID playerUUID);
 
     public abstract CompletableFuture<Void> savePlayerData(UUID playerUUID, byte[] content);
+
+    public abstract void onModelReloadResult(UUID requester, boolean succeed);
 }

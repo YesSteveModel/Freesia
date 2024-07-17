@@ -6,6 +6,8 @@ import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.util.concurrent.CompletableFuture;
+
 public abstract class NettyClientChannelHandlerLayer extends SimpleChannelInboundHandler<IMessage<NettyClientChannelHandlerLayer>> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, IMessage<NettyClientChannelHandlerLayer> msg) throws Exception {
@@ -24,4 +26,6 @@ public abstract class NettyClientChannelHandlerLayer extends SimpleChannelInboun
     public abstract NettySocketClient getClient();
 
     public abstract void onMasterPlayerDataResponse(int traceId, byte[] content);
+
+    public abstract CompletableFuture<Boolean> callReloadModel();
 }

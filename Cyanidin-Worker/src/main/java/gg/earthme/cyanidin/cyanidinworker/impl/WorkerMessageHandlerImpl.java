@@ -1,6 +1,8 @@
 package gg.earthme.cyanidin.cyanidinworker.impl;
 
 import com.google.common.collect.Maps;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.ParseResults;
 import gg.earthme.cyanidin.cyanidinworker.ServerLoader;
 import i.mrhua269.cyanidin.common.EntryPoint;
 import i.mrhua269.cyanidin.common.communicating.NettySocketClient;
@@ -9,6 +11,7 @@ import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MPlayerDataGetRequ
 import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MUpdatePlayerDataRequestMessage;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
@@ -19,6 +22,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -81,6 +85,25 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
         }catch (Exception e){
             EntryPoint.LOGGER_INST.error("Failed to fire player data callback!", e);
         }
+    }
+
+    @Override
+    public CompletableFuture<Boolean> callReloadModel() {
+        final CompletableFuture<Boolean> callback = new CompletableFuture<>();
+
+        Runnable scheduledCommand = () -> {
+            final String command = "ysm model reload";
+
+            CommandDispatcher<CommandSourceStack> commandDispatcher = ServerLoader.SERVER_INST.getCommands().getDispatcher();
+            final ParseResults<CommandSourceStack> parsed = commandDispatcher.parse(command, ServerLoader.SERVER_INST.createCommandSourceStack().withCallback((succeed, result) -> {
+                callback.complete(succeed);
+            }));
+
+            ServerLoader.SERVER_INST.getCommands().performCommand(parsed, command);
+        };
+        ServerLoader.SERVER_INST.execute(scheduledCommand);
+
+        return callback;
     }
 
     public void updatePlayerData(UUID playerUUID, CompoundTag data){
