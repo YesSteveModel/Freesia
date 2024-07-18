@@ -19,9 +19,7 @@ public class ServerLoader implements DedicatedServerModInitializer {
     public static volatile WorkerMessageHandlerImpl workerConnection = new WorkerMessageHandlerImpl();
     public static MinecraftServer SERVER_INST;
 
-    public static final Cache<UUID, CompoundTag> playerDataCache = CacheBuilder.newBuilder()
-            .expireAfterAccess(5, TimeUnit.MINUTES)
-            .build();
+    public static Cache<UUID, CompoundTag> playerDataCache;
 
     @Override
     public void onInitializeServer() {
@@ -33,6 +31,7 @@ public class ServerLoader implements DedicatedServerModInitializer {
             throw new RuntimeException(e);
         }
 
+        playerDataCache = CacheBuilder.newBuilder().expireAfterWrite(CyanidinWorkerConfig.playerDataCacheInvalidateIntervalSeconds, TimeUnit.SECONDS).build();
         clientInstance = new NettySocketClient(CyanidinWorkerConfig.masterServiceAddress, c -> workerConnection, CyanidinWorkerConfig.reconnectInterval);
 
         connectToBackend();

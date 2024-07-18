@@ -31,7 +31,7 @@ public class W2MUpdatePlayerDataRequestMessage implements IMessage<NettyServerCh
         this.content = new byte[buffer.readableBytes()];
         buffer.readBytes(this.content);
 
-        this.playerUUID = new UUID(lsb, msb);
+        this.playerUUID = new UUID(msb, lsb);
     }
 
     @Override

@@ -33,7 +33,7 @@ public class W2MPlayerDataGetRequestMessage implements IMessage<NettyServerChann
         final long lsb = buffer.readLong();
         final long msb = buffer.readLong();
 
-        this.playerUUID = new UUID(lsb, msb);
+        this.playerUUID = new UUID(msb, lsb);
     }
 
     @Override

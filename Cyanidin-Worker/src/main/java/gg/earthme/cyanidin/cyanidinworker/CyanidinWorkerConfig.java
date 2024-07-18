@@ -16,6 +16,7 @@ public class CyanidinWorkerConfig {
 
     public static InetSocketAddress masterServiceAddress = new InetSocketAddress("127.0.0.1", 19200);
     public static int reconnectInterval = 1;
+    public static int playerDataCacheInvalidateIntervalSeconds = 30;
 
     static {
         CONFIG_FILE_DIR.mkdirs();
@@ -27,6 +28,7 @@ public class CyanidinWorkerConfig {
                 get("worker.worker_master_port", masterServiceAddress.getPort())
         );
         reconnectInterval = get("worker.controller_reconnect_interval", reconnectInterval);
+        playerDataCacheInvalidateIntervalSeconds = get("worker.player_data_cache_invalidate_interval_seconds", playerDataCacheInvalidateIntervalSeconds);
     }
 
     private static <T> T get(String key, T def){

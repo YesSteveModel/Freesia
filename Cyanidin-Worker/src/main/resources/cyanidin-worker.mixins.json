@@ -4,12 +4,13 @@
   "package": "gg.earthme.cyanidin.cyanidinworker.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "TrackedEntityMixin",
     "ConnectionMixin",
     "EntityMixin",
     "MinecraftServerMixin",
+    "PlayerDataStorageMixin",
     "ServerCommonPacketListenerImplMixin",
-    "ServerLoginPacketListenerImplMixin"
+    "ServerLoginPacketListenerImplMixin",
+    "TrackedEntityMixin"
   ],
   "client": [
   ],

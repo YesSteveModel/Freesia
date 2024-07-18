@@ -20,6 +20,10 @@ public class EntityMixin {
     public void onEntityDataSave(CompoundTag entityDataNbt, CallbackInfoReturnable<CompoundTag> cir){
         final Entity thisEntity = (Entity) (Object) this;
 
+        if (entityDataNbt.contains("cyanidin_null_entity")){
+            return;
+        }
+
         if (thisEntity instanceof Player player){
             final CompoundTag ysmData = entityDataNbt.getCompound("ysm");
 
@@ -28,7 +32,7 @@ public class EntityMixin {
         }
     }
 
-    @Inject(method = "load", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V", shift = At.Shift.BEFORE))
+    @Inject(method = "load", at = @At(value = "HEAD"))
     public void onEntityDataLoad(@NotNull CompoundTag entityDataNbt, CallbackInfo ci){
         final Entity thisEntity = (Entity) (Object) this;
 
@@ -55,6 +59,8 @@ public class EntityMixin {
                 if (got != null){
                     ServerLoader.playerDataCache.put(player.getUUID(), got);
                     ysmData = got;
+                }else{
+                    EntryPoint.LOGGER_INST.info("Generating default ysm data for entity id {} uuid: {}", thisEntity.getId(), thisEntity.getUUID());
                 }
             }
         }

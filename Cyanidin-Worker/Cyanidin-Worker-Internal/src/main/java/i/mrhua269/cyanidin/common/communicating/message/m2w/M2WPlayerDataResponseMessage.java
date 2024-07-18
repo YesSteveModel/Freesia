@@ -4,8 +4,6 @@ import i.mrhua269.cyanidin.common.communicating.handler.NettyClientChannelHandle
 import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import io.netty.buffer.ByteBuf;
 
-import java.nio.charset.StandardCharsets;
-
 public class M2WPlayerDataResponseMessage implements IMessage<NettyClientChannelHandlerLayer> {
     private int traceId;
     private byte[] content;
