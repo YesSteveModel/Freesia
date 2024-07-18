@@ -1,20 +1,10 @@
 package gg.earthme.cyanidin.cyanidin.datastorage;
 
-import com.github.retrooper.packetevents.protocol.nbt.*;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
-import i.mrhua269.cyanidin.common.EntryPoint;
-import org.cloudburstmc.nbt.NbtList;
-import org.cloudburstmc.nbt.NbtType;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,12 +22,10 @@ public class DefaultDataStorageManagerImpl implements IDataStorageManager{
             final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".nbt");
 
             if (!targetFile.exists()){
-                EntryPoint.LOGGER_INST.info("Player data not found for {}", playerUUID);
                 return null;
             }
 
             try {
-                EntryPoint.LOGGER_INST.info("Loaded player data for {}", playerUUID);
                 return Files.readAllBytes(targetFile.toPath());
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -56,7 +44,6 @@ public class DefaultDataStorageManagerImpl implements IDataStorageManager{
                     targetFile.createNewFile();
                 }
 
-                EntryPoint.LOGGER_INST.info("Saved player data for {}", playerUUID);
                 Files.write(targetFile.toPath(), content);
             }catch (IOException e){
                 throw new RuntimeException(e);
