@@ -1,9 +1,11 @@
 package gg.earthme.cyanidin.cyanidinworker.mixin;
 
 import gg.earthme.cyanidin.cyanidinworker.ServerLoader;
+import i.mrhua269.cyanidin.common.EntryPoint;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,8 +29,17 @@ public class EntityMixin {
     }
 
     @Inject(method = "load", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V", shift = At.Shift.BEFORE))
-    public void onEntityDataLoad(CompoundTag entityDataNbt, CallbackInfo ci){
+    public void onEntityDataLoad(@NotNull CompoundTag entityDataNbt, CallbackInfo ci){
         final Entity thisEntity = (Entity) (Object) this;
+
+        if (entityDataNbt.contains("cyanidin_do_not_pull_from_master")){
+            entityDataNbt.remove("cyanidin_do_not_pull_from_master"); //As we just want to sync it once instead of loading it
+            if (thisEntity instanceof Player player){
+                ServerLoader.playerDataCache.asMap().replace(player.getUUID(), entityDataNbt.getCompound("ysm"));
+                EntryPoint.LOGGER_INST.info("Synced entity ysm data from master controller service point for player {}", player.getScoreboardName());
+            }
+            return;
+        }
 
         CompoundTag ysmData = null;
         if (thisEntity instanceof Player player){

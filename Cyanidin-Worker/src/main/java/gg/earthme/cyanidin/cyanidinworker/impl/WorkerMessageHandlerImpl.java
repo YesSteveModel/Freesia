@@ -13,8 +13,10 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.world.entity.player.Player;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -104,6 +106,30 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
         ServerLoader.SERVER_INST.execute(scheduledCommand);
 
         return callback;
+    }
+
+    @Override
+    public void updatePlayerData(UUID target, byte[] nbtData) {
+        try{
+            final CompoundTag ysmNbtTag = (CompoundTag) NbtIo.readAnyTag(new DataInputStream(new ByteArrayInputStream(nbtData)), NbtAccounter.unlimitedHeap());
+
+            ServerLoader.SERVER_INST.execute(() -> {
+                final Player targetPlayer = ServerLoader.SERVER_INST.getPlayerList().getPlayer(target);
+                if (targetPlayer != null){
+                    EntryPoint.LOGGER_INST.warn("Could not found target player with UUID {} !", target);
+                    return;
+                }
+
+                final CompoundTag saved = targetPlayer.saveWithoutId(new CompoundTag());
+                saved.put("cyanidin_do_not_pull_from_master", IntTag.valueOf(1));
+                saved.remove("ysm");
+                saved.put("ysm", ysmNbtTag);
+
+                targetPlayer.load(saved);
+            });
+        }catch (Exception e){
+            EntryPoint.LOGGER_INST.error("Failed to decode nbt!", e);
+        }
     }
 
     public void updatePlayerData(UUID playerUUID, CompoundTag data){

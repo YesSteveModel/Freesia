@@ -6,6 +6,7 @@ import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public abstract class NettyClientChannelHandlerLayer extends SimpleChannelInboundHandler<IMessage<NettyClientChannelHandlerLayer>> {
@@ -28,4 +29,6 @@ public abstract class NettyClientChannelHandlerLayer extends SimpleChannelInboun
     public abstract void onMasterPlayerDataResponse(int traceId, byte[] content);
 
     public abstract CompletableFuture<Boolean> callReloadModel();
+
+    public abstract void updatePlayerData(UUID target, byte[] nbtData);
 }
