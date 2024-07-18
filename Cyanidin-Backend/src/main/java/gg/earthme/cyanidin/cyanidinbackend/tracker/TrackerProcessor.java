@@ -7,9 +7,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,6 +25,39 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
     @EventHandler
     public void onPlayerLeft(@NotNull PlayerQuitEvent event){
         this.visibleMap.remove(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerDead(PlayerDeathEvent event){
+        this.visibleMap.remove(event.getEntity());
+        for (Set<Player> others : this.visibleMap.values()){
+            others.remove(event.getEntity());
+        }
+    }
+
+    @EventHandler
+    public void onPlayerRespawn(PlayerRespawnEvent event){
+        final Player player = event.getPlayer();
+
+        this.visibleMap.put(player, new HashSet<>());
+        this.visibleMap.get(player).add(player);
+
+        Set<Player> visiblePlayers = new HashSet<>();
+
+        visiblePlayers.add(player);
+
+        for (Player singlePlayer : Bukkit.getOnlinePlayers()) {
+            if (player.canSee(singlePlayer)) {
+                visiblePlayers.add(singlePlayer);
+                this.playerTrackedPlayer(player, singlePlayer);
+            } else {
+                if (this.visibleMap.containsKey(player) && this.visibleMap.get(player).contains(singlePlayer)) {
+                    this.visibleMap.get(player).remove(singlePlayer);
+                }
+            }
+        }
+
+        this.visibleMap.replace(player, visiblePlayers);
     }
 
     @EventHandler
