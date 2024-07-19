@@ -17,16 +17,17 @@ import java.util.concurrent.CompletableFuture;
 @Mixin(Entity.class)
 public class EntityMixin {
     @Inject(method = "saveWithoutId", at = @At(value = "RETURN"))
-    public void onEntityDataSave(CompoundTag entityDataNbt, CallbackInfoReturnable<CompoundTag> cir){
+    public void onEntityDataSave(@NotNull CompoundTag entityDataNbt, CallbackInfoReturnable<CompoundTag> cir){
         final Entity thisEntity = (Entity) (Object) this;
 
-        if (entityDataNbt.contains("cyanidin_null_entity")){
+        if (entityDataNbt.contains("cyanidin_null_entity")){ //Do not store the data of NULL player because we just use its data for a standard
             return;
         }
 
         if (thisEntity instanceof Player player){
             final CompoundTag ysmData = entityDataNbt.getCompound("ysm");
 
+            //Sync the data to master
             ServerLoader.playerDataCache.asMap().replace(player.getUUID(), ysmData);
             ServerLoader.workerConnection.updatePlayerData(player.getUUID(), ysmData);
         }
@@ -36,6 +37,7 @@ public class EntityMixin {
     public void onEntityDataLoad(@NotNull CompoundTag entityDataNbt, CallbackInfo ci){
         final Entity thisEntity = (Entity) (Object) this;
 
+        //On master wants to sync its data to this worker
         if (entityDataNbt.contains("cyanidin_do_not_pull_from_master")){
             entityDataNbt.remove("cyanidin_do_not_pull_from_master"); //As we just want to sync it once instead of loading it
             if (thisEntity instanceof Player player){
@@ -45,6 +47,7 @@ public class EntityMixin {
             return;
         }
 
+        //Check itself if is a player
         CompoundTag ysmData = null;
         if (thisEntity instanceof Player player){
             final CompoundTag hit = ServerLoader.playerDataCache.getIfPresent(player.getUUID());
@@ -52,9 +55,10 @@ public class EntityMixin {
             if (hit != null){
                 ysmData = hit;
             }else{
+                //If not in cache
                 CompletableFuture<CompoundTag> callback = new CompletableFuture<>();
                 ServerLoader.workerConnection.getPlayerData(player.getUUID(), callback::complete);
-                CompoundTag got = callback.join();
+                CompoundTag got = callback.join(); //Must be blocking
 
                 if (got != null){
                     ServerLoader.playerDataCache.put(player.getUUID(), got);

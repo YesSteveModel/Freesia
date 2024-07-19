@@ -48,15 +48,15 @@ public class PlayerDataStorageMixin {
     }
 
     @Inject(method = "save", at = @At("HEAD"), cancellable = true)
-    public void onSaveCalled(Player player, @NotNull CallbackInfo ci){
+    public void onSaveCalled(@NotNull Player player, @NotNull CallbackInfo ci){
         player.saveWithoutId(new CompoundTag()); //DROP But call the hooks to sync the player data to master
-        ci.cancel();
+        ci.cancel(); //Do not save on worker side as we will save it on master
     }
 
     @Inject(method = "load(Lnet/minecraft/world/entity/player/Player;)Ljava/util/Optional;", at = @At("HEAD"), cancellable = true)
-    public void onLoadCalled(Player player, @NotNull CallbackInfoReturnable<Optional<CompoundTag>> cir){
+    public void onLoadCalled(@NotNull Player player, @NotNull CallbackInfoReturnable<Optional<CompoundTag>> cir){
         loadNullPlayer(); //Null player data
         player.load(standardTag.copy()); //Trap the hooks which we wrote
-        cir.setReturnValue(Optional.of(standardTag));
+        cir.setReturnValue(Optional.of(standardTag)); //Do not load on worker side as we will pull it from master
     }
 }

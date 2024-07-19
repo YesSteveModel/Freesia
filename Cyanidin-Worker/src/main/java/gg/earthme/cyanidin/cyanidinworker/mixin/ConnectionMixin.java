@@ -21,7 +21,7 @@ public class ConnectionMixin {
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;)V", at = @At(value = "HEAD"), cancellable = true)
     public void sendPacketPInject(Packet<?> packet, CallbackInfo ci){
         if (!this.checkPacket(packet)){
-            ci.cancel();
+            ci.cancel(); //Drop useless packets to reduce I/O load
         }
     }
 
@@ -31,7 +31,7 @@ public class ConnectionMixin {
             if (packetSendListener != null){
                 packetSendListener.onSuccess();
             }
-            ci.cancel();
+            ci.cancel(); //Drop useless packets to reduce I/O load
         }
     }
 
@@ -41,7 +41,7 @@ public class ConnectionMixin {
             if (packetSendListener != null){
                 packetSendListener.onSuccess();
             }
-            ci.cancel();
+            ci.cancel(); //Drop useless packets to reduce I/O load
         }
     }
 

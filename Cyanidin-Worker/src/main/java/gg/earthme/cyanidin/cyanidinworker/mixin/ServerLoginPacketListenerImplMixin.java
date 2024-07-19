@@ -27,13 +27,14 @@ public abstract class ServerLoginPacketListenerImplMixin {
         this.requestedUsername = serverboundHelloPacket.name();
         final GameProfile requestedProfile = new GameProfile(serverboundHelloPacket.profileId(), this.requestedUsername);
 
+        //Preload it to prevent load it blocking
         ServerLoader.workerConnection.getPlayerData(requestedProfile.getId(), data -> {
             if (data != null){
                 ServerLoader.playerDataCache.put(requestedProfile.getId(), data);
             }
 
             EntryPoint.LOGGER_INST.info("Pre-loaded player data for player {}.", requestedProfile.getName());
-            this.startClientVerification(requestedProfile);
+            this.startClientVerification(requestedProfile); //Continue login process
         });
     }
 }
