@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'eclipse'
     id "org.jetbrains.gradle.plugin.idea-ext" version "1.0.1"
-    id 'com.github.johnrengelman.shadow' version '7.0.0'
+    id 'io.github.goooler.shadow' version '8.1.2'
 }
 
 group = 'i.mrhua269'
@@ -15,7 +15,7 @@ allprojects {
     apply {
         plugin 'java'
         plugin 'eclipse'
-        plugin 'com.github.johnrengelman.shadow'
+        plugin 'io.github.goooler.shadow'
         plugin 'org.jetbrains.gradle.plugin.idea-ext'
     }
 

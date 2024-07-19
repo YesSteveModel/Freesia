@@ -3,3 +3,6 @@ dependencies {
     compileOnly 'io.netty:netty-all:4.1.92.Final'
 }
 
+build{
+    dependsOn(shadowJar)
+}
