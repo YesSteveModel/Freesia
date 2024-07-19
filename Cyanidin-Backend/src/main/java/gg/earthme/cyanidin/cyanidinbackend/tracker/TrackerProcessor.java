@@ -28,7 +28,7 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
     }
 
     @EventHandler
-    public void onPlayerDead(PlayerDeathEvent event){
+    public void onPlayerDead(@NotNull PlayerDeathEvent event){
         this.visibleMap.remove(event.getEntity());
         for (Set<Player> others : this.visibleMap.values()){
             others.remove(event.getEntity());
@@ -36,7 +36,7 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
     }
 
     @EventHandler
-    public void onPlayerRespawn(PlayerRespawnEvent event){
+    public void onPlayerRespawn(@NotNull PlayerRespawnEvent event){
         final Player player = event.getPlayer();
 
         this.visibleMap.put(player, new HashSet<>());

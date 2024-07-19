@@ -3,6 +3,7 @@ package i.mrhua269.cyanidin.common.communicating.message.w2m;
 import i.mrhua269.cyanidin.common.communicating.handler.NettyServerChannelHandlerLayer;
 import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
@@ -18,7 +19,7 @@ public class W2MReloadModelsResultMessage implements IMessage<NettyServerChannel
     }
 
     @Override
-    public void writeMessageData(ByteBuf buffer) {
+    public void writeMessageData(@NotNull ByteBuf buffer) {
         buffer.writeBoolean(this.succeed);
         buffer.writeBoolean(this.requester != null);
         buffer.writeLong(this.requester.getMostSignificantBits());
@@ -26,7 +27,7 @@ public class W2MReloadModelsResultMessage implements IMessage<NettyServerChannel
     }
 
     @Override
-    public void readMessageData(ByteBuf buffer) {
+    public void readMessageData(@NotNull ByteBuf buffer) {
         this.succeed = buffer.readBoolean();
         if(buffer.readBoolean()){
             this.requester = new UUID(buffer.readLong(), buffer.readLong());
@@ -34,7 +35,7 @@ public class W2MReloadModelsResultMessage implements IMessage<NettyServerChannel
     }
 
     @Override
-    public void process(NettyServerChannelHandlerLayer handler) {
+    public void process(@NotNull NettyServerChannelHandlerLayer handler) {
         handler.onModelReloadResult(this.requester, this.succeed);
     }
 }

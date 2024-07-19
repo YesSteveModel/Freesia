@@ -5,6 +5,7 @@ import i.mrhua269.cyanidin.common.NettyUtils;
 import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
 import java.util.Queue;
@@ -41,7 +42,7 @@ public class NettySocketClient {
                     .option(ChannelOption.TCP_NODELAY, true)
                     .handler(new ChannelInitializer<>() {
                         @Override
-                        protected void initChannel(Channel channel) {
+                        protected void initChannel(@NotNull Channel channel) {
                             DefaultChannelPipelineLoader.loadDefaultHandlers(channel);
                             channel.pipeline().addLast(NettySocketClient.this.handlerCreator.apply(channel));
                         }

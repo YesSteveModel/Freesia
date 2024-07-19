@@ -19,6 +19,10 @@ public record ProxyComputeResult(EnumResult result, ByteBuf data) {
             throw new UnsupportedOperationException();
         }
 
+        if (this.data == null) {
+            throw new NullPointerException();
+        }
+
         return this.data;
     }
 

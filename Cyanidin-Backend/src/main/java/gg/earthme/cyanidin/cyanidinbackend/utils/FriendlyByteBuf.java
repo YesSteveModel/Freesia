@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.ByteProcessor;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -832,7 +833,7 @@ public class FriendlyByteBuf extends ByteBuf {
         return this.source.toString(charset);
     }
 
-    public String toString(int i, int j, Charset charset) {
+    public @NotNull String toString(int i, int j, Charset charset) {
         return this.source.toString(i, j, charset);
     }
 

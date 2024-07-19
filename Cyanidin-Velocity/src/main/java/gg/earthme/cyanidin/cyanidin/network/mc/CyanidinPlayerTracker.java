@@ -104,6 +104,7 @@ public class CyanidinPlayerTracker {
         return callback;
     }
 
+    @Deprecated
     public Set<Player> getCanSee(@NotNull Player target) {
         CompletableFuture<Set<Player>> callback = new CompletableFuture<>();
         final int callbackId = this.idGenerator.getAndIncrement();

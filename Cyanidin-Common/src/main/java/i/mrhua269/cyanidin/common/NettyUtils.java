@@ -10,13 +10,14 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.jetbrains.annotations.NotNull;
 
 public class NettyUtils {
     public static Class<? extends ServerChannel> serverChannelClass(){
         return Epoll.isAvailable() ? EpollServerSocketChannel.class : NioServerSocketChannel.class;
     }
 
-    public static EventLoopGroup eventLoopGroup(){
+    public static @NotNull EventLoopGroup eventLoopGroup(){
         return Epoll.isAvailable() ? new EpollEventLoopGroup() : new NioEventLoopGroup();
     }
 

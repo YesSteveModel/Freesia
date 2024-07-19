@@ -3,6 +3,7 @@ package i.mrhua269.cyanidin.common.communicating.message.w2m;
 import i.mrhua269.cyanidin.common.communicating.handler.NettyServerChannelHandlerLayer;
 import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
@@ -18,14 +19,14 @@ public class W2MUpdatePlayerDataRequestMessage implements IMessage<NettyServerCh
     }
 
     @Override
-    public void writeMessageData(ByteBuf buffer) {
+    public void writeMessageData(@NotNull ByteBuf buffer) {
         buffer.writeLong(this.playerUUID.getLeastSignificantBits());
         buffer.writeLong(this.playerUUID.getMostSignificantBits());
         buffer.writeBytes(this.content);
     }
 
     @Override
-    public void readMessageData(ByteBuf buffer) {
+    public void readMessageData(@NotNull ByteBuf buffer) {
         final long lsb = buffer.readLong();
         final long msb = buffer.readLong();
         this.content = new byte[buffer.readableBytes()];
@@ -35,7 +36,7 @@ public class W2MUpdatePlayerDataRequestMessage implements IMessage<NettyServerCh
     }
 
     @Override
-    public void process(NettyServerChannelHandlerLayer handler) {
+    public void process(@NotNull NettyServerChannelHandlerLayer handler) {
         handler.savePlayerData(this.playerUUID, this.content);
     }
 }

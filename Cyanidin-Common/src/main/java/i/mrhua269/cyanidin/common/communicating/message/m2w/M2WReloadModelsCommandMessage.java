@@ -4,6 +4,7 @@ import i.mrhua269.cyanidin.common.communicating.handler.NettyClientChannelHandle
 import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MReloadModelsResultMessage;
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
@@ -17,14 +18,14 @@ public class M2WReloadModelsCommandMessage implements IMessage<NettyClientChanne
     }
 
     @Override
-    public void writeMessageData(ByteBuf buffer) {
+    public void writeMessageData(@NotNull ByteBuf buffer) {
         buffer.writeBoolean(this.requester != null);
         buffer.writeLong(requester.getMostSignificantBits());
         buffer.writeLong(requester.getLeastSignificantBits());
     }
 
     @Override
-    public void readMessageData(ByteBuf buffer) {
+    public void readMessageData(@NotNull ByteBuf buffer) {
         if (!buffer.readBoolean()){
             return;
         }
@@ -32,7 +33,7 @@ public class M2WReloadModelsCommandMessage implements IMessage<NettyClientChanne
     }
 
     @Override
-    public void process(NettyClientChannelHandlerLayer handler) {
+    public void process(@NotNull NettyClientChannelHandlerLayer handler) {
         handler.callReloadModel().whenComplete((result, exception) -> handler.getClient().sendToMaster(new W2MReloadModelsResultMessage(this.requester, result)));
     }
 }

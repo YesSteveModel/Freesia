@@ -17,6 +17,7 @@ import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.world.entity.player.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -39,7 +40,7 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
+    public void channelInactive(@NotNull ChannelHandlerContext ctx) {
         super.channelInactive(ctx);
         ServerLoader.SERVER_INST.execute(ServerLoader::connectToBackend);
     }
@@ -97,9 +98,7 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
             final String command = "ysm model reload";
 
             CommandDispatcher<CommandSourceStack> commandDispatcher = ServerLoader.SERVER_INST.getCommands().getDispatcher();
-            final ParseResults<CommandSourceStack> parsed = commandDispatcher.parse(command, ServerLoader.SERVER_INST.createCommandSourceStack().withCallback((succeed, result) -> {
-                callback.complete(succeed);
-            }));
+            final ParseResults<CommandSourceStack> parsed = commandDispatcher.parse(command, ServerLoader.SERVER_INST.createCommandSourceStack().withCallback((succeed, result) -> callback.complete(succeed)));
 
             ServerLoader.SERVER_INST.getCommands().performCommand(parsed, command);
         };

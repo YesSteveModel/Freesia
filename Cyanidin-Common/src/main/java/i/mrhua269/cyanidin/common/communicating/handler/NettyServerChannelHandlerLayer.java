@@ -5,6 +5,7 @@ import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Queue;
 import java.util.UUID;
@@ -16,13 +17,13 @@ public abstract class NettyServerChannelHandlerLayer extends SimpleChannelInboun
     private final Queue<IMessage<NettyClientChannelHandlerLayer>> pendingPackets = new ConcurrentLinkedQueue<>();
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(@NotNull ChannelHandlerContext ctx) {
         this.channel = ctx.channel();
         EntryPoint.LOGGER_INST.info("Worker connected {}", this.channel);
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, IMessage<NettyServerChannelHandlerLayer> msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, IMessage<NettyServerChannelHandlerLayer> msg) {
         try {
             msg.process(this);
         }catch (Exception e){

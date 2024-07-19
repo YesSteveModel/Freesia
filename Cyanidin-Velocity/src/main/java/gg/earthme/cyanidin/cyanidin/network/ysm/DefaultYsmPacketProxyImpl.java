@@ -93,9 +93,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                         return ProxyComputeResult.ofDrop(); //Do not process the entity state if it is not ours
                     }
 
-                    final NBTCompound original = this.nbtRemapper.readBound(mcBuffer);
-
-                    this.lastYsmEntityStatus = original;
+                    this.lastYsmEntityStatus = this.nbtRemapper.readBound(mcBuffer);
 
                     this.sendEntityStateTo(this.player);
 
@@ -125,12 +123,10 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
         final byte packetId = mcBuffer.readByte();
 
-        switch (packetId){
-            case  52 -> {
-                final String clientYsmVersion = mcBuffer.readUtf();
-                Cyanidin.LOGGER.info("Player {} is connection to the backend with ysm version {}", this.player.getUsername(), clientYsmVersion);
-                Cyanidin.mapperManager.onClientYsmPacketReply(this.player);
-            }
+        if (packetId == 52) {
+            final String clientYsmVersion = mcBuffer.readUtf();
+            Cyanidin.LOGGER.info("Player {} is connection to the backend with ysm version {}", this.player.getUsername(), clientYsmVersion);
+            Cyanidin.mapperManager.onClientYsmPacketReply(this.player);
         }
 
         return ProxyComputeResult.ofPass();

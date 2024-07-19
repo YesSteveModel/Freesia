@@ -14,8 +14,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 public class BuiltinMessageRegitres {
-    private static final Map<Integer, Supplier<? extends IMessage>> id2MessageCreators = new ConcurrentHashMap<>();
-    private static final Map<Class<? extends IMessage>, Integer> messageClasses2Ids = new ConcurrentHashMap<>();
+    private static final Map<Integer, Supplier<? extends IMessage<?>>> id2MessageCreators = new ConcurrentHashMap<>();
+    private static final Map<Class<? extends IMessage<?>>, Integer> messageClasses2Ids = new ConcurrentHashMap<>();
     private static final AtomicInteger idGenerator = new AtomicInteger(0);
 
     static {
@@ -27,7 +27,7 @@ public class BuiltinMessageRegitres {
         registerMessage(M2WPlayerDataUpdateMessage.class, M2WPlayerDataUpdateMessage::new);
     }
 
-    public static void registerMessage(Class<? extends IMessage> clazz, Supplier<IMessage> creator){
+    public static void registerMessage(Class<? extends IMessage<?>> clazz, Supplier<IMessage<?>> creator){
         final int packetId = idGenerator.getAndIncrement();
 
         id2MessageCreators.put(packetId, creator);
@@ -35,11 +35,11 @@ public class BuiltinMessageRegitres {
     }
 
 
-    public static Supplier<? extends IMessage> getMessageCreator(int packetId){
+    public static Supplier<? extends IMessage<?>> getMessageCreator(int packetId){
         return id2MessageCreators.get(packetId);
     }
 
-    public static int getMessageId(Class<? extends IMessage> clazz){
+    public static int getMessageId(Class<IMessage<?>> clazz){
         return messageClasses2Ids.get(clazz);
     }
 }

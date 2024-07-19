@@ -5,13 +5,14 @@ import i.mrhua269.cyanidin.common.communicating.NettySocketClient;
 import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public abstract class NettyClientChannelHandlerLayer extends SimpleChannelInboundHandler<IMessage<NettyClientChannelHandlerLayer>> {
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, IMessage<NettyClientChannelHandlerLayer> msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, IMessage<NettyClientChannelHandlerLayer> msg) {
         try {
             msg.process(this);
         }catch (Exception e){
@@ -20,7 +21,7 @@ public abstract class NettyClientChannelHandlerLayer extends SimpleChannelInboun
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
+    public void channelInactive(@NotNull ChannelHandlerContext ctx) {
         this.getClient().onChannelInactive();
     }
 

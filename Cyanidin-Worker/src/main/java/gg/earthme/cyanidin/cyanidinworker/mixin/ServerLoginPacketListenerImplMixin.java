@@ -3,7 +3,6 @@ package gg.earthme.cyanidin.cyanidinworker.mixin;
 import com.mojang.authlib.GameProfile;
 import gg.earthme.cyanidin.cyanidinworker.ServerLoader;
 import i.mrhua269.cyanidin.common.EntryPoint;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.login.ServerboundHelloPacket;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.jetbrains.annotations.NotNull;
@@ -11,8 +10,6 @@ import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-
-import java.util.concurrent.CompletableFuture;
 
 @Mixin(ServerLoginPacketListenerImpl.class)
 public abstract class ServerLoginPacketListenerImplMixin {

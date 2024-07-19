@@ -3,6 +3,7 @@ package i.mrhua269.cyanidin.common.communicating.message.m2w;
 import i.mrhua269.cyanidin.common.communicating.handler.NettyClientChannelHandlerLayer;
 import i.mrhua269.cyanidin.common.communicating.message.IMessage;
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.NotNull;
 
 public class M2WPlayerDataResponseMessage implements IMessage<NettyClientChannelHandlerLayer> {
     private int traceId;
@@ -18,7 +19,7 @@ public class M2WPlayerDataResponseMessage implements IMessage<NettyClientChannel
     }
 
     @Override
-    public void writeMessageData(ByteBuf buffer) {
+    public void writeMessageData(@NotNull ByteBuf buffer) {
         buffer.writeInt(this.traceId);
         buffer.writeBoolean(this.content != null);
 
@@ -31,7 +32,7 @@ public class M2WPlayerDataResponseMessage implements IMessage<NettyClientChannel
     }
 
     @Override
-    public void readMessageData(ByteBuf buffer) {
+    public void readMessageData(@NotNull ByteBuf buffer) {
         this.traceId = buffer.readInt();
         if (!buffer.readBoolean()){
             this.content = null;
