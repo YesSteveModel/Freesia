@@ -6,6 +6,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Queue;
 import java.util.UUID;
@@ -60,5 +61,7 @@ public abstract class NettyServerChannelHandlerLayer extends SimpleChannelInboun
 
     public abstract CompletableFuture<Void> savePlayerData(UUID playerUUID, byte[] content);
 
-    public abstract void onModelReloadResult(UUID requester, boolean succeed);
+    public abstract void onCommandDispatchResult(int traceId,@Nullable String result);
+
+    public abstract void updateWorkerInfo(UUID workerUUID, String workerName);
 }

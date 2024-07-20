@@ -9,14 +9,15 @@ import i.mrhua269.cyanidin.common.communicating.NettySocketClient;
 import i.mrhua269.cyanidin.common.communicating.handler.NettyClientChannelHandlerLayer;
 import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MPlayerDataGetRequestMessage;
 import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MUpdatePlayerDataRequestMessage;
+import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MWorkerInfoMessage;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
@@ -37,6 +38,7 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         ServerLoader.workerConnection = this;
+        this.getClient().sendToMaster(new W2MWorkerInfoMessage(ServerLoader.workerInfoFile.getWorkerUUID(), ServerLoader.workerInfoFile.getWorkerName()));
     }
 
     @Override
@@ -91,44 +93,38 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     }
 
     @Override
-    public CompletableFuture<Boolean> callReloadModel() {
-        final CompletableFuture<Boolean> callback = new CompletableFuture<>();
+    public CompletableFuture<String> dispatchCommand(String command) {
+        final CompletableFuture<String> callback = new CompletableFuture<>();
 
         Runnable scheduledCommand = () -> {
-            final String command = "ysm model reload";
-
             CommandDispatcher<CommandSourceStack> commandDispatcher = ServerLoader.SERVER_INST.getCommands().getDispatcher();
-            final ParseResults<CommandSourceStack> parsed = commandDispatcher.parse(command, ServerLoader.SERVER_INST.createCommandSourceStack().withCallback((succeed, result) -> callback.complete(succeed)));
+            final ParseResults<CommandSourceStack> parsed = commandDispatcher.parse(command, ServerLoader.SERVER_INST.createCommandSourceStack().withSource(new CommandSource() {
+                @Override
+                public void sendSystemMessage(Component component) {
+                    callback.complete(component.getString());
+                }
+
+                @Override
+                public boolean acceptsSuccess() {
+                    return true;
+                }
+
+                @Override
+                public boolean acceptsFailure() {
+                    return true;
+                }
+
+                @Override
+                public boolean shouldInformAdmins() {
+                    return false;
+                }
+            }));
 
             ServerLoader.SERVER_INST.getCommands().performCommand(parsed, command);
         };
         ServerLoader.SERVER_INST.execute(scheduledCommand);
 
         return callback;
-    }
-
-    @Override
-    public void updatePlayerData(UUID target, byte[] nbtData) {
-        try{
-            final CompoundTag ysmNbtTag = (CompoundTag) NbtIo.readAnyTag(new DataInputStream(new ByteArrayInputStream(nbtData)), NbtAccounter.unlimitedHeap());
-
-            ServerLoader.SERVER_INST.execute(() -> {
-                final Player targetPlayer = ServerLoader.SERVER_INST.getPlayerList().getPlayer(target);
-                if (targetPlayer != null){
-                    EntryPoint.LOGGER_INST.warn("Could not found target player with UUID {} !", target);
-                    return;
-                }
-
-                final CompoundTag saved = targetPlayer.saveWithoutId(new CompoundTag());
-                saved.put("cyanidin_do_not_pull_from_master", IntTag.valueOf(1));
-                saved.remove("ysm");
-                saved.put("ysm", ysmNbtTag);
-
-                targetPlayer.load(saved);
-            });
-        }catch (Exception e){
-            EntryPoint.LOGGER_INST.error("Failed to decode nbt!", e);
-        }
     }
 
     public void updatePlayerData(UUID playerUUID, CompoundTag data){

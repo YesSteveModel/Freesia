@@ -49,6 +49,6 @@ shadowJar {
     mergeServiceFiles()
 }
 
-build{
-    dependsOn(shadowJar)
+shadowJar{
+    dependsOn(build)
 }

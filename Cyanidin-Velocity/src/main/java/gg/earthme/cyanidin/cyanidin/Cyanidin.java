@@ -6,6 +6,7 @@ import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerJoinGame;
+import com.google.common.collect.Maps;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
@@ -18,6 +19,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import gg.earthme.cyanidin.cyanidin.command.WorkerCommandCommand;
 import gg.earthme.cyanidin.cyanidin.datastorage.DefaultDataStorageManagerImpl;
 import gg.earthme.cyanidin.cyanidin.datastorage.IDataStorageManager;
 import gg.earthme.cyanidin.cyanidin.i18n.I18NManager;
@@ -32,6 +34,8 @@ import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Plugin(id = "cyanidin", name = "Cyanidin", version = BuildConstants.VERSION, authors = {"Earthme"}, dependencies = @Dependency(id = "packetevents"))
@@ -48,6 +52,7 @@ public class Cyanidin implements PacketListener {
     public static final YsmMapperPayloadManager mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new);
     public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
     public static final IDataStorageManager dataStorageManager = new DefaultDataStorageManagerImpl();
+    public static final Map<UUID, MasterServerMessageHandler> registedWorkers = Maps.newConcurrentMap();
     public static final I18NManager languageManager = new I18NManager();
     public static NettySocketServer masterServer;
 
@@ -91,6 +96,8 @@ public class Cyanidin implements PacketListener {
 
         masterServer = new NettySocketServer(CyanidinConfig.masterServiceAddress, c -> new MasterServerMessageHandler());
         masterServer.bind();
+
+        WorkerCommandCommand.register();
     }
 
     @Subscribe
