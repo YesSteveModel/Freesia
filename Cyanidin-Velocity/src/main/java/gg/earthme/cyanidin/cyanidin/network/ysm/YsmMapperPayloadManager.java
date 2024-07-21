@@ -237,7 +237,9 @@ public class YsmMapperPayloadManager {
             return;
         }
 
-        ((DefaultYsmPacketProxyImpl) mapperSession.getPacketProxy()).sendEntityStateTo(watching);
+        if (this.isPlayerInstalledYsm(watching)){
+            ((DefaultYsmPacketProxyImpl) mapperSession.getPacketProxy()).sendEntityStateTo(watching);
+        }
     }
 
     @Nullable
