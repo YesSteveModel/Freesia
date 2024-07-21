@@ -2,6 +2,7 @@ package gg.earthme.cyanidin.cyanidin.network.ysm;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.velocitypowered.api.proxy.Player;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import gg.earthme.cyanidin.cyanidin.network.mc.NbtRemapper;
@@ -59,7 +60,15 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         }
 
         try {
-            final int targetProtocolVer = PacketEvents.getAPI().getProtocolManager().getClientVersion(PacketEvents.getAPI().getProtocolManager().getChannel(target.getUniqueId())).getProtocolVersion();
+            final Object targetChannel = PacketEvents.getAPI().getProtocolManager().getChannel(target.getUniqueId());
+
+            if (targetChannel == null){
+                return;
+            }
+
+            final ClientVersion clientVersion = PacketEvents.getAPI().getProtocolManager().getClientVersion(targetChannel);
+
+            final int targetProtocolVer = clientVersion.getProtocolVersion();
             final FriendlyByteBuf wrappedPacketData = new FriendlyByteBuf(Unpooled.buffer());
 
             wrappedPacketData.writeByte(4);
@@ -69,6 +78,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
             this.sendPluginMessageTo(target, YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData);
         }catch (Exception e){
             Cyanidin.LOGGER.error("Error in encoding nbt or sending packet!", e);
+            e.printStackTrace();
         }
     }
 
