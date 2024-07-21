@@ -5,12 +5,12 @@ plugins {
     id 'io.github.goooler.shadow' version '8.1.2'
 }
 
-group = 'i.mrhua269'
-version = '1.0-SNAPSHOT'
+group = 'gg.earthme'
+version = project.version
 
 allprojects {
-    group = 'i.mrhua269'
-    version = rootProject.property("version")
+    group = 'gg.earthme'
+    version = rootProject.version
 
     apply {
         plugin 'java'
