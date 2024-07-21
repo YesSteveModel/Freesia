@@ -1,4 +1,4 @@
-package i.mrhua269.cyanidin.common;
+package gg.earthme.cyanidin.common;
 
 import org.slf4j.Logger;
 

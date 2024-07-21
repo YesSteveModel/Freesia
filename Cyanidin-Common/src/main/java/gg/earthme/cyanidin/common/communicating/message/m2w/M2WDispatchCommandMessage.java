@@ -1,8 +1,8 @@
-package i.mrhua269.cyanidin.common.communicating.message.m2w;
+package gg.earthme.cyanidin.common.communicating.message.m2w;
 
-import i.mrhua269.cyanidin.common.communicating.handler.NettyClientChannelHandlerLayer;
-import i.mrhua269.cyanidin.common.communicating.message.IMessage;
-import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MCommandResultMessage;
+import gg.earthme.cyanidin.common.communicating.handler.NettyClientChannelHandlerLayer;
+import gg.earthme.cyanidin.common.communicating.message.IMessage;
+import gg.earthme.cyanidin.common.communicating.message.w2m.W2MCommandResultMessage;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 

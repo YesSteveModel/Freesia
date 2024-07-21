@@ -1,12 +1,12 @@
-package i.mrhua269.cyanidin.common.communicating;
+package gg.earthme.cyanidin.common.communicating;
 
-import i.mrhua269.cyanidin.common.communicating.message.IMessage;
-import i.mrhua269.cyanidin.common.communicating.message.m2w.M2WDispatchCommandMessage;
-import i.mrhua269.cyanidin.common.communicating.message.m2w.M2WPlayerDataResponseMessage;
-import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MCommandResultMessage;
-import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MPlayerDataGetRequestMessage;
-import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MUpdatePlayerDataRequestMessage;
-import i.mrhua269.cyanidin.common.communicating.message.w2m.W2MWorkerInfoMessage;
+import gg.earthme.cyanidin.common.communicating.message.IMessage;
+import gg.earthme.cyanidin.common.communicating.message.m2w.M2WDispatchCommandMessage;
+import gg.earthme.cyanidin.common.communicating.message.m2w.M2WPlayerDataResponseMessage;
+import gg.earthme.cyanidin.common.communicating.message.w2m.W2MCommandResultMessage;
+import gg.earthme.cyanidin.common.communicating.message.w2m.W2MPlayerDataGetRequestMessage;
+import gg.earthme.cyanidin.common.communicating.message.w2m.W2MUpdatePlayerDataRequestMessage;
+import gg.earthme.cyanidin.common.communicating.message.w2m.W2MWorkerInfoMessage;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

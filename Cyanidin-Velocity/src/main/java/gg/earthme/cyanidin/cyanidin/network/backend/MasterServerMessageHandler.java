@@ -2,9 +2,9 @@ package gg.earthme.cyanidin.cyanidin.network.backend;
 
 import com.google.common.collect.Maps;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
-import i.mrhua269.cyanidin.common.EntryPoint;
-import i.mrhua269.cyanidin.common.communicating.handler.NettyServerChannelHandlerLayer;
-import i.mrhua269.cyanidin.common.communicating.message.m2w.M2WDispatchCommandMessage;
+import gg.earthme.cyanidin.common.EntryPoint;
+import gg.earthme.cyanidin.common.communicating.handler.NettyServerChannelHandlerLayer;
+import gg.earthme.cyanidin.common.communicating.message.m2w.M2WDispatchCommandMessage;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;

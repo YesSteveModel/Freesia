@@ -1,7 +1,7 @@
-package i.mrhua269.cyanidin.common.communicating;
+package gg.earthme.cyanidin.common.communicating;
 
-import i.mrhua269.cyanidin.common.communicating.codec.MessageDecoder;
-import i.mrhua269.cyanidin.common.communicating.codec.MessageEncoder;
+import gg.earthme.cyanidin.common.communicating.codec.MessageDecoder;
+import gg.earthme.cyanidin.common.communicating.codec.MessageEncoder;
 import io.netty.channel.Channel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;

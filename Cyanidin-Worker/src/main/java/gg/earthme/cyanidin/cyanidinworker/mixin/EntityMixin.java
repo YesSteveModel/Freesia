@@ -1,7 +1,7 @@
 package gg.earthme.cyanidin.cyanidinworker.mixin;
 
 import gg.earthme.cyanidin.cyanidinworker.ServerLoader;
-import i.mrhua269.cyanidin.common.EntryPoint;
+import gg.earthme.cyanidin.common.EntryPoint;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;

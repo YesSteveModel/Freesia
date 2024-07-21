@@ -1,7 +1,7 @@
-package i.mrhua269.cyanidin.common.communicating.handler;
+package gg.earthme.cyanidin.common.communicating.handler;
 
-import i.mrhua269.cyanidin.common.EntryPoint;
-import i.mrhua269.cyanidin.common.communicating.message.IMessage;
+import gg.earthme.cyanidin.common.EntryPoint;
+import gg.earthme.cyanidin.common.communicating.message.IMessage;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

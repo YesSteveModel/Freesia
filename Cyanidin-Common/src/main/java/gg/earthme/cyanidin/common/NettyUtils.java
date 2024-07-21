@@ -1,4 +1,4 @@
-package i.mrhua269.cyanidin.common;
+package gg.earthme.cyanidin.common;
 
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;

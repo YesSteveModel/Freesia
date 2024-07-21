@@ -1,7 +1,7 @@
-package i.mrhua269.cyanidin.common.communicating.codec;
+package gg.earthme.cyanidin.common.communicating.codec;
 
-import i.mrhua269.cyanidin.common.communicating.BuiltinMessageRegitres;
-import i.mrhua269.cyanidin.common.communicating.message.IMessage;
+import gg.earthme.cyanidin.common.communicating.message.IMessage;
+import gg.earthme.cyanidin.common.communicating.BuiltinMessageRegitres;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;

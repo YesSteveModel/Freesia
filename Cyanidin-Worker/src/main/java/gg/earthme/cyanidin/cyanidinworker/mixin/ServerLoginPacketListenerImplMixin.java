@@ -2,7 +2,7 @@ package gg.earthme.cyanidin.cyanidinworker.mixin;
 
 import com.mojang.authlib.GameProfile;
 import gg.earthme.cyanidin.cyanidinworker.ServerLoader;
-import i.mrhua269.cyanidin.common.EntryPoint;
+import gg.earthme.cyanidin.common.EntryPoint;
 import net.minecraft.network.protocol.login.ServerboundHelloPacket;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.jetbrains.annotations.NotNull;

@@ -27,8 +27,8 @@ import gg.earthme.cyanidin.cyanidin.network.backend.MasterServerMessageHandler;
 import gg.earthme.cyanidin.cyanidin.network.mc.CyanidinPlayerTracker;
 import gg.earthme.cyanidin.cyanidin.network.ysm.DefaultYsmPacketProxyImpl;
 import gg.earthme.cyanidin.cyanidin.network.ysm.YsmMapperPayloadManager;
-import i.mrhua269.cyanidin.common.EntryPoint;
-import i.mrhua269.cyanidin.common.communicating.NettySocketServer;
+import gg.earthme.cyanidin.common.EntryPoint;
+import gg.earthme.cyanidin.common.communicating.NettySocketServer;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 

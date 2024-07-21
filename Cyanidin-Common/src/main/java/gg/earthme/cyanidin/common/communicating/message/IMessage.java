@@ -1,4 +1,4 @@
-package i.mrhua269.cyanidin.common.communicating.message;
+package gg.earthme.cyanidin.common.communicating.message;
 
 import io.netty.buffer.ByteBuf;
 

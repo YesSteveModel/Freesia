@@ -1,8 +1,8 @@
-package i.mrhua269.cyanidin.common.communicating;
+package gg.earthme.cyanidin.common.communicating;
 
-import i.mrhua269.cyanidin.common.EntryPoint;
-import i.mrhua269.cyanidin.common.NettyUtils;
-import i.mrhua269.cyanidin.common.communicating.message.IMessage;
+import gg.earthme.cyanidin.common.EntryPoint;
+import gg.earthme.cyanidin.common.communicating.message.IMessage;
+import gg.earthme.cyanidin.common.NettyUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import org.jetbrains.annotations.NotNull;
