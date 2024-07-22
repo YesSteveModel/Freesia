@@ -9,14 +9,14 @@ import net.kyori.adventure.key.Key;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.*;
 import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.network.tcp.TcpClientSession;
 import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundCustomPayloadPacket;
 import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundPingPacket;
 import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
 import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundPongPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.LockSupport;
 
 public class MapperSessionProcessor implements SessionListener{
@@ -24,9 +24,7 @@ public class MapperSessionProcessor implements SessionListener{
     private final YsmPacketProxy packetProxy;
     private final YsmMapperPayloadManager mapperPayloadManager;
     private volatile Session session;
-    private volatile boolean readyForReceivingPackets = false;
     private volatile boolean kickMasterWhenDisconnect = true;
-    private final Queue<Runnable> pendingPacketProcessQueue = new ConcurrentLinkedDeque<>();
 
     public MapperSessionProcessor(Player bindPlayer, YsmPacketProxy packetProxy, YsmMapperPayloadManager mapperPayloadManager) {
         this.bindPlayer = bindPlayer;
@@ -38,10 +36,6 @@ public class MapperSessionProcessor implements SessionListener{
         return this.packetProxy;
     }
 
-    public boolean isNotReady(){
-        return !this.readyForReceivingPackets;
-    }
-
     public Session getSession() {
         return this.session;
     }
@@ -50,38 +44,31 @@ public class MapperSessionProcessor implements SessionListener{
         this.kickMasterWhenDisconnect = kickMasterWhenDisconnect;
     }
 
-    public void onProxyReady(){
-        Runnable callback;
-        while ((callback = this.pendingPacketProcessQueue.poll()) != null){
-            try {
-                callback.run();
-            }catch (Exception e){
-                Cyanidin.LOGGER.error("Error while firing proxy callbacks!", e);
-            }
-        }
-    }
-
     public void processPlayerPluginMessage(byte[] packetData){
-        if (this.isNotReady()){
-            this.pendingPacketProcessQueue.offer(() -> this.processPlayerPluginMessage(packetData));
-            return;
-        }
-
-        final ProxyComputeResult processed = this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData));
-
-        switch (processed.result()){
-            case MODIFY -> {
-                final ByteBuf finalData = processed.data();
-
-                finalData.resetReaderIndex();
-                byte[] data = new byte[finalData.readableBytes()];
-                finalData.readBytes(data);
-
-                this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, data));
+        CompletableFuture.supplyAsync(
+                () -> this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData)),
+                task -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, task).schedule()
+        ).whenComplete((processed, throwable) -> {
+            if (throwable != null){
+                Cyanidin.LOGGER.warn("Error while processing packet from player: {}", this.bindPlayer.getUsername());
+                Cyanidin.LOGGER.warn("Error: ", throwable);
+                return;
             }
 
-            case PASS -> this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, packetData));
-        }
+            switch (processed.result()){
+                case MODIFY -> {
+                    final ByteBuf finalData = processed.data();
+
+                    finalData.resetReaderIndex();
+                    byte[] data = new byte[finalData.readableBytes()];
+                    finalData.readBytes(data);
+
+                    this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, data));
+                }
+
+                case PASS -> this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, packetData));
+            }
+        });
     }
 
     public Player getBindPlayer(){
@@ -92,29 +79,36 @@ public class MapperSessionProcessor implements SessionListener{
     public void packetReceived(Session session, Packet packet) {
         if (packet instanceof ClientboundLoginPacket loginPacket){
             Cyanidin.mapperManager.updateWorkerPlayerEntityId(this.bindPlayer, loginPacket.getEntityId());
-            this.readyForReceivingPackets = true;
+            Cyanidin.mapperManager.onProxyLoggedin(this.bindPlayer, this, ((TcpClientSession) session));
         }
 
         if (packet instanceof ClientboundCustomPayloadPacket payloadPacket){
-            this.readyForReceivingPackets = true;
-
             final Key channelKey = payloadPacket.getChannel();
             final byte[] packetData = payloadPacket.getData();
 
             if (channelKey.toString().equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE.toString())){
-                final ProxyComputeResult processed = this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData));
-
-                switch (processed.result()){
-                    case MODIFY -> {
-                        final ByteBuf finalData = processed.data();
-
-                        finalData.resetReaderIndex();
-
-                        this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), finalData);
+                CompletableFuture.supplyAsync(
+                        () -> this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData)),
+                        task -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, task).schedule()
+                ).whenComplete((result, throwable) -> {
+                    if (throwable != null){
+                        Cyanidin.LOGGER.warn("Error while processing packet from player: {}", this.bindPlayer.getUsername());
+                        Cyanidin.LOGGER.warn("Error: ", throwable);
+                        return;
                     }
 
-                    case PASS -> this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
-                }
+                    switch (result.result()){
+                        case MODIFY -> {
+                            final ByteBuf finalData = result.data();
+
+                            finalData.resetReaderIndex();
+
+                            this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), finalData);
+                        }
+
+                        case PASS -> this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
+                    }
+                });
             }
         }
 
@@ -151,6 +145,9 @@ public class MapperSessionProcessor implements SessionListener{
     @Override
     public void disconnected(DisconnectedEvent event) {
         Cyanidin.LOGGER.info("Mapper session has disconnected for reason(non-deserialized): {}", event.getReason());
+        if (event.getCause() != null){
+            Cyanidin.LOGGER.info("Mapper session has disconnected for throwable: {}", event.getCause().getLocalizedMessage());
+        }
         this.mapperPayloadManager.onWorkerSessionDisconnect(this, this.kickMasterWhenDisconnect, event.getReason());
         this.session = null;
     }

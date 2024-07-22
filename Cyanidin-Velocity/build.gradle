@@ -48,7 +48,3 @@ project.eclipse.synchronizationTasks(generateTemplates)
 shadowJar {
     mergeServiceFiles()
 }
-
-shadowJar{
-    dependsOn(build)
-}

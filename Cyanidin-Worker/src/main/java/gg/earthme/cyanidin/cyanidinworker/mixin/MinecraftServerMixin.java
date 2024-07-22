@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.net.Proxy;
 import java.util.function.BooleanSupplier;
@@ -24,6 +25,11 @@ import java.util.function.BooleanSupplier;
 @Mixin(value = MinecraftServer.class, priority = 600)
 public abstract class MinecraftServerMixin {
     @Shadow public abstract ServerConnectionListener getConnection();
+
+    @Inject(method = "pollTaskInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/ServerTickRateManager;isSprinting()Z", shift = At.Shift.BEFORE), cancellable = true)
+    public void onExecutingChunkSystemTasks(@NotNull CallbackInfoReturnable<Boolean> cir){
+        cir.setReturnValue(false);
+    }
 
     /**
      * @author MrHua269

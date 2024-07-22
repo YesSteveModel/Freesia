@@ -65,8 +65,5 @@ jar {
 
 shadowJar{
     configurations = [project.configurations.customShadow]
-}
-
-remapJar{
-    dependsOn(shadowJar)
+    dependsOn(remapJar)
 }

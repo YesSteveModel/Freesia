@@ -31,8 +31,6 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
             Thread.yield();
             LockSupport.parkNanos(1_000);
         }
-
-        Cyanidin.mapperManager.onPacketProxyReady(this.player);
     }
 
     @Override

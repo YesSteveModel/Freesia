@@ -16,7 +16,6 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -45,10 +44,6 @@ public class YsmMapperPayloadManager {
 
     public void onClientYsmPacketReply(Player target){
         this.ysmInstalledPlayers.add(target);
-    }
-
-    public void onPacketProxyReady(Player player){
-        this.mapperSessions.get(player).onProxyReady();
     }
 
     public void updateWorkerPlayerEntityId(Player target, int entityId){
@@ -151,9 +146,9 @@ public class YsmMapperPayloadManager {
 
     protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster, Component reason){
         if (kickMaster) mapperSession.getBindPlayer().disconnect(Cyanidin.languageManager.i18n("cyanidin.backend.disconnected", List.of("reason"), List.of(reason)));
+        this.ysmInstalledPlayers.remove(mapperSession.getBindPlayer());
         this.player2Mappers.remove(mapperSession.getBindPlayer());
         this.mapperSessions.remove(mapperSession.getBindPlayer());
-        this.ysmInstalledPlayers.remove(mapperSession.getBindPlayer());
 
         final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.get(mapperSession.getBindPlayer());
 
@@ -181,7 +176,7 @@ public class YsmMapperPayloadManager {
 
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(player);
 
-        if (mapperSession == null || mapperSession.isNotReady()){
+        if (mapperSession == null){
             throw new IllegalStateException("Mapper session not found or ready for player " + player.getUsername());
         }
 
@@ -207,26 +202,24 @@ public class YsmMapperPayloadManager {
         mapperSession.setWriteTimeout(30_000);
         mapperSession.setReadTimeout(30_000);
         mapperSession.connect(true,false);
+    }
 
-        while (packetProcessor.isNotReady()){
-            Thread.yield();
-            LockSupport.parkNanos(1_000);
-        }
-
+    public void onProxyLoggedin(Player player, MapperSessionProcessor packetProcessor, TcpClientSession session){
         this.mapperSessions.put(player, packetProcessor);
+        this.player2Mappers.put(player, session);
 
-        packetProcessor.getPacketProxy().blockUntilProxyReady();
+        Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, () -> {
+            packetProcessor.getPacketProxy().blockUntilProxyReady();
 
-        Consumer<MapperSessionProcessor> callback;
-        while ((callback = this.mapperCreateCallbacks.get(player).poll()) != null){
-            try {
-                callback.accept(packetProcessor);
-            }catch (Exception e){
-                Cyanidin.LOGGER.info("Error occurs while processing connect callbacks!", e);
+            Consumer<MapperSessionProcessor> callback;
+            while ((callback = this.mapperCreateCallbacks.get(player).poll()) != null){
+                try {
+                    callback.accept(packetProcessor);
+                }catch (Exception e){
+                    Cyanidin.LOGGER.info("Error occurs while processing connect callbacks!", e);
+                }
             }
-        }
-
-        this.player2Mappers.put(player, mapperSession);
+        }).schedule();
     }
 
     public void onPlayerTrackerUpdate(Player owner, Player watching){
