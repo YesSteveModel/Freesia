@@ -135,6 +135,7 @@ public class YsmMapperPayloadManager {
 
         if (mapperSession != null){
             mapperSession.getSession().disconnect("PLAYER DISCONNECTED");
+            mapperSession.waitForDisconnected();
         }
 
         this.player2Mappers.remove(player);
