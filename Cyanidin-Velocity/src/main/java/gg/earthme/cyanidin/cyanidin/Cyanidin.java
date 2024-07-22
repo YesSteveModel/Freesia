@@ -37,7 +37,6 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Plugin(id = "cyanidin", name = "Cyanidin", version = BuildConstants.VERSION, authors = {"Earthme"}, dependencies = @Dependency(id = "packetevents"))
 public class Cyanidin implements PacketListener {
@@ -111,8 +110,8 @@ public class Cyanidin implements PacketListener {
     @Subscribe
     public EventTask onPlayerConnected(@NotNull ServerConnectedEvent event){
         final Player targetPlayer = event.getPlayer();
-
         mapperManager.onPlayerConnected(targetPlayer);
+
         return EventTask.async(() -> {
             if (!mapperManager.hasPlayer(targetPlayer)){
                 this.logger.info("Initiating mapper session for player {}", targetPlayer.getUsername());
