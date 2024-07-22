@@ -26,7 +26,12 @@ import java.util.function.BooleanSupplier;
 @Mixin(value = MinecraftServer.class, priority = 600)
 public abstract class MinecraftServerMixin {
     @Shadow public abstract ServerConnectionListener getConnection();
-    @Unique boolean shouldPollTask = true;
+    @Unique volatile boolean shouldPollTask = true;
+
+    @Inject(method = "stopServer", at = @At(value = "HEAD"))
+    public void onServerStop(CallbackInfo ci){
+        this.shouldPollTask = true;
+    }
 
     @Inject(method = "pollTaskInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/ServerTickRateManager;isSprinting()Z", shift = At.Shift.BEFORE), cancellable = true)
     public void onExecutingChunkSystemTasks(@NotNull CallbackInfoReturnable<Boolean> cir){
