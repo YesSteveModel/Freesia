@@ -7,6 +7,7 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.google.common.collect.Maps;
+import com.velocitypowered.api.event.EventTask;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
@@ -101,17 +102,18 @@ public class Cyanidin implements PacketListener {
     }
 
     @Subscribe
-    public void onPlayerDisconnect(@NotNull DisconnectEvent event){
+    public EventTask onPlayerDisconnect(@NotNull DisconnectEvent event){
         final Player targetPlayer = event.getPlayer();
-        mapperManager.onPlayerDisconnect(targetPlayer);
+
+        return EventTask.async(() -> mapperManager.onPlayerDisconnect(targetPlayer));
     }
 
     @Subscribe
-    public void onPlayerConnected(@NotNull ServerConnectedEvent event){
+    public EventTask onPlayerConnected(@NotNull ServerConnectedEvent event){
         final Player targetPlayer = event.getPlayer();
 
         mapperManager.onPlayerConnected(targetPlayer);
-        this.proxyServer.getScheduler().buildTask(this, () -> {
+        return EventTask.async(() -> {
             if (!mapperManager.hasPlayer(targetPlayer)){
                 this.logger.info("Initiating mapper session for player {}", targetPlayer.getUsername());
                 mapperManager.firstCreateMapper(targetPlayer);
@@ -120,7 +122,7 @@ public class Cyanidin implements PacketListener {
 
             logger.info("Player {} has changed backend server.Reconnecting mapper session", targetPlayer.getUsername());
             mapperManager.reconnectWorker(targetPlayer);
-        }).delay(10, TimeUnit.MILLISECONDS).schedule();
+        });
     }
 
     @Subscribe

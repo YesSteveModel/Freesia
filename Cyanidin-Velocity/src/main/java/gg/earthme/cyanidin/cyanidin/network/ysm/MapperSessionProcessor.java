@@ -153,17 +153,7 @@ public class MapperSessionProcessor implements SessionListener{
     }
 
     public void waitForDisconnected(){
-        while (true){
-            final Session curr = this.session;
-
-            if (curr == null){
-                break;
-            }
-
-            if (!curr.isConnected()){
-                break;
-            }
-
+        while (this.session != null) {
             Thread.yield();
             LockSupport.parkNanos(1_000);
         }
