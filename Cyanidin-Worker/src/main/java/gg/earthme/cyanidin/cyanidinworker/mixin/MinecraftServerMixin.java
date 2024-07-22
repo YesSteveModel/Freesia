@@ -13,6 +13,7 @@ import net.minecraft.world.level.storage.LevelStorageSource;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -25,9 +26,14 @@ import java.util.function.BooleanSupplier;
 @Mixin(value = MinecraftServer.class, priority = 600)
 public abstract class MinecraftServerMixin {
     @Shadow public abstract ServerConnectionListener getConnection();
+    @Unique boolean shouldPollTask = true;
 
     @Inject(method = "pollTaskInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/ServerTickRateManager;isSprinting()Z", shift = At.Shift.BEFORE), cancellable = true)
     public void onExecutingChunkSystemTasks(@NotNull CallbackInfoReturnable<Boolean> cir){
+        if (this.shouldPollTask){
+            return;
+        }
+
         cir.setReturnValue(false);
     }
 
@@ -37,6 +43,7 @@ public abstract class MinecraftServerMixin {
      */
     @Redirect(method = "tickChildren", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;tick(Ljava/util/function/BooleanSupplier;)V"))
     public void tickLevelHook(ServerLevel instance, BooleanSupplier booleanSupplier) {
+        this.shouldPollTask = true;
         //Do not run game logics because it is just a worker
     }
 
