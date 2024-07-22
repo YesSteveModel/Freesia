@@ -24,6 +24,7 @@ import gg.earthme.cyanidin.cyanidin.command.WorkerCommandCommand;
 import gg.earthme.cyanidin.cyanidin.datastorage.DefaultDataStorageManagerImpl;
 import gg.earthme.cyanidin.cyanidin.datastorage.IDataStorageManager;
 import gg.earthme.cyanidin.cyanidin.i18n.I18NManager;
+import gg.earthme.cyanidin.cyanidin.metrics.Metrics;
 import gg.earthme.cyanidin.cyanidin.network.backend.MasterServerMessageHandler;
 import gg.earthme.cyanidin.cyanidin.network.mc.CyanidinPlayerTracker;
 import gg.earthme.cyanidin.cyanidin.network.ysm.DefaultYsmPacketProxyImpl;
@@ -35,6 +36,7 @@ import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 
@@ -44,6 +46,8 @@ public class Cyanidin implements PacketListener {
     private Logger logger;
     @Inject
     private ProxyServer proxyServer;
+    @Inject
+    private Metrics.Factory metricsFactory;
 
     public static Cyanidin INSTANCE = null;
     public static Logger LOGGER = null;
@@ -55,6 +59,7 @@ public class Cyanidin implements PacketListener {
     public static final Map<UUID, MasterServerMessageHandler> registedWorkers = Maps.newConcurrentMap();
     public static final I18NManager languageManager = new I18NManager();
     public static NettySocketServer masterServer;
+    private Metrics metrics;
 
     private static void printLogo(){
         LOGGER.info("------------------------------------------------------------------------------");
@@ -72,6 +77,10 @@ public class Cyanidin implements PacketListener {
         LOGGER.info("------------------------------------------------------------------------------");
     }
 
+    private void initMetrics(){
+        this.metrics = this.metricsFactory.make(this, 22734);
+    }
+
     @Subscribe
     public void onProxyStart(ProxyInitializeEvent event) {
         INSTANCE = this;
@@ -80,6 +89,7 @@ public class Cyanidin implements PacketListener {
         EntryPoint.initLogger(this.logger);
 
         printLogo();
+        initMetrics();
 
         try {
             CyanidinConfig.init();
