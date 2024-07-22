@@ -103,11 +103,7 @@ public class YsmMapperPayloadManager {
     }
 
     public void onPlayerConnected(Player player){
-        if (this.mapperCreateCallbacks.containsKey(player)){
-            return;
-        }
-
-        this.mapperCreateCallbacks.put(player, new ConcurrentLinkedQueue<>());
+        this.mapperCreateCallbacks.putIfAbsent(player, new ConcurrentLinkedQueue<>());
     }
 
     public void firstCreateMapper(Player player){
@@ -226,7 +222,7 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
 
         if (mapperSession == null){
-            this.mapperCreateCallbacks.get(owner).offer((mapper) -> ((DefaultYsmPacketProxyImpl) mapper.getPacketProxy()).sendEntityStateTo(watching));
+            this.mapperCreateCallbacks.computeIfAbsent(owner, player -> new ConcurrentLinkedQueue<>()).offer((mapper) -> ((DefaultYsmPacketProxyImpl) mapper.getPacketProxy()).sendEntityStateTo(watching));
             return;
         }
 
