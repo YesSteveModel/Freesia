@@ -48,7 +48,10 @@ public class I18NManager {
 
         int idx = 0;
         for (Object arg : args){
-            builtResolvers.add(Placeholder.component(subKeys.get(idx), arg instanceof Component ? (Component) arg : Component.text(String.valueOf(arg))));
+            builtResolvers.add(
+                    Placeholder
+                            .component(subKeys.get(idx), arg instanceof Component ? (Component) arg : Component.text(String.valueOf(arg)))
+            );
             idx++;
         }
 
