@@ -11,7 +11,8 @@
     "ServerCommonPacketListenerImplMixin",
     "ServerGamePacketListenerImplMixin",
     "ServerLoginPacketListenerImplMixin",
-    "TrackedEntityMixin"
+    "TrackedEntityMixin",
+    "YsmNativeLibLoaderMixin"
   ],
   "client": [
   ],
