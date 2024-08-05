@@ -134,6 +134,7 @@ public class YsmMapperPayloadManager {
         }
 
         if (mapperSession != null){
+            mapperSession.setKickMasterWhenDisconnect(false); //Player already offline, so we don't disconnect again
             mapperSession.getSession().disconnect("PLAYER DISCONNECTED");
             mapperSession.waitForDisconnected();
         }
