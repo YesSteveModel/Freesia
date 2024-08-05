@@ -1,4 +1,4 @@
 cyanidin.backend.disconnected=<#4c4f69>[</#4c4f69><#04a5e5>CyanidinSystems</#04a5e5><#4c4f69>]</#4c4f69><#d20f39>Ysm后端worker断开了连接,原因:<reason>
 cyanidin.backend.not_connected=<#4c4f69>[</#4c4f69><#04a5e5>CyanidinSystems</#04a5e5><#4c4f69>]</#4c4f69><#d20f39>你没有连接到Ysm后端worker.如果反复遇到该问题,请汇报管理员!
-cyanidin.worker_command.worker_not_found=<#4c4f69>[</#4c4f69><#04a5e5>CyanidinSystems</#04a5e5><#4c4f69>]</#4c4f69><#d20f39>找不该worker!
+cyanidin.worker_command.worker_not_found=<#4c4f69>[</#4c4f69><#04a5e5>CyanidinSystems</#04a5e5><#4c4f69>]</#4c4f69><#d20f39>找不到该worker!
 cyanidin.worker_command.command_feedback=<#4c4f69>[</#4c4f69><#04a5e5>CyanidinSystems</#04a5e5><#4c4f69>][</#4c4f69><workerName><#4c4f69>]</#4c4f69><feedback>

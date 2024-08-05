@@ -1,0 +1,4 @@
+cyanidin.backend.disconnected=<#4c4f69>[</#4c4f69><#04a5e5>CyanidinSystems</#04a5e5><#4c4f69>]</#4c4f69><#d20f39>Ysm backend has been disconnected, reason::<reason>
+cyanidin.backend.not_connected=<#4c4f69>[</#4c4f69><#04a5e5>CyanidinSystems</#04a5e5><#4c4f69>]</#4c4f69><#d20f39>There is not a valid connection to ysm backend! If you still meet this issue. please report to the administrators
+cyanidin.worker_command.worker_not_found=<#4c4f69>[</#4c4f69><#04a5e5>CyanidinSystems</#04a5e5><#4c4f69>]</#4c4f69><#d20f39>Cannot found specified worker
+cyanidin.worker_command.command_feedback=<#4c4f69>[</#4c4f69><#04a5e5>CyanidinSystems</#04a5e5><#4c4f69>][</#4c4f69><workerName><#4c4f69>]</#4c4f69><feedback>
