@@ -224,7 +224,13 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
 
         if (mapperSession == null){
-            this.mapperCreateCallbacks.computeIfAbsent(owner, player -> new ConcurrentLinkedQueue<>()).offer((mapper) -> ((DefaultYsmPacketProxyImpl) mapper.getPacketProxy()).sendEntityStateTo(watching));
+            this.mapperCreateCallbacks.computeIfAbsent(owner, player -> new ConcurrentLinkedQueue<>()).offer((mapper) -> {
+                if (mapper == null){
+                    return;
+                }
+
+                ((DefaultYsmPacketProxyImpl) mapper.getPacketProxy()).sendEntityStateTo(watching);
+            });
             return;
         }
 
