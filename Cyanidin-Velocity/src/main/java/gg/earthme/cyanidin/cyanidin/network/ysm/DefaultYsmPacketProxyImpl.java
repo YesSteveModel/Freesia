@@ -133,7 +133,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
         if (packetId == 52) {
             final String clientYsmVersion = mcBuffer.readUtf();
-            Cyanidin.LOGGER.info("Player {} is connection to the backend with ysm version {}", this.player.getUsername(), clientYsmVersion);
+            Cyanidin.LOGGER.info("Player {} is connected to the backend with ysm version {}", this.player.getUsername(), clientYsmVersion);
             Cyanidin.mapperManager.onClientYsmPacketReply(this.player);
         }
 
