@@ -13,11 +13,8 @@ dependencies {
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
     mappings loom.officialMojangMappings()
 
-    implementation project(":Cyanidin-Common")
-    customShadow project(":Cyanidin-Common")
-
-    customShadow "com.electronwill.night-config:toml:${rootProject.night_config_version}"
-    implementation "com.electronwill.night-config:toml:${rootProject.night_config_version}"
+    include(implementation(project(":Cyanidin-Common")))
+    include(implementation("com.electronwill.night-config:toml:${rootProject.night_config_version}"))
 
     modImplementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_version}"
