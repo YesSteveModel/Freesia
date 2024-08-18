@@ -25,16 +25,22 @@ public class YsmMapperPayloadManager {
     public static final Key YSM_CHANNEL_KEY_ADVENTURE = Key.key("yes_steve_model:2_2_2");
     public static final MinecraftChannelIdentifier YSM_CHANNEL_KEY_VELOCITY = MinecraftChannelIdentifier.create("yes_steve_model", "2_2_2");
 
+    // Player to worker mappers connections
     private final Map<Player, TcpClientSession> player2Mappers = new ConcurrentHashMap<>();
     private final Map<Player, MapperSessionProcessor> mapperSessions = new ConcurrentHashMap<>();
+    // Creation callbacks
     private final Map<Player, Queue<Consumer<MapperSessionProcessor>>> mapperCreateCallbacks = new ConcurrentHashMap<>();
 
+    // Backend connect infos
     private final ReadWriteLock backendIpsAccessLock = new ReentrantReadWriteLock(false);
     private final Map<InetSocketAddress, Integer> backend2Players = new LinkedHashMap<>();
     private final Function<Player, YsmPacketProxy> packetProxyCreator;
 
+    // The entity id of the worker session(Used for tracker updates remapping)
     private final Map<Player, Integer> player2WorkerEntityIds = new ConcurrentHashMap<>();
+    // The entity id of the real server session(Used for tracker updates remapping)
     private final Map<Player, Integer> player2ServerEntityIds = new ConcurrentHashMap<>();
+    // The players who installed ysm(Used for packet sending reduction)
     private final Set<Player> ysmInstalledPlayers = ConcurrentHashMap.newKeySet();
 
     public YsmMapperPayloadManager(Function<Player, YsmPacketProxy> packetProxyCreator) {
@@ -150,6 +156,7 @@ public class YsmMapperPayloadManager {
 
         final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.get(mapperSession.getBindPlayer());
 
+        //Finalize the callbacks
         if (removedQueue != null){
             Consumer<MapperSessionProcessor> unprocessed;
             while ((unprocessed = removedQueue.poll()) != null){
@@ -206,6 +213,7 @@ public class YsmMapperPayloadManager {
         this.mapperSessions.put(player, packetProcessor);
         this.player2Mappers.put(player, session);
 
+        //Finish the callbacks
         Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, () -> {
             packetProcessor.getPacketProxy().blockUntilProxyReady();
 
@@ -224,6 +232,7 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
 
         if (mapperSession == null){
+            //Commit to callback if the mapper session of the player not finished connecting currently
             this.mapperCreateCallbacks.computeIfAbsent(owner, player -> new ConcurrentLinkedQueue<>()).offer((mapper) -> {
                 if (mapper == null){
                     return;

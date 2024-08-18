@@ -45,6 +45,7 @@ public class MapperSessionProcessor implements SessionListener{
     }
 
     public void processPlayerPluginMessage(byte[] packetData){
+        // Async packet processing
         CompletableFuture.supplyAsync(
                 () -> this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData)),
                 task -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, task).schedule()
@@ -87,6 +88,7 @@ public class MapperSessionProcessor implements SessionListener{
             final byte[] packetData = payloadPacket.getData();
 
             if (channelKey.toString().equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE.toString())){
+                // Async packet processing
                 CompletableFuture.supplyAsync(
                         () -> this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData)),
                         task -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, task).schedule()
@@ -112,6 +114,7 @@ public class MapperSessionProcessor implements SessionListener{
             }
         }
 
+        // Reply the fabric mod loader ping checks
         if (packet instanceof ClientboundPingPacket pingPacket){
             session.send(new ServerboundPongPacket(pingPacket.getId()));
         }
@@ -144,12 +147,12 @@ public class MapperSessionProcessor implements SessionListener{
 
     @Override
     public void disconnected(DisconnectedEvent event) {
-        Cyanidin.LOGGER.info("Mapper session has disconnected for reason(non-deserialized): {}", event.getReason());
+        Cyanidin.LOGGER.info("Mapper session has disconnected for reason(non-deserialized): {}", event.getReason()); // Log disconnected
         if (event.getCause() != null){
-            Cyanidin.LOGGER.info("Mapper session has disconnected for throwable: {}", event.getCause().getLocalizedMessage());
+            Cyanidin.LOGGER.info("Mapper session has disconnected for throwable: {}", event.getCause().getLocalizedMessage()); // Log errors
         }
-        this.mapperPayloadManager.onWorkerSessionDisconnect(this, this.kickMasterWhenDisconnect, event.getReason());
-        this.session = null;
+        this.mapperPayloadManager.onWorkerSessionDisconnect(this, this.kickMasterWhenDisconnect, event.getReason()); // Fire events
+        this.session = null; //Set session to null to finalize the mapper connection
     }
 
     public void waitForDisconnected(){

@@ -27,6 +27,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public void blockUntilProxyReady(){
+        // Must block until the player joined to the backend server
         while (Cyanidin.mapperManager.getServerPlayerEntityId(this.player) == -1){
             Thread.yield();
             LockSupport.parkNanos(1_000);
@@ -49,29 +50,29 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     }
 
     public void sendEntityStateTo(@NotNull Player target){
-        final int currentEntityId = Cyanidin.mapperManager.getServerPlayerEntityId(this.player);
+        final int currentEntityId = Cyanidin.mapperManager.getServerPlayerEntityId(this.player); // Get current entity id on the server of the player
 
-        final NBTCompound lastEntityStatusTemp = this.lastYsmEntityStatus;
+        final NBTCompound lastEntityStatusTemp = this.lastYsmEntityStatus; // Copy the value instead of the reference
 
-        if (lastEntityStatusTemp == null || currentEntityId == -1){
+        if (lastEntityStatusTemp == null || currentEntityId == -1){ // If no data got or player is not in the backend server currently
             return;
         }
 
         try {
-            final Object targetChannel = PacketEvents.getAPI().getProtocolManager().getChannel(target.getUniqueId());
+            final Object targetChannel = PacketEvents.getAPI().getProtocolManager().getChannel(target.getUniqueId()); // Get the netty channel of the player
 
             if (targetChannel == null){
                 return;
             }
 
-            final ClientVersion clientVersion = PacketEvents.getAPI().getProtocolManager().getClientVersion(targetChannel);
+            final ClientVersion clientVersion = PacketEvents.getAPI().getProtocolManager().getClientVersion(targetChannel); // Get the client version of the player
 
-            final int targetProtocolVer = clientVersion.getProtocolVersion();
+            final int targetProtocolVer = clientVersion.getProtocolVersion(); // Protocol version(Used for nbt remappers)
             final FriendlyByteBuf wrappedPacketData = new FriendlyByteBuf(Unpooled.buffer());
 
             wrappedPacketData.writeByte(4);
             wrappedPacketData.writeVarInt(currentEntityId);
-            wrappedPacketData.writeBytes(this.nbtRemapper.shouldRemap(targetProtocolVer) ? this.nbtRemapper.remapToMasterVer(lastEntityStatusTemp) : this.nbtRemapper.remapToWorkerVer(lastEntityStatusTemp));
+            wrappedPacketData.writeBytes(this.nbtRemapper.shouldRemap(targetProtocolVer) ? this.nbtRemapper.remapToMasterVer(lastEntityStatusTemp) : this.nbtRemapper.remapToWorkerVer(lastEntityStatusTemp)); // Remap nbt if needed
 
             this.sendPluginMessageTo(target, YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData);
         }catch (Exception e){
@@ -97,21 +98,21 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                 final int workerEntityId = mcBuffer.readVarInt();
 
                 try {
-                    if (!this.isEntityStateOfSelf(workerEntityId)){
-                        return ProxyComputeResult.ofDrop(); //Do not process the entity state if it is not ours
+                    if (!this.isEntityStateOfSelf(workerEntityId)){ // Check if the packet is current player and drop to prevent incorrect broadcasting
+                        return ProxyComputeResult.ofDrop(); // Do not process the entity state if it is not ours
                     }
 
-                    this.lastYsmEntityStatus = this.nbtRemapper.readBound(mcBuffer);
+                    this.lastYsmEntityStatus = this.nbtRemapper.readBound(mcBuffer); // Read using the protocol version matched for the worker
 
-                    this.sendEntityStateTo(this.player);
+                    this.sendEntityStateTo(this.player); //Sync to self
 
-                    Cyanidin.tracker.getCanSeeAsync(this.player).whenComplete((beingWatched, exception) -> {
+                    Cyanidin.tracker.getCanSeeAsync(this.player).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
                         for (Player target : beingWatched){
-                            if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){
+                            if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){ // Skip if target is not ysm-installed
                                 continue;
                             }
 
-                            this.sendEntityStateTo(target);
+                            this.sendEntityStateTo(target); // Sync to target
                         }
                     });
                 }catch (Exception e){
