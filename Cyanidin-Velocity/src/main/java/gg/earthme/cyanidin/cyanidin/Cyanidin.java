@@ -31,6 +31,7 @@ import gg.earthme.cyanidin.cyanidin.network.ysm.DefaultYsmPacketProxyImpl;
 import gg.earthme.cyanidin.cyanidin.network.ysm.YsmMapperPayloadManager;
 import gg.earthme.cyanidin.common.EntryPoint;
 import gg.earthme.cyanidin.common.communicating.NettySocketServer;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
@@ -62,19 +63,15 @@ public class Cyanidin implements PacketListener {
     private Metrics metrics;
 
     private static void printLogo(){
-        LOGGER.info("------------------------------------------------------------------------------");
-        LOGGER.info("   █████████                                   ███      █████  ███            ");
-        LOGGER.info("  ███░░░░░███                                 ░░░      ░░███  ░░░             ");
-        LOGGER.info(" ███     ░░░  █████ ████  ██████   ████████   ████   ███████  ████  ████████  ");
-        LOGGER.info("░███         ░░███ ░███  ░░░░░███ ░░███░░███ ░░███  ███░░███ ░░███ ░░███░░███ ");
-        LOGGER.info("░███          ░███ ░███   ███████  ░███ ░███  ░███ ░███ ░███  ░███  ░███ ░███ ");
-        LOGGER.info("░░███     ███ ░███ ░███  ███░░███  ░███ ░███  ░███ ░███ ░███  ░███  ░███ ░███ ");
-        LOGGER.info(" ░░█████████  ░░███████ ░░████████ ████ █████ █████░░████████ █████ ████ █████");
-        LOGGER.info("  ░░░░░░░░░    ░░░░░███  ░░░░░░░░ ░░░░ ░░░░░ ░░░░░  ░░░░░░░░ ░░░░░ ░░░░ ░░░░░ ");
-        LOGGER.info("               ███ ░███                                                       ");
-        LOGGER.info("              ░░██████                                                        ");
-        LOGGER.info("                    Powered by CyanidinMC, Version: {}", BuildConstants.VERSION);
-        LOGGER.info("------------------------------------------------------------------------------");
+        PROXY_SERVER.sendMessage(Component.text("----------------------------------------------------------------"));
+        PROXY_SERVER.sendMessage(Component.text("      ______                  _     ___     "));
+        PROXY_SERVER.sendMessage(Component.text("     / ____/_  ______ _____  (_)___/ (_)___ "));
+        PROXY_SERVER.sendMessage(Component.text("    / /   / / / / __ `/ __ \\/ / __  / / __ \\"));
+        PROXY_SERVER.sendMessage(Component.text("   / /___/ /_/ / /_/ / / / / / /_/ / / / / /"));
+        PROXY_SERVER.sendMessage(Component.text("   \\____/\\__, /\\__,_/_/ /_/_/\\__,_/_/_/ /_/ "));
+        PROXY_SERVER.sendMessage(Component.text("        /____/                              "));
+        PROXY_SERVER.sendMessage(Component.text("     Powered by CyanidinMC, Version: " + BuildConstants.VERSION));
+        PROXY_SERVER.sendMessage(Component.text("----------------------------------------------------------------"));
     }
 
     private void initMetrics(){
