@@ -26,7 +26,7 @@ Cyanidin并非是一个整体,而是由一组模组/插件负责着不同功能�
 你需要准备好Java22
 克隆项目及其构建指令(第三行)如下:
 ```shell
-git clone https://github.com/MyYsm/Cyanidin.git
+git clone https://github.com/CyanidinMC/Cyanidin.git
 cd Cyanidin
 ./gradlew build
 ```
