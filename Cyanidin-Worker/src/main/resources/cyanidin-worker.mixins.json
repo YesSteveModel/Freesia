@@ -8,6 +8,7 @@
     "EntityMixin",
     "MinecraftServerMixin",
     "PlayerDataStorageMixin",
+    "PlayerListMixin",
     "ServerCommonPacketListenerImplMixin",
     "ServerGamePacketListenerImplMixin",
     "ServerLoginPacketListenerImplMixin",
