@@ -21,8 +21,8 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.command.WorkerCommandCommand;
-import gg.earthme.cyanidin.cyanidin.datastorage.DefaultDataStorageManagerImpl;
-import gg.earthme.cyanidin.cyanidin.datastorage.IDataStorageManager;
+import gg.earthme.cyanidin.cyanidin.storage.DefaultDataStorageManagerImpl;
+import gg.earthme.cyanidin.cyanidin.storage.IDataStorageManager;
 import gg.earthme.cyanidin.cyanidin.i18n.I18NManager;
 import gg.earthme.cyanidin.cyanidin.metrics.Metrics;
 import gg.earthme.cyanidin.cyanidin.network.backend.MasterServerMessageHandler;
@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 

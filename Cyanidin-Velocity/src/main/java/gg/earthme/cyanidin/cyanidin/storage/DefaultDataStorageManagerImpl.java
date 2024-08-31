@@ -1,4 +1,4 @@
-package gg.earthme.cyanidin.cyanidin.datastorage;
+package gg.earthme.cyanidin.cyanidin.storage;
 
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 
