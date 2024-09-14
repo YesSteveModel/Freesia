@@ -7,6 +7,7 @@ import gg.earthme.cyanidin.cyanidin.CyanidinConfig;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.geysermc.mcprotocollib.auth.GameProfile;
+import org.geysermc.mcprotocollib.network.BuiltinFlags;
 import org.geysermc.mcprotocollib.network.tcp.TcpClientSession;
 import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
 import org.jetbrains.annotations.NotNull;
@@ -204,8 +205,8 @@ public class YsmMapperPayloadManager {
 
         mapperSession.addListener(packetProcessor);
 
-        mapperSession.setWriteTimeout(30_000);
-        mapperSession.setReadTimeout(30_000);
+        mapperSession.setFlag(BuiltinFlags.READ_TIMEOUT,30_000);
+        mapperSession.setFlag(BuiltinFlags.WRITE_TIMEOUT,30_000);
         mapperSession.connect(true,false);
     }
 
