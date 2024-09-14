@@ -20,12 +20,6 @@ public class NettySocketServer {
         this.handlerCreator = handlerCreator;
     }
 
-    public void close() {
-        if (this.channelFuture != null) {
-            this.channelFuture.channel().close().awaitUninterruptibly();
-        }
-    }
-
     public void bind(){
         this.channelFuture = new ServerBootstrap()
                 .group(this.masterLoopGroup, this.workerLoopGroup)

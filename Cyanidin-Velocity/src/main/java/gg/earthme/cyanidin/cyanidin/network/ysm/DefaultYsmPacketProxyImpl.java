@@ -3,6 +3,7 @@ package gg.earthme.cyanidin.cyanidin.network.ysm;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import com.velocitypowered.api.proxy.Player;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import gg.earthme.cyanidin.cyanidin.network.mc.NbtRemapper;
 import gg.earthme.cyanidin.cyanidin.network.mc.impl.StandardNbtRemapperImpl;
@@ -10,7 +11,6 @@ import gg.earthme.cyanidin.cyanidin.utils.FriendlyByteBuf;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.kyori.adventure.key.Key;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.locks.LockSupport;
@@ -134,7 +134,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
         if (packetId == 52) {
             final String clientYsmVersion = mcBuffer.readUtf();
-            Cyanidin.LOGGER.info("Player {} is connected to the backend with ysm version {}", this.player.getName(), clientYsmVersion);
+            Cyanidin.LOGGER.info("Player {} is connected to the backend with ysm version {}", this.player.getUsername(), clientYsmVersion);
             Cyanidin.mapperManager.onClientYsmPacketReply(this.player);
         }
 
