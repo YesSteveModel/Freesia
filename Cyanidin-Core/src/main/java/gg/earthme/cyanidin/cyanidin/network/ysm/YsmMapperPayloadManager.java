@@ -1,12 +1,14 @@
 package gg.earthme.cyanidin.cyanidin.network.ysm;
 
-import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import gg.earthme.cyanidin.cyanidin.CyanidinConfig;
+import gg.earthme.cyanidin.cyanidin.SchedulerUtils;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
+import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
 import org.geysermc.mcprotocollib.auth.GameProfile;
+import org.geysermc.mcprotocollib.network.BuiltinFlags;
 import org.geysermc.mcprotocollib.network.tcp.TcpClientSession;
 import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
 import org.jetbrains.annotations.NotNull;
@@ -23,13 +25,13 @@ import java.util.function.Function;
 
 public class YsmMapperPayloadManager {
     public static final Key YSM_CHANNEL_KEY_ADVENTURE = Key.key("yes_steve_model:2_2_2");
-    public static final MinecraftChannelIdentifier YSM_CHANNEL_KEY_VELOCITY = MinecraftChannelIdentifier.create("yes_steve_model", "2_2_2");
+    public static final NamespacedKey YSM_CHANNEL_KEY_VELOCITY = NamespacedKey.fromString("yes_steve_model:2_2_2");
 
     // Player to worker mappers connections
-    private final Map<Player, TcpClientSession> player2Mappers = new ConcurrentHashMap<>();
-    private final Map<Player, MapperSessionProcessor> mapperSessions = new ConcurrentHashMap<>();
+    private final Map<UUID, TcpClientSession> player2Mappers = new ConcurrentHashMap<>();
+    private final Map<UUID, MapperSessionProcessor> mapperSessions = new ConcurrentHashMap<>();
     // Creation callbacks
-    private final Map<Player, Queue<Consumer<MapperSessionProcessor>>> mapperCreateCallbacks = new ConcurrentHashMap<>();
+    private final Map<UUID, Queue<Consumer<MapperSessionProcessor>>> mapperCreateCallbacks = new ConcurrentHashMap<>();
 
     // Backend connect infos
     private final ReadWriteLock backendIpsAccessLock = new ReentrantReadWriteLock(false);
@@ -37,61 +39,83 @@ public class YsmMapperPayloadManager {
     private final Function<Player, YsmPacketProxy> packetProxyCreator;
 
     // The entity id of the worker session(Used for tracker updates remapping)
-    private final Map<Player, Integer> player2WorkerEntityIds = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> player2WorkerEntityIds = new ConcurrentHashMap<>();
     // The entity id of the real server session(Used for tracker updates remapping)
-    private final Map<Player, Integer> player2ServerEntityIds = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> player2ServerEntityIds = new ConcurrentHashMap<>();
     // The players who installed ysm(Used for packet sending reduction)
-    private final Set<Player> ysmInstalledPlayers = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> ysmInstalledPlayers = ConcurrentHashMap.newKeySet();
 
     public YsmMapperPayloadManager(Function<Player, YsmPacketProxy> packetProxyCreator) {
         this.packetProxyCreator = packetProxyCreator;
         this.backend2Players.put(CyanidinConfig.workerMSessionAddress ,1); //TODO Load balance
     }
 
+    public void disconnectAllMappers(){
+        for (TcpClientSession mapperSession : this.player2Mappers.values()){
+            try {
+                mapperSession.disconnect(Cyanidin.languageManager.i18n("cyanidin.backend.disconnected_actively", List.of(), List.of()));
+            }catch (Exception e){
+                Cyanidin.LOGGER.error("Failed to disconnect mapper session", e);
+            }
+        }
+
+        this.player2Mappers.clear();
+    }
+
     public void onClientYsmPacketReply(Player target){
-        this.ysmInstalledPlayers.add(target);
+        this.ysmInstalledPlayers.add(target.getUniqueId());
     }
 
     public void updateWorkerPlayerEntityId(Player target, int entityId){
-        if (!this.player2WorkerEntityIds.containsKey(target)){
-            this.player2WorkerEntityIds.put(target, entityId);
+        final UUID targetUUID = target.getUniqueId();
+
+        if (!this.player2WorkerEntityIds.containsKey(targetUUID)){
+            this.player2WorkerEntityIds.put(targetUUID, entityId);
             return;
         }
 
-        this.player2WorkerEntityIds.replace(target, entityId);
+        this.player2WorkerEntityIds.replace(targetUUID, entityId);
     }
 
     public int getWorkerPlayerEntityId(Player target){
-        if (!this.player2WorkerEntityIds.containsKey(target)){
+        final UUID targetUUID = target.getUniqueId();
+
+        if (!this.player2WorkerEntityIds.containsKey(targetUUID)){
             return -1;
         }
 
-        return this.player2WorkerEntityIds.get(target);
+        return this.player2WorkerEntityIds.get(targetUUID);
     }
 
     public void updateServerPlayerEntityId(Player target, int entityId){
-        if (!this.player2ServerEntityIds.containsKey(target)){
-            this.player2ServerEntityIds.put(target, entityId);
+        final UUID targetUUID = target.getUniqueId();
+
+        if (!this.player2ServerEntityIds.containsKey(targetUUID)){
+            this.player2ServerEntityIds.put(targetUUID, entityId);
             return;
         }
 
-        this.player2ServerEntityIds.replace(target, entityId);
+        this.player2ServerEntityIds.replace(targetUUID, entityId);
     }
 
     public int getServerPlayerEntityId(Player target){
-        if (!this.player2ServerEntityIds.containsKey(target)){
+        final UUID targetUUID = target.getUniqueId();
+
+        if (!this.player2ServerEntityIds.containsKey(targetUUID)){
             return -1;
         }
 
-        return this.player2ServerEntityIds.get(target);
+        return this.player2ServerEntityIds.get(targetUUID);
     }
 
     public void reconnectWorker(@NotNull Player master, @NotNull InetSocketAddress target){
-        if (!this.mapperSessions.containsKey(master)){
+        final UUID masterUUID = master.getUniqueId();
+
+        if (!this.mapperSessions.containsKey(masterUUID)){
             throw new IllegalStateException("Player is not connected to mapper!");
         }
 
-        final MapperSessionProcessor currentMapper = this.mapperSessions.get(master);
+        final MapperSessionProcessor currentMapper = this.mapperSessions.get(masterUUID);
 
         currentMapper.setKickMasterWhenDisconnect(false);
         currentMapper.getSession().disconnect("RECONNECT");
@@ -105,11 +129,11 @@ public class YsmMapperPayloadManager {
     }
 
     public boolean hasPlayer(@NotNull Player player){
-        return this.player2Mappers.containsKey(player);
+        return this.player2Mappers.containsKey(player.getUniqueId());
     }
 
     public void onPlayerConnected(Player player){
-        this.mapperCreateCallbacks.putIfAbsent(player, new ConcurrentLinkedQueue<>());
+        this.mapperCreateCallbacks.putIfAbsent(player.getUniqueId(), new ConcurrentLinkedQueue<>());
     }
 
     public void firstCreateMapper(Player player){
@@ -117,16 +141,17 @@ public class YsmMapperPayloadManager {
     }
 
     public boolean isPlayerInstalledYsm(Player target){
-        return this.ysmInstalledPlayers.contains(target);
+        return this.ysmInstalledPlayers.contains(target.getUniqueId());
     }
 
     public void onPlayerDisconnect(Player player){
-        this.ysmInstalledPlayers.remove(player);
-        this.player2ServerEntityIds.remove(player);
-        this.player2WorkerEntityIds.remove(player);
+        final UUID playerUUID = player.getUniqueId();
+        this.ysmInstalledPlayers.remove(playerUUID);
+        this.player2ServerEntityIds.remove(playerUUID);
+        this.player2WorkerEntityIds.remove(playerUUID);
 
-        final MapperSessionProcessor mapperSession = this.mapperSessions.remove(player);
-        final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.remove(player);
+        final MapperSessionProcessor mapperSession = this.mapperSessions.remove(playerUUID);
+        final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.remove(playerUUID);
 
         if (removedQueue != null){
             Consumer<MapperSessionProcessor> unprocessed;
@@ -145,16 +170,16 @@ public class YsmMapperPayloadManager {
             mapperSession.waitForDisconnected();
         }
 
-        this.player2Mappers.remove(player);
+        this.player2Mappers.remove(playerUUID);
     }
 
     protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster, Component reason){
-        if (kickMaster) mapperSession.getBindPlayer().disconnect(Cyanidin.languageManager.i18n("cyanidin.backend.disconnected", List.of("reason"), List.of(reason)));
-        this.ysmInstalledPlayers.remove(mapperSession.getBindPlayer());
-        this.player2Mappers.remove(mapperSession.getBindPlayer());
-        this.mapperSessions.remove(mapperSession.getBindPlayer());
+        if (kickMaster) mapperSession.getBindPlayer().kick(Cyanidin.languageManager.i18n("cyanidin.backend.disconnected", List.of("reason"), List.of(reason)));
+        this.ysmInstalledPlayers.remove(mapperSession.getBindPlayer().getUniqueId());
+        this.player2Mappers.remove(mapperSession.getBindPlayer().getUniqueId());
+        this.mapperSessions.remove(mapperSession.getBindPlayer().getUniqueId());
 
-        final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.get(mapperSession.getBindPlayer());
+        final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.get(mapperSession.getBindPlayer().getUniqueId());
 
         //Finalize the callbacks
         if (removedQueue != null){
@@ -169,20 +194,20 @@ public class YsmMapperPayloadManager {
         }
     }
 
-    public void onPluginMessageIn(@NotNull Player player, @NotNull MinecraftChannelIdentifier channel, byte[] packetData){
+    public void onPluginMessageIn(@NotNull Player player, @NotNull NamespacedKey channel, byte[] packetData){
         if (!channel.equals(YSM_CHANNEL_KEY_VELOCITY)){
             return;
         }
 
-        if (!this.player2Mappers.containsKey(player)){
-            player.disconnect(Cyanidin.languageManager.i18n("cyanidin.backend.not_connected", Collections.emptyList(), Collections.emptyList()));
+        if (!this.player2Mappers.containsKey(player.getUniqueId())){
+            player.kick(Cyanidin.languageManager.i18n("cyanidin.backend.not_connected", Collections.emptyList(), Collections.emptyList()));
             return;
         }
 
-        final MapperSessionProcessor mapperSession = this.mapperSessions.get(player);
+        final MapperSessionProcessor mapperSession = this.mapperSessions.get(player.getUniqueId());
 
         if (mapperSession == null){
-            throw new IllegalStateException("Mapper session not found or ready for player " + player.getUsername());
+            throw new IllegalStateException("Mapper session not found or ready for player " + player.getName());
         }
 
         mapperSession.processPlayerPluginMessage(packetData);
@@ -195,7 +220,7 @@ public class YsmMapperPayloadManager {
                 new MinecraftProtocol(
                         new GameProfile(
                                 player.getUniqueId(),
-                                player.getUsername()),
+                                player.getName()),
                         null
                 )
         );
@@ -204,36 +229,36 @@ public class YsmMapperPayloadManager {
 
         mapperSession.addListener(packetProcessor);
 
-        mapperSession.setWriteTimeout(30_000);
-        mapperSession.setReadTimeout(30_000);
+        mapperSession.setFlag(BuiltinFlags.CLIENT_CONNECT_TIMEOUT, 30_000);
+        mapperSession.setFlag(BuiltinFlags.READ_TIMEOUT, 30_000);
         mapperSession.connect(true,false);
     }
 
     public void onProxyLoggedin(Player player, MapperSessionProcessor packetProcessor, TcpClientSession session){
-        this.mapperSessions.put(player, packetProcessor);
-        this.player2Mappers.put(player, session);
+        this.mapperSessions.put(player.getUniqueId(), packetProcessor);
+        this.player2Mappers.put(player.getUniqueId(), session);
 
         //Finish the callbacks
-        Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, () -> {
+        SchedulerUtils.getAsyncScheduler().execute(() -> {
             packetProcessor.getPacketProxy().blockUntilProxyReady();
 
             Consumer<MapperSessionProcessor> callback;
-            while ((callback = this.mapperCreateCallbacks.get(player).poll()) != null){
+            while ((callback = this.mapperCreateCallbacks.get(player.getUniqueId()).poll()) != null){
                 try {
                     callback.accept(packetProcessor);
                 }catch (Exception e){
                     Cyanidin.LOGGER.info("Error occurs while processing connect callbacks!", e);
                 }
             }
-        }).schedule();
+        });
     }
 
     public void onPlayerTrackerUpdate(Player owner, Player watching){
-        final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
+        final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner.getUniqueId());
 
         if (mapperSession == null){
             //Commit to callback if the mapper session of the player not finished connecting currently
-            this.mapperCreateCallbacks.computeIfAbsent(owner, player -> new ConcurrentLinkedQueue<>()).offer((mapper) -> {
+            this.mapperCreateCallbacks.computeIfAbsent(owner.getUniqueId(), player -> new ConcurrentLinkedQueue<>()).offer((mapper) -> {
                 if (mapper == null){
                     return;
                 }

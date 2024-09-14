@@ -1,6 +1,6 @@
 package gg.earthme.cyanidin.cyanidin.storage;
 
-import gg.earthme.cyanidin.cyanidin.Cyanidin;
+import gg.earthme.cyanidin.cyanidin.SchedulerUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +30,7 @@ public class DefaultDataStorageManagerImpl implements IDataStorageManager{
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }, ioTask -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, ioTask).schedule());
+        }, SchedulerUtils.getAsyncScheduler());
     }
 
 
@@ -48,6 +48,6 @@ public class DefaultDataStorageManagerImpl implements IDataStorageManager{
             }catch (IOException e){
                 throw new RuntimeException(e);
             }
-        }, ioTask -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, ioTask).schedule());
+        }, SchedulerUtils.getAsyncScheduler());
     }
 }

@@ -1,11 +1,12 @@
 package gg.earthme.cyanidin.cyanidin.network.ysm;
 
-import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
+import gg.earthme.cyanidin.cyanidin.SchedulerUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.kyori.adventure.key.Key;
+import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.*;
 import org.geysermc.mcprotocollib.network.packet.Packet;
@@ -48,10 +49,10 @@ public class MapperSessionProcessor implements SessionListener{
         // Async packet processing
         CompletableFuture.supplyAsync(
                 () -> this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData)),
-                task -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, task).schedule()
+                SchedulerUtils.getAsyncScheduler()
         ).whenComplete((processed, throwable) -> {
             if (throwable != null){
-                Cyanidin.LOGGER.warn("Error while processing packet from player: {}", this.bindPlayer.getUsername());
+                Cyanidin.LOGGER.warn("Error while processing packet from player: {}", this.bindPlayer.getName());
                 Cyanidin.LOGGER.warn("Error: ", throwable);
                 return;
             }
@@ -91,10 +92,10 @@ public class MapperSessionProcessor implements SessionListener{
                 // Async packet processing
                 CompletableFuture.supplyAsync(
                         () -> this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData)),
-                        task -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, task).schedule()
+                        SchedulerUtils.getAsyncScheduler()
                 ).whenComplete((result, throwable) -> {
                     if (throwable != null){
-                        Cyanidin.LOGGER.warn("Error while processing packet from player: {}", this.bindPlayer.getUsername());
+                        Cyanidin.LOGGER.warn("Error while processing packet from player: {}", this.bindPlayer.getName());
                         Cyanidin.LOGGER.warn("Error: ", throwable);
                         return;
                     }
@@ -105,10 +106,10 @@ public class MapperSessionProcessor implements SessionListener{
 
                             finalData.resetReaderIndex();
 
-                            this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), finalData);
+                            this.packetProxy.sendPluginMessageToOwner(NamespacedKey.fromString(channelKey.namespace() + ":" + channelKey.value()), finalData);
                         }
 
-                        case PASS -> this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
+                        case PASS -> this.packetProxy.sendPluginMessageToOwner(NamespacedKey.fromString(channelKey.namespace() + ":" + channelKey.value()), packetData);
                     }
                 });
             }

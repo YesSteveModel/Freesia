@@ -1,0 +1,8 @@
+name: Cyanidin-Backend
+version: '2.2.2'
+main: gg.earthme.cyanidin.cyanidin.Cyanidin
+api-version: '1.16'
+folia-supported: true
+
+depend:
+  - packetevents
