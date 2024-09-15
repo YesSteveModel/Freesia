@@ -114,6 +114,11 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     }
 
     @Override
+    public NBTCompound getCurrentEntityState() {
+        return this.lastYsmEntityStatus;
+    }
+
+    @Override
     public ProxyComputeResult processS2C(Key key, ByteBuf copiedPacketData) {
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
         final byte packetId = mcBuffer.readByte();

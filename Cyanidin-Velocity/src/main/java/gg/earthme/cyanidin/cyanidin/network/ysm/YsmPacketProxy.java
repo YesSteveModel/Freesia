@@ -23,6 +23,8 @@ public interface YsmPacketProxy {
 
     void refreshToOthers();
 
+    NBTCompound getCurrentEntityState();
+
     default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, byte[] data){
         this.sendPluginMessageTo(this.getOwner(), channel, data);
     }

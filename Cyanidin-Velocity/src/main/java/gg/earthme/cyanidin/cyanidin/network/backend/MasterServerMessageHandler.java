@@ -63,7 +63,7 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
     @Override
     public CompletableFuture<byte[]> readPlayerData(UUID playerUUID) {
         final CompletableFuture<byte[]> callback = new CompletableFuture<>();
-        Cyanidin.dataStorageManager
+        Cyanidin.realPlayerDataStorageManager
                 .loadPlayerData(playerUUID)
                 .thenApply(data -> Cyanidin.PROXY_SERVER
                         .getEventManager()
@@ -86,7 +86,7 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
         return Cyanidin.PROXY_SERVER
                 .getEventManager()
                 .fire(new PlayerEntityDataStoreEvent(playerUUID, content))
-                .thenAccept(event -> Cyanidin.dataStorageManager.save(playerUUID, event.getSerializedNbtData()));
+                .thenAccept(event -> Cyanidin.realPlayerDataStorageManager.save(playerUUID, event.getSerializedNbtData()));
     }
 
 

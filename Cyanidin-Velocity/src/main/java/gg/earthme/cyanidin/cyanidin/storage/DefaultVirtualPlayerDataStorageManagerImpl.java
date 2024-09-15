@@ -8,9 +8,9 @@ import java.nio.file.Files;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public class DefaultDataStorageManagerImpl implements IDataStorageManager{
+public class DefaultVirtualPlayerDataStorageManagerImpl implements IDataStorageManager{
     private static final File PLUGIN_FOLDER = new File(new File("plugins"), "Cyanidin");
-    private static final File PLAYER_DATA_FOLDER = new File(PLUGIN_FOLDER, "playerdata");
+    private static final File PLAYER_DATA_FOLDER = new File(PLUGIN_FOLDER, "playerdata_virtual");
 
     static {
         PLAYER_DATA_FOLDER.mkdirs();
@@ -19,7 +19,7 @@ public class DefaultDataStorageManagerImpl implements IDataStorageManager{
     @Override
     public CompletableFuture<byte[]> loadPlayerData(UUID playerUUID) {
         return CompletableFuture.supplyAsync(() -> {
-            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".nbt");
+            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".dat");
 
             if (!targetFile.exists()){
                 return null;
@@ -37,7 +37,7 @@ public class DefaultDataStorageManagerImpl implements IDataStorageManager{
     @Override
     public CompletableFuture<Void> save(UUID playerUUID, byte[] content) {
         return CompletableFuture.runAsync(() -> {
-            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".nbt");
+            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".dat");
 
             try {
                 if (!targetFile.exists()){

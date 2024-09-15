@@ -72,6 +72,11 @@ public class VirtualYsmPacketProxyImpl implements YsmPacketProxy{
     }
 
     @Override
+    public NBTCompound getCurrentEntityState() {
+        return this.lastYsmEntityStatus;
+    }
+
+    @Override
     public void sendEntityStateTo(@NotNull Player target) {
         final int currentEntityId = Cyanidin.mapperManager.getVirtualPlayerEntityId(this.virtualPlayerUUID); // Get current entity id on the server of the player
 

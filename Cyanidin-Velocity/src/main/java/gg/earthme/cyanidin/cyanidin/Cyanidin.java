@@ -22,7 +22,8 @@ import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.command.WorkerCommandCommand;
 import gg.earthme.cyanidin.cyanidin.network.ysm.VirtualYsmPacketProxyImpl;
-import gg.earthme.cyanidin.cyanidin.storage.DefaultDataStorageManagerImpl;
+import gg.earthme.cyanidin.cyanidin.storage.DefaultRealPlayerDataStorageManagerImpl;
+import gg.earthme.cyanidin.cyanidin.storage.DefaultVirtualPlayerDataStorageManagerImpl;
 import gg.earthme.cyanidin.cyanidin.storage.IDataStorageManager;
 import gg.earthme.cyanidin.cyanidin.i18n.I18NManager;
 import gg.earthme.cyanidin.cyanidin.metrics.Metrics;
@@ -56,7 +57,8 @@ public class Cyanidin implements PacketListener {
 
     public static final YsmMapperPayloadManager mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new, VirtualYsmPacketProxyImpl::new);
     public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
-    public static final IDataStorageManager dataStorageManager = new DefaultDataStorageManagerImpl();
+    public static final IDataStorageManager realPlayerDataStorageManager = new DefaultRealPlayerDataStorageManagerImpl();
+    public static final IDataStorageManager virtualPlayerDataStorageManager = new DefaultVirtualPlayerDataStorageManagerImpl();
     public static final Map<UUID, MasterServerMessageHandler> registedWorkers = Maps.newConcurrentMap();
     public static final I18NManager languageManager = new I18NManager();
     public static NettySocketServer masterServer;

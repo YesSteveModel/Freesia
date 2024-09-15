@@ -1,10 +1,13 @@
 package gg.earthme.cyanidin.cyanidin.network.ysm;
 
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
+import com.github.retrooper.packetevents.protocol.nbt.NBTLimiter;
+import com.github.retrooper.packetevents.protocol.nbt.serializer.DefaultNBTSerializer;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import gg.earthme.cyanidin.cyanidin.CyanidinConfig;
+import io.netty.buffer.ByteBufInputStream;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.geysermc.mcprotocollib.auth.GameProfile;
@@ -14,8 +17,13 @@ import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -103,6 +111,25 @@ public class YsmMapperPayloadManager {
 
         virtualProxy.setEntityDataRaw(nbt);
         virtualProxy.refreshToOthers();
+
+        final NBTCompound entityData = virtualProxy.getCurrentEntityState();
+
+        if (entityData == null){
+            return;
+        }
+
+        try {
+            final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
+            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(bos);
+
+            serializer.serializeTag(dos, entityData, true);
+            dos.flush();
+
+            Cyanidin.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray());
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }
     }
 
     public void addVirtualPlayer(UUID playerUUID, int playerEntityId){
@@ -111,20 +138,70 @@ public class YsmMapperPayloadManager {
                 throw new IllegalStateException("Virtual player already exists!");
             }
 
-            this.virtualProxies.put(playerUUID, this.packetProxyCreatorVirtual.apply(playerUUID));
+            final YsmPacketProxy createdVirtualProxy = this.virtualProxies.computeIfAbsent(playerUUID, this.packetProxyCreatorVirtual);
+
             this.updateVirtualPlayerEntityId(playerUUID, playerEntityId);
+
+            //Load from data storage
+            Cyanidin.virtualPlayerDataStorageManager.loadPlayerData(playerUUID).whenComplete((data, ex) -> {
+                if (ex != null){
+                    throw new RuntimeException(ex);
+                }
+
+                try {
+                    final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
+                    final NBTCompound read = (NBTCompound) serializer.deserializeTag(new NBTLimiter(data), new DataInputStream(new ByteArrayInputStream(data)), true);
+
+                    createdVirtualProxy.setEntityDataRaw(read);
+                    createdVirtualProxy.refreshToOthers();
+                }catch (Exception ex1){
+                    throw new RuntimeException(ex1);
+                }
+            });
         }
     }
 
     public void removeVirtualPlayer(UUID playerUUID){
+        final CompletableFuture<Void> saveWaiter = new CompletableFuture<>() ;
+
         synchronized (this.virtualProxies){
-            if (!this.virtualProxies.containsKey(playerUUID)){
+            final YsmPacketProxy removedProxy = this.virtualProxies.remove(playerUUID);
+
+            if (removedProxy == null){
                 throw new IllegalStateException("Virtual player does not exists!");
+
             }
 
-            this.virtualProxies.remove(playerUUID);
             this.virtualPlayerEntityIds.remove(playerUUID);
+
+            final NBTCompound entityData = removedProxy.getCurrentEntityState();
+
+            if (entityData == null){
+                return;
+            }
+
+            try {
+                final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
+                final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                final DataOutputStream dos = new DataOutputStream(bos);
+
+                serializer.serializeTag(dos, entityData, true);
+                dos.flush();
+
+                Cyanidin.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray()).whenComplete((r, e) -> {
+                    if (e != null){
+                        saveWaiter.completeExceptionally(e);
+                        return;
+                    }
+
+                    saveWaiter.complete(null);
+                });
+            }catch (Exception e){
+                throw new RuntimeException(e);
+            }
         }
+
+        saveWaiter.join();
     }
 
     public int getVirtualPlayerEntityId(UUID target){
