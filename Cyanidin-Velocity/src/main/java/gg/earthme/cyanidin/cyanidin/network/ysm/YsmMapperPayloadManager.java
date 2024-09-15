@@ -7,7 +7,6 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import gg.earthme.cyanidin.cyanidin.CyanidinConfig;
-import io.netty.buffer.ByteBufInputStream;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.geysermc.mcprotocollib.auth.GameProfile;
@@ -133,6 +132,10 @@ public class YsmMapperPayloadManager {
     }
 
     public void addVirtualPlayer(UUID playerUUID, int playerEntityId){
+        if (Cyanidin.PROXY_SERVER.getPlayer(playerUUID).isPresent()){
+            throw new IllegalArgumentException("Trying to create virtual player with UUID " + playerEntityId + " but it already exists!");
+        }
+
         synchronized (this.virtualProxies){
             if (this.virtualProxies.containsKey(playerUUID)){
                 throw new IllegalStateException("Virtual player already exists!");
