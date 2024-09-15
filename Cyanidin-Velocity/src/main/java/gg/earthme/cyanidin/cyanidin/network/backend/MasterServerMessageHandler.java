@@ -5,6 +5,8 @@ import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import gg.earthme.cyanidin.common.EntryPoint;
 import gg.earthme.cyanidin.common.communicating.handler.NettyServerChannelHandlerLayer;
 import gg.earthme.cyanidin.common.communicating.message.m2w.M2WDispatchCommandMessage;
+import gg.earthme.cyanidin.cyanidin.events.PlayerEntityDataLoadEvent;
+import gg.earthme.cyanidin.cyanidin.events.PlayerEntityDataStoreEvent;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -60,12 +62,31 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
 
     @Override
     public CompletableFuture<byte[]> readPlayerData(UUID playerUUID) {
-        return Cyanidin.dataStorageManager.loadPlayerData(playerUUID);
+        final CompletableFuture<byte[]> callback = new CompletableFuture<>();
+        Cyanidin.dataStorageManager
+                .loadPlayerData(playerUUID)
+                .thenApply(data -> Cyanidin.PROXY_SERVER
+                        .getEventManager()
+                        .fire(new PlayerEntityDataLoadEvent(playerUUID, data))
+                        .thenApply(PlayerEntityDataLoadEvent::getSerializedNbtData)
+                        .whenComplete((result, ex) -> {
+                            if (ex != null){
+                                callback.completeExceptionally(ex);
+                                return;
+                            }
+
+                            callback.complete(result);
+                        })
+                );
+        return callback;
     }
 
     @Override
     public CompletableFuture<Void> savePlayerData(UUID playerUUID, byte[] content) {
-        return Cyanidin.dataStorageManager.save(playerUUID, content);
+        return Cyanidin.PROXY_SERVER
+                .getEventManager()
+                .fire(new PlayerEntityDataStoreEvent(playerUUID, content))
+                .thenAccept(event -> Cyanidin.dataStorageManager.save(playerUUID, event.getSerializedNbtData()));
     }
 
 

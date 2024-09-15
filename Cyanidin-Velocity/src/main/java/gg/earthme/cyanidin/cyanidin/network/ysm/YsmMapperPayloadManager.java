@@ -49,7 +49,7 @@ public class YsmMapperPayloadManager {
         this.backend2Players.put(CyanidinConfig.workerMSessionAddress ,1); //TODO Load balance
     }
 
-    public void onClientYsmPacketReply(Player target){
+    public void onClientYsmHandshakePacketReply(Player target){
         this.ysmInstalledPlayers.add(target);
     }
 

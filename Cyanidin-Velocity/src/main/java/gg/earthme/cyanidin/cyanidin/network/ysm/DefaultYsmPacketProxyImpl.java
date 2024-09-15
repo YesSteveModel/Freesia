@@ -3,8 +3,11 @@ package gg.earthme.cyanidin.cyanidin.network.ysm;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import com.velocitypowered.api.event.ResultedEvent;
 import com.velocitypowered.api.proxy.Player;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
+import gg.earthme.cyanidin.cyanidin.events.PlayerYsmHandshakeEvent;
+import gg.earthme.cyanidin.cyanidin.events.PlayerEntityStateChangeEvent;
 import gg.earthme.cyanidin.cyanidin.network.mc.NbtRemapper;
 import gg.earthme.cyanidin.cyanidin.network.mc.impl.StandardNbtRemapperImpl;
 import gg.earthme.cyanidin.cyanidin.utils.FriendlyByteBuf;
@@ -102,18 +105,20 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                         return ProxyComputeResult.ofDrop(); // Do not process the entity state if it is not ours
                     }
 
-                    this.lastYsmEntityStatus = this.nbtRemapper.readBound(mcBuffer); // Read using the protocol version matched for the worker
+                    Cyanidin.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
+                        this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
 
-                    this.sendEntityStateTo(this.player); //Sync to self
+                        this.sendEntityStateTo(this.player); //Sync to self
 
-                    Cyanidin.tracker.getCanSeeAsync(this.player).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
-                        for (Player target : beingWatched){
-                            if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){ // Skip if target is not ysm-installed
-                                continue;
+                        Cyanidin.tracker.getCanSeeAsync(this.player).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
+                            for (Player target : beingWatched){
+                                if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){ // Skip if target is not ysm-installed
+                                    continue;
+                                }
+
+                                this.sendEntityStateTo(target); // Sync to target
                             }
-
-                            this.sendEntityStateTo(target); // Sync to target
-                        }
+                        });
                     });
                 }catch (Exception e){
                     Cyanidin.LOGGER.error("Error while in processing tracker!", e);
@@ -133,9 +138,15 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         final byte packetId = mcBuffer.readByte();
 
         if (packetId == 52) {
+            final ResultedEvent.GenericResult result = Cyanidin.PROXY_SERVER.getEventManager().fire(new PlayerYsmHandshakeEvent(this.player)).join().getResult();
+
+            if (!result.isAllowed()){
+                return ProxyComputeResult.ofDrop();
+            }
+
             final String clientYsmVersion = mcBuffer.readUtf();
             Cyanidin.LOGGER.info("Player {} is connected to the backend with ysm version {}", this.player.getUsername(), clientYsmVersion);
-            Cyanidin.mapperManager.onClientYsmPacketReply(this.player);
+            Cyanidin.mapperManager.onClientYsmHandshakePacketReply(this.player);
         }
 
         return ProxyComputeResult.ofPass();
