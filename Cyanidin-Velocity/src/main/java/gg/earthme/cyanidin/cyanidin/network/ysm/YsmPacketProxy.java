@@ -1,5 +1,6 @@
 package gg.earthme.cyanidin.cyanidin.network.ysm;
 
+import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import io.netty.buffer.ByteBuf;
@@ -15,6 +16,12 @@ public interface YsmPacketProxy {
     void blockUntilProxyReady();
 
     Player getOwner();
+
+    void sendEntityStateTo(@NotNull Player target);
+
+    void setEntityDataRaw(NBTCompound data);
+
+    void refreshToOthers();
 
     default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, byte[] data){
         this.sendPluginMessageTo(this.getOwner(), channel, data);

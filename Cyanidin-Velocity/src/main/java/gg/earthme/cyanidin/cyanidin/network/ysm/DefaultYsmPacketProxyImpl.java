@@ -16,22 +16,23 @@ import io.netty.buffer.Unpooled;
 import net.kyori.adventure.key.Key;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
 
 public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     private final Player player;
-    private final NbtRemapper nbtRemapper;
+    private final NbtRemapper nbtRemapper = new StandardNbtRemapperImpl();
     private volatile NBTCompound lastYsmEntityStatus = null;
 
     public DefaultYsmPacketProxyImpl(@NotNull Player player) {
         this.player = player;
-        this.nbtRemapper = new StandardNbtRemapperImpl();
     }
 
     @Override
     public void blockUntilProxyReady(){
         // Must block until the player joined to the backend server
-        while (Cyanidin.mapperManager.getServerPlayerEntityId(this.player) == -1){
+        while (Cyanidin.mapperManager.getRealPlayerEntityId(this.player) == -1){
             Thread.yield();
             LockSupport.parkNanos(1_000);
         }
@@ -52,8 +53,9 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         return currentWorkerEntityId == entityId;
     }
 
+    @Override
     public void sendEntityStateTo(@NotNull Player target){
-        final int currentEntityId = Cyanidin.mapperManager.getServerPlayerEntityId(this.player); // Get current entity id on the server of the player
+        final int currentEntityId = Cyanidin.mapperManager.getRealPlayerEntityId(this.player); // Get current entity id on the server of the player
 
         final NBTCompound lastEntityStatusTemp = this.lastYsmEntityStatus; // Copy the value instead of the reference
 
@@ -80,8 +82,35 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
             this.sendPluginMessageTo(target, YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData);
         }catch (Exception e){
             Cyanidin.LOGGER.error("Error in encoding nbt or sending packet!", e);
-            e.printStackTrace();
         }
+    }
+
+    @Override
+    public void setEntityDataRaw(NBTCompound data) {
+        this.lastYsmEntityStatus = data;
+    }
+
+    @Override
+    public void refreshToOthers() {
+        this.sendEntityStateTo(this.player); // Sync to self
+
+        Cyanidin.tracker.getCanSee(this.player.getUniqueId()).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
+            if (beingWatched != null){ // Actually there is impossible to be null
+                for (UUID targetUUID : beingWatched){
+                    final Optional<Player> targetNullable = Cyanidin.PROXY_SERVER.getPlayer(targetUUID);
+
+                    if (targetNullable.isPresent()){ // Skip send to NPCs
+                        final Player target = targetNullable.get();
+
+                        if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){ // Skip if target is not ysm-installed
+                            continue;
+                        }
+
+                        this.sendEntityStateTo(target); // Sync to target
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -108,15 +137,23 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                     Cyanidin.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
                         this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
 
-                        this.sendEntityStateTo(this.player); //Sync to self
+                        this.sendEntityStateTo(this.player); // Sync to self
 
-                        Cyanidin.tracker.getCanSeeAsync(this.player).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
-                            for (Player target : beingWatched){
-                                if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){ // Skip if target is not ysm-installed
-                                    continue;
+                        Cyanidin.tracker.getCanSee(this.player.getUniqueId()).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
+                            if (beingWatched != null){ // Actually there is impossible to be null
+                                for (UUID targetUUID : beingWatched){
+                                    final Optional<Player> targetNullable = Cyanidin.PROXY_SERVER.getPlayer(targetUUID);
+
+                                    if (targetNullable.isPresent()){ // Skip send to NPCs
+                                        final Player target = targetNullable.get();
+
+                                        if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){ // Skip if target is not ysm-installed
+                                            continue;
+                                        }
+
+                                        this.sendEntityStateTo(target); // Sync to target
+                                    }
                                 }
-
-                                this.sendEntityStateTo(target); // Sync to target
                             }
                         });
                     });

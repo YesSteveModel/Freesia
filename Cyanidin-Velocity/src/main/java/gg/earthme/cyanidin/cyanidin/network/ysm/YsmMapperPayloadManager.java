@@ -1,5 +1,6 @@
 package gg.earthme.cyanidin.cyanidin.network.ysm;
 
+import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
@@ -26,6 +27,11 @@ public class YsmMapperPayloadManager {
     public static final Key YSM_CHANNEL_KEY_ADVENTURE = Key.key("yes_steve_model:2_2_2");
     public static final MinecraftChannelIdentifier YSM_CHANNEL_KEY_VELOCITY = MinecraftChannelIdentifier.create("yes_steve_model", "2_2_2");
 
+    // Used for virtual players like NPCs
+    private final Map<UUID, YsmPacketProxy> virtualProxies = new HashMap<>();
+    private final Map<UUID, Integer> virtualPlayerEntityIds = new HashMap<>();
+    private final Function<UUID, YsmPacketProxy> packetProxyCreatorVirtual;
+
     // Player to worker mappers connections
     private final Map<Player, TcpClientSession> player2Mappers = new ConcurrentHashMap<>();
     private final Map<Player, MapperSessionProcessor> mapperSessions = new ConcurrentHashMap<>();
@@ -44,8 +50,9 @@ public class YsmMapperPayloadManager {
     // The players who installed ysm(Used for packet sending reduction)
     private final Set<Player> ysmInstalledPlayers = ConcurrentHashMap.newKeySet();
 
-    public YsmMapperPayloadManager(Function<Player, YsmPacketProxy> packetProxyCreator) {
+    public YsmMapperPayloadManager(Function<Player, YsmPacketProxy> packetProxyCreator, Function<UUID, YsmPacketProxy> packetProxyCreatorVirtual) {
         this.packetProxyCreator = packetProxyCreator;
+        this.packetProxyCreatorVirtual = packetProxyCreatorVirtual;
         this.backend2Players.put(CyanidinConfig.workerMSessionAddress ,1); //TODO Load balance
     }
 
@@ -70,7 +77,7 @@ public class YsmMapperPayloadManager {
         return this.player2WorkerEntityIds.get(target);
     }
 
-    public void updateServerPlayerEntityId(Player target, int entityId){
+    public void updateRealPlayerEntityId(Player target, int entityId){
         if (!this.player2ServerEntityIds.containsKey(target)){
             this.player2ServerEntityIds.put(target, entityId);
             return;
@@ -79,12 +86,62 @@ public class YsmMapperPayloadManager {
         this.player2ServerEntityIds.replace(target, entityId);
     }
 
-    public int getServerPlayerEntityId(Player target){
+    public int getRealPlayerEntityId(Player target){
         if (!this.player2ServerEntityIds.containsKey(target)){
             return -1;
         }
 
         return this.player2ServerEntityIds.get(target);
+    }
+
+    public void setVirtualPlayerEntityState(UUID playerUUID, NBTCompound nbt){
+        final YsmPacketProxy virtualProxy = this.virtualProxies.get(playerUUID);
+
+        if (virtualProxy == null){
+            return;
+        }
+
+        virtualProxy.setEntityDataRaw(nbt);
+        virtualProxy.refreshToOthers();
+    }
+
+    public void addVirtualPlayer(UUID playerUUID, int playerEntityId){
+        synchronized (this.virtualProxies){
+            if (this.virtualProxies.containsKey(playerUUID)){
+                throw new IllegalStateException("Virtual player already exists!");
+            }
+
+            this.virtualProxies.put(playerUUID, this.packetProxyCreatorVirtual.apply(playerUUID));
+            this.updateVirtualPlayerEntityId(playerUUID, playerEntityId);
+        }
+    }
+
+    public void removeVirtualPlayer(UUID playerUUID){
+        synchronized (this.virtualProxies){
+            if (!this.virtualProxies.containsKey(playerUUID)){
+                throw new IllegalStateException("Virtual player does not exists!");
+            }
+
+            this.virtualProxies.remove(playerUUID);
+            this.virtualPlayerEntityIds.remove(playerUUID);
+        }
+    }
+
+    public int getVirtualPlayerEntityId(UUID target){
+        if (!this.virtualPlayerEntityIds.containsKey(target)){
+            return -1;
+        }
+
+        return this.virtualPlayerEntityIds.get(target);
+    }
+
+    public void updateVirtualPlayerEntityId(UUID target, int entityId){
+        if (!this.virtualPlayerEntityIds.containsKey(target)){
+            this.virtualPlayerEntityIds.put(target, entityId);
+            return;
+        }
+
+        this.virtualPlayerEntityIds.replace(target, entityId);
     }
 
     public void reconnectWorker(@NotNull Player master, @NotNull InetSocketAddress target){
@@ -229,7 +286,20 @@ public class YsmMapperPayloadManager {
         }).schedule();
     }
 
-    public void onPlayerTrackerUpdate(Player owner, Player watching){
+    public void onVirtualPlayerTrackerUpdate(UUID owner, Player watcher){
+        final YsmPacketProxy virtualProxy = this.virtualProxies.get(owner);
+
+        //There is no specified virtual proxy for the owner
+        if (virtualProxy == null){
+            return;
+        }
+
+        if (this.isPlayerInstalledYsm(watcher)){
+            virtualProxy.sendEntityStateTo(watcher);
+        }
+    }
+
+    public void onRealPlayerTrackerUpdate(Player owner, Player watcher){
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
 
         if (mapperSession == null){
@@ -239,13 +309,13 @@ public class YsmMapperPayloadManager {
                     return;
                 }
 
-                ((DefaultYsmPacketProxyImpl) mapper.getPacketProxy()).sendEntityStateTo(watching);
+                mapper.getPacketProxy().sendEntityStateTo(watcher);
             });
             return;
         }
 
-        if (this.isPlayerInstalledYsm(watching)){
-            ((DefaultYsmPacketProxyImpl) mapperSession.getPacketProxy()).sendEntityStateTo(watching);
+        if (this.isPlayerInstalledYsm(watcher)){
+            mapperSession.getPacketProxy().sendEntityStateTo(watcher);
         }
     }
 

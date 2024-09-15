@@ -21,6 +21,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.command.WorkerCommandCommand;
+import gg.earthme.cyanidin.cyanidin.network.ysm.VirtualYsmPacketProxyImpl;
 import gg.earthme.cyanidin.cyanidin.storage.DefaultDataStorageManagerImpl;
 import gg.earthme.cyanidin.cyanidin.storage.IDataStorageManager;
 import gg.earthme.cyanidin.cyanidin.i18n.I18NManager;
@@ -53,7 +54,7 @@ public class Cyanidin implements PacketListener {
     public static Logger LOGGER = null;
     public static ProxyServer PROXY_SERVER = null;
 
-    public static final YsmMapperPayloadManager mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new);
+    public static final YsmMapperPayloadManager mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new, VirtualYsmPacketProxyImpl::new);
     public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
     public static final IDataStorageManager dataStorageManager = new DefaultDataStorageManagerImpl();
     public static final Map<UUID, MasterServerMessageHandler> registedWorkers = Maps.newConcurrentMap();
@@ -98,7 +99,8 @@ public class Cyanidin implements PacketListener {
         PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.HIGHEST);
         this.proxyServer.getChannelRegistrar().register(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY);
         tracker.init();
-        tracker.addTrackerEventListener(mapperManager::onPlayerTrackerUpdate);
+        tracker.addRealPlayerTrackerEventListener(mapperManager::onRealPlayerTrackerUpdate);
+        tracker.addVirtualPlayerTrackerEventListener(mapperManager::onVirtualPlayerTrackerUpdate);
 
         masterServer = new NettySocketServer(CyanidinConfig.masterServiceAddress, c -> new MasterServerMessageHandler());
         masterServer.bind();
@@ -132,7 +134,7 @@ public class Cyanidin implements PacketListener {
 
     @Subscribe
     public void onServerPreConnect(@NotNull ServerPreConnectEvent event){
-        mapperManager.updateServerPlayerEntityId(event.getPlayer(), -1);
+        mapperManager.updateRealPlayerEntityId(event.getPlayer(), -1);
     }
 
     @Subscribe
@@ -154,7 +156,7 @@ public class Cyanidin implements PacketListener {
             final Player target = (Player) event.getPlayer();
 
             logger.info("Entity id update for player {} to {}", target.getUsername(), playerSpawnPacket.getEntityId());
-            mapperManager.updateServerPlayerEntityId(target, playerSpawnPacket.getEntityId());
+            mapperManager.updateRealPlayerEntityId(target, playerSpawnPacket.getEntityId());
         }
     }
 }
