@@ -3,7 +3,6 @@ package gg.earthme.cyanidin.cyanidinbackend.misc;
 import gg.earthme.cyanidin.cyanidinbackend.CyanidinBackend;
 import gg.earthme.cyanidin.cyanidinbackend.utils.FriendlyByteBuf;
 import io.netty.buffer.Unpooled;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.messaging.PluginMessageListener;
@@ -50,5 +49,6 @@ public class VirtualPlayerManager implements PluginMessageListener, Listener {
         packetBuffer.writeUUID(playerUUID);
 
         payload.sendPluginMessage(CyanidinBackend.INSTANCE, CHANNEL_NAME, packetBuffer.array());
+        return true;
     }
 }
