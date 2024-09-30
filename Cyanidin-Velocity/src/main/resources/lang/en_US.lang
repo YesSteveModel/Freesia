@@ -2,3 +2,4 @@ cyanidin.backend.disconnected=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89d
 cyanidin.backend.not_connected=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>]</#cdd6f4><#f38ba8>There is not a valid connection to ysm backend! If you still meet this issue. please report to the administrators
 cyanidin.worker_command.worker_not_found=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>]</#cdd6f4><#f38ba8>Cannot found specified worker
 cyanidin.worker_command.command_feedback=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>][</#cdd6f4><workerName><#cdd6f4>]</#cdd6f4><feedback>
+cyanidin.mod_handshake_time_outed=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>]</#cdd6f4><#f38ba8>Handshake time outed, please ensure you have installed the corrected version of ysm

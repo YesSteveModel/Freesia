@@ -16,6 +16,9 @@ public class CyanidinConfig {
     public static InetSocketAddress masterServiceAddress = new InetSocketAddress("127.0.0.1", 19200);
     public static String languageName = "zh_CN";
 
+    public static boolean kickIfYsmNotInstalled = false;
+    public static int ysmDetectionTimeout = 3000;
+
     static {
         CONFIG_FILE_DIR.mkdirs();
     }
@@ -30,6 +33,9 @@ public class CyanidinConfig {
                 get("worker.worker_master_port", masterServiceAddress.getPort())
         );
         languageName = get("messages.language", languageName);
+
+        kickIfYsmNotInstalled = get("functions.kick_if_ysm_not_installed", kickIfYsmNotInstalled);
+        ysmDetectionTimeout = get("functions.ysm_detection_timeout_for_kicking", ysmDetectionTimeout);
     }
 
     private static <T> T get(String key, T def){

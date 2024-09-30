@@ -64,6 +64,10 @@ public class YsmMapperPayloadManager {
     }
 
     public void onClientYsmHandshakePacketReply(Player target){
+        if (this.ysmInstalledPlayers.contains(target)) {
+            return;
+        }
+
         this.ysmInstalledPlayers.add(target);
     }
 
@@ -295,7 +299,6 @@ public class YsmMapperPayloadManager {
 
     protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster, Component reason){
         if (kickMaster) mapperSession.getBindPlayer().disconnect(Cyanidin.languageManager.i18n("cyanidin.backend.disconnected", List.of("reason"), List.of(reason)));
-        this.ysmInstalledPlayers.remove(mapperSession.getBindPlayer());
         this.player2Mappers.remove(mapperSession.getBindPlayer());
         this.mapperSessions.remove(mapperSession.getBindPlayer());
 

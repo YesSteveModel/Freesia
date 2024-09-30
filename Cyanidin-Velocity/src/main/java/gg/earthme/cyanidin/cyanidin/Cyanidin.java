@@ -56,6 +56,7 @@ public class Cyanidin implements PacketListener {
     public static Logger LOGGER = null;
     public static ProxyServer PROXY_SERVER = null;
 
+    public static YsmClientKickDetector kickChecker;
     public static final YsmMapperPayloadManager mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new, VirtualYsmPacketProxyImpl::new);
     public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
     public static final IDataStorageManager realPlayerDataStorageManager = new DefaultRealPlayerDataStorageManagerImpl();
@@ -110,6 +111,10 @@ public class Cyanidin implements PacketListener {
         masterServer = new NettySocketServer(CyanidinConfig.masterServiceAddress, c -> new MasterServerMessageHandler());
         masterServer.bind();
 
+        LOGGER.info("Initiating client kicker.");
+        kickChecker = new YsmClientKickDetector();
+        kickChecker.bootstrap();
+
         WorkerCommandCommand.register();
     }
 
@@ -117,7 +122,10 @@ public class Cyanidin implements PacketListener {
     public EventTask onPlayerDisconnect(@NotNull DisconnectEvent event){
         final Player targetPlayer = event.getPlayer();
 
-        return EventTask.async(() -> mapperManager.onPlayerDisconnect(targetPlayer));
+        return EventTask.async(() -> {
+            mapperManager.onPlayerDisconnect(targetPlayer);
+            kickChecker.onPlayerLeft(targetPlayer);
+        });
     }
 
     @Subscribe
@@ -129,6 +137,7 @@ public class Cyanidin implements PacketListener {
             if (!mapperManager.hasPlayer(targetPlayer)){
                 this.logger.info("Initiating mapper session for player {}", targetPlayer.getUsername());
                 mapperManager.firstCreateMapper(targetPlayer);
+                kickChecker.onPlayerJoin(targetPlayer);
                 return;
             }
 
