@@ -28,6 +28,7 @@ public class VirtualPlayerManager implements PluginMessageListener, Listener {
 
         final FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.wrappedBuffer(data));
         final byte packetId = packetBuffer.readByte();
+
         switch (packetId) {
             case 2 -> {
                 final int eventId = packetBuffer.readVarInt();
