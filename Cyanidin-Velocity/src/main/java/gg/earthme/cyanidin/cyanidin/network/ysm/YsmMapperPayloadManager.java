@@ -102,7 +102,11 @@ public class YsmMapperPayloadManager {
     }
 
     public void setVirtualPlayerEntityState(UUID playerUUID, NBTCompound nbt){
-        final YsmPacketProxy virtualProxy = this.virtualProxies.get(playerUUID);
+        final YsmPacketProxy virtualProxy;
+
+        synchronized (this.virtualProxies){
+            virtualProxy = this.virtualProxies.get(playerUUID);
+        }
 
         if (virtualProxy == null){
             return;
@@ -131,14 +135,14 @@ public class YsmMapperPayloadManager {
         }
     }
 
-    public void addVirtualPlayer(UUID playerUUID, int playerEntityId){
+    public boolean addVirtualPlayer(UUID playerUUID, int playerEntityId){
         if (Cyanidin.PROXY_SERVER.getPlayer(playerUUID).isPresent()){
-            throw new IllegalArgumentException("Trying to create virtual player with UUID " + playerEntityId + " but it already exists!");
+            return false;
         }
 
         synchronized (this.virtualProxies){
             if (this.virtualProxies.containsKey(playerUUID)){
-                throw new IllegalStateException("Virtual player already exists!");
+                return false;
             }
 
             final YsmPacketProxy createdVirtualProxy = this.virtualProxies.computeIfAbsent(playerUUID, this.packetProxyCreatorVirtual);
@@ -162,49 +166,52 @@ public class YsmMapperPayloadManager {
                 }
             });
         }
+
+        return true;
     }
 
-    public void removeVirtualPlayer(UUID playerUUID){
+    public boolean removeVirtualPlayer(UUID playerUUID){
         final CompletableFuture<Void> saveWaiter = new CompletableFuture<>() ;
 
+        final YsmPacketProxy removedProxy;
         synchronized (this.virtualProxies){
-            final YsmPacketProxy removedProxy = this.virtualProxies.remove(playerUUID);
+            removedProxy = this.virtualProxies.remove(playerUUID);
 
             if (removedProxy == null){
-                throw new IllegalStateException("Virtual player does not exists!");
-
+                return false;
             }
 
             this.virtualPlayerEntityIds.remove(playerUUID);
+        }
 
-            final NBTCompound entityData = removedProxy.getCurrentEntityState();
+        final NBTCompound entityData = removedProxy.getCurrentEntityState();
 
-            if (entityData == null){
-                return;
-            }
+        if (entityData == null){
+            return true;
+        }
 
-            try {
-                final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
-                final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                final DataOutputStream dos = new DataOutputStream(bos);
+        try {
+            final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
+            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(bos);
 
-                serializer.serializeTag(dos, entityData, true);
-                dos.flush();
+            serializer.serializeTag(dos, entityData, true);
+            dos.flush();
 
-                Cyanidin.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray()).whenComplete((r, e) -> {
-                    if (e != null){
-                        saveWaiter.completeExceptionally(e);
-                        return;
-                    }
+            Cyanidin.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray()).whenComplete((r, e) -> {
+                if (e != null){
+                    saveWaiter.completeExceptionally(e);
+                    return;
+                }
 
-                    saveWaiter.complete(null);
-                });
-            }catch (Exception e){
-                throw new RuntimeException(e);
-            }
+                saveWaiter.complete(null);
+            });
+        }catch (Exception e){
+            throw new RuntimeException(e);
         }
 
         saveWaiter.join();
+        return true;
     }
 
     public int getVirtualPlayerEntityId(UUID target){

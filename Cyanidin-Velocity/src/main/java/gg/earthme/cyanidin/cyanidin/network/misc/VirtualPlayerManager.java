@@ -1,5 +1,6 @@
 package gg.earthme.cyanidin.cyanidin.network.misc;
 
+import com.velocitypowered.api.event.EventTask;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.proxy.ServerConnection;
@@ -20,32 +21,50 @@ public class VirtualPlayerManager {
     }
 
     @Subscribe
-    public void onPluginMessage(@NotNull PluginMessageEvent event){
-        if (!(event.getSource() instanceof ServerConnection)){
-            return;
-        }
-
-        if (!event.getIdentifier().getId().equals(MANAGEMENT_CHANNEL_KEY.getId())){
-            return;
-        }
-
-        event.setResult(PluginMessageEvent.ForwardResult.handled());
-
-        final FriendlyByteBuf packetData = new FriendlyByteBuf(Unpooled.wrappedBuffer(event.getData()));
-
-        switch (packetData.readByte()){
-            case 0 -> { // Create virtual player packet
-                final int entityId = packetData.readVarInt();
-                final UUID virtualPlayerUUID = packetData.readUUID();
-
-                Cyanidin.mapperManager.addVirtualPlayer(virtualPlayerUUID, entityId);
+    public EventTask onPluginMessage(@NotNull PluginMessageEvent event){
+        return EventTask.async(() -> {
+            if (!(event.getSource() instanceof ServerConnection)){
+                return;
             }
 
-            case 1 -> { // Remove virtual player packet
-                final UUID virtualPlayerUUID = packetData.readUUID();
-
-                Cyanidin.mapperManager.removeVirtualPlayer(virtualPlayerUUID);
+            if (!event.getIdentifier().getId().equals(MANAGEMENT_CHANNEL_KEY.getId())){
+                return;
             }
-        }
+
+            event.setResult(PluginMessageEvent.ForwardResult.handled());
+
+            final FriendlyByteBuf packetData = new FriendlyByteBuf(Unpooled.wrappedBuffer(event.getData()));
+
+            switch (packetData.readByte()){
+                case 0 -> { // Create virtual player packet
+                    final int eventId = packetData.readVarInt();
+                    final int entityId = packetData.readVarInt();
+                    final UUID virtualPlayerUUID = packetData.readUUID();
+
+                    final boolean result = Cyanidin.mapperManager.addVirtualPlayer(virtualPlayerUUID, entityId);
+
+                    final FriendlyByteBuf response = new FriendlyByteBuf(Unpooled.buffer());
+                    response.writeByte(2);
+                    response.writeVarInt(eventId);
+                    response.writeBoolean(result);
+
+                    ((ServerConnection) event.getSource()).sendPluginMessage(MANAGEMENT_CHANNEL_KEY, response.getBytes());
+                }
+
+                case 1 -> { // Remove virtual player packet
+                    final int eventId = packetData.readVarInt();
+                    final UUID virtualPlayerUUID = packetData.readUUID();
+
+                    final boolean result = Cyanidin.mapperManager.removeVirtualPlayer(virtualPlayerUUID);
+
+                    final FriendlyByteBuf response = new FriendlyByteBuf(Unpooled.buffer());
+                    response.writeByte(3);
+                    response.writeVarInt(eventId);
+                    response.writeBoolean(result);
+
+                    ((ServerConnection) event.getSource()).sendPluginMessage(MANAGEMENT_CHANNEL_KEY, response.getBytes());
+                }
+            }
+        });
     }
 }

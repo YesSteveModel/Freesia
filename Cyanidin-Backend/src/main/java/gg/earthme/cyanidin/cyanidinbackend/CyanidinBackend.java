@@ -18,7 +18,12 @@ public final class CyanidinBackend extends JavaPlugin {
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "cyanidin:tracker_sync");
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "cyanidin:virtual_player_management", this.virtualPlayerManager);
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "cyanidin:virtual_player_management");
+
         Bukkit.getPluginManager().registerEvents(this.trackerProcessor, this);
+    }
+
+    public VirtualPlayerManager getVirtualPlayerManager() {
+        return this.virtualPlayerManager;
     }
 
     @Override

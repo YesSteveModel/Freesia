@@ -1,4 +1,9 @@
+repositories {
+    maven { url = "https://repo.fancyplugins.de/releases" }
+}
+
 dependencies {
+    compileOnly "de.oliver:FancyNpcs:2.2.2"
     compileOnly "com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT"
     compileOnly 'io.netty:netty-all:4.1.92.Final'
 }

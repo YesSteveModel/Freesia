@@ -5,6 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@SuppressWarnings("Unused")
+@Deprecated
 public class WorkerBackendInfo {
     private final AtomicInteger activeMappersCount = new AtomicInteger(0);
     private final InetSocketAddress connectAddress;
