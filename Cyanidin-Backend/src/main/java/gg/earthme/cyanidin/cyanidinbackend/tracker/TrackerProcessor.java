@@ -111,7 +111,7 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
             return false;
         }
 
-        payload.sendPluginMessage(CyanidinBackend.INSTANCE, CHANNEL_NAME, wrappedUpdatePacket.array());
+        payload.sendPluginMessage(CyanidinBackend.INSTANCE, CHANNEL_NAME, wrappedUpdatePacket.getBytes());
         return true;
     }
 
@@ -154,7 +154,7 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
                 reply.writeUUID(uuid);
             }
 
-            sender.sendPluginMessage(CyanidinBackend.INSTANCE, CHANNEL_NAME, reply.array());
+            sender.sendPluginMessage(CyanidinBackend.INSTANCE, CHANNEL_NAME, reply.getBytes());
         }
     }
 }

@@ -105,7 +105,7 @@ public class YsmMapperPayloadManager {
         return this.player2ServerEntityIds.get(target);
     }
 
-    public void setVirtualPlayerEntityState(UUID playerUUID, NBTCompound nbt){
+    public boolean setVirtualPlayerEntityState(UUID playerUUID, NBTCompound nbt){
         final YsmPacketProxy virtualProxy;
 
         synchronized (this.virtualProxies){
@@ -113,7 +113,7 @@ public class YsmMapperPayloadManager {
         }
 
         if (virtualProxy == null){
-            return;
+            return false;
         }
 
         virtualProxy.setEntityDataRaw(nbt);
@@ -121,8 +121,9 @@ public class YsmMapperPayloadManager {
 
         final NBTCompound entityData = virtualProxy.getCurrentEntityState();
 
+        //Probably be reset
         if (entityData == null){
-            return;
+            return false;
         }
 
         try {
@@ -137,6 +138,8 @@ public class YsmMapperPayloadManager {
         }catch (Exception e){
             throw new RuntimeException(e);
         }
+
+        return true;
     }
 
     public boolean addVirtualPlayer(UUID playerUUID, int playerEntityId){

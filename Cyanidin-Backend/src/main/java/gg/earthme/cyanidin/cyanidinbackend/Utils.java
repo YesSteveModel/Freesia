@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public class Utils {
     public static Player randomPlayerIfNotFound(UUID uuid) {
-        Player expected = Bukkit.getPlayer(uuid);
+        Player expected = uuid != null ? Bukkit.getPlayer(uuid) : null;
 
         if (expected != null) {
             return expected;
