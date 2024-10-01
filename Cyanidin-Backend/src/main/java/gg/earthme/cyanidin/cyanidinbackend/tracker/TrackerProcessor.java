@@ -140,7 +140,7 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
                 }
             }
 
-            final CyanidinTrackerScanEvent trackerScanEvent = new CyanidinTrackerScanEvent(result);
+            final CyanidinTrackerScanEvent trackerScanEvent = new CyanidinTrackerScanEvent(result, toScan);
 
             Bukkit.getPluginManager().callEvent(trackerScanEvent);
 
