@@ -159,6 +159,10 @@ public class YsmMapperPayloadManager {
                     throw new RuntimeException(ex);
                 }
 
+                if (data == null) {
+                    return;
+                }
+
                 try {
                     final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
                     final NBTCompound read = (NBTCompound) serializer.deserializeTag(new NBTLimiter(data), new DataInputStream(new ByteArrayInputStream(data)), true);
