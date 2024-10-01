@@ -1,6 +1,9 @@
 package gg.earthme.cyanidin.cyanidinbackend.tracker;
 
 import gg.earthme.cyanidin.cyanidinbackend.CyanidinBackend;
+import gg.earthme.cyanidin.cyanidinbackend.Utils;
+import gg.earthme.cyanidin.cyanidinbackend.event.CyanidinRealPlayerTrackerUpdateEvent;
+import gg.earthme.cyanidin.cyanidinbackend.event.CyanidinTrackerScanEvent;
 import gg.earthme.cyanidin.cyanidinbackend.utils.FriendlyByteBuf;
 import io.netty.buffer.Unpooled;
 import org.bukkit.Bukkit;
@@ -88,13 +91,28 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
     }
 
     private void playerTrackedPlayer(@NotNull Player watcher, @NotNull Player beSeeing){
+        if (!new CyanidinRealPlayerTrackerUpdateEvent(watcher, beSeeing).callEvent()) {
+            return;
+        }
+
+        this.notifyTrackerUpdate(watcher.getUniqueId(), beSeeing.getUniqueId());
+    }
+
+    public boolean notifyTrackerUpdate(UUID watcher, UUID beWatched) {
         final FriendlyByteBuf wrappedUpdatePacket = new FriendlyByteBuf(Unpooled.buffer());
 
         wrappedUpdatePacket.writeVarInt(2);
-        wrappedUpdatePacket.writeUUID(beSeeing.getUniqueId());
-        wrappedUpdatePacket.writeUUID(watcher.getUniqueId());
+        wrappedUpdatePacket.writeUUID(beWatched);
+        wrappedUpdatePacket.writeUUID(watcher);
 
-        watcher.sendPluginMessage(CyanidinBackend.INSTANCE, CHANNEL_NAME, wrappedUpdatePacket.array());
+        final Player payload = Utils.randomPlayerIfNotFound(watcher);
+
+        if (payload == null) {
+            return false;
+        }
+
+        payload.sendPluginMessage(CyanidinBackend.INSTANCE, CHANNEL_NAME, wrappedUpdatePacket.array());
+        return true;
     }
 
     @Override
@@ -111,16 +129,20 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
 
             final Player toScan = Objects.requireNonNull(Bukkit.getPlayer(requestedPlayerUUID));
 
-            final Set<Player> result = new HashSet<>();
+            final Set<UUID> result = new HashSet<>();
             for (Player other : Bukkit.getOnlinePlayers()) {
                 if (other == toScan) {
                     continue;
                 }
 
                 if (other.canSee(toScan)) {
-                    result.add(other);
+                    result.add(other.getUniqueId());
                 }
             }
+
+            final CyanidinTrackerScanEvent trackerScanEvent = new CyanidinTrackerScanEvent(result);
+
+            Bukkit.getPluginManager().callEvent(trackerScanEvent);
 
             final FriendlyByteBuf reply = new FriendlyByteBuf(Unpooled.buffer());
 
@@ -128,8 +150,8 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
             reply.writeVarInt(callbackId);
             reply.writeVarInt(result.size());
 
-            for (Player player : result) {
-                reply.writeUUID(player.getUniqueId());
+            for (UUID uuid : result) {
+                reply.writeUUID(uuid);
             }
 
             sender.sendPluginMessage(CyanidinBackend.INSTANCE, CHANNEL_NAME, reply.array());
