@@ -83,7 +83,7 @@ public class VirtualPlayerManager {
                     final NBTCompound deserializedTag;
 
                     try {
-                        deserializedTag = (NBTCompound) serializer.deserializeTag(new NBTLimiter(null), new DataInputStream(new ByteArrayInputStream(serializedNbt)));
+                        deserializedTag = (NBTCompound) serializer.deserializeTag(NBTLimiter.forBuffer(null, Integer.MAX_VALUE), new DataInputStream(new ByteArrayInputStream(serializedNbt)));
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }

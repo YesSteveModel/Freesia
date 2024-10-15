@@ -43,6 +43,6 @@ public class StandardNbtRemapperImpl implements NbtRemapper {
 
     @Override
     public NBTCompound readBound(FriendlyByteBuf data) throws IOException {
-        return (NBTCompound) this.serializer.deserializeTag(new NBTLimiter(data), new ByteBufInputStream(data), false); //1.21
+        return (NBTCompound) this.serializer.deserializeTag(NBTLimiter.forBuffer(data, Integer.MAX_VALUE), new ByteBufInputStream(data), false); //1.21
     }
 }

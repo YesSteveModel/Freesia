@@ -168,7 +168,7 @@ public class YsmMapperPayloadManager {
 
                 try {
                     final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
-                    final NBTCompound read = (NBTCompound) serializer.deserializeTag(new NBTLimiter(data), new DataInputStream(new ByteArrayInputStream(data)), true);
+                    final NBTCompound read = (NBTCompound) serializer.deserializeTag(NBTLimiter.forBuffer(data, Integer.MAX_VALUE), new DataInputStream(new ByteArrayInputStream(data)), true);
 
                     createdVirtualProxy.setEntityDataRaw(read);
                     createdVirtualProxy.refreshToOthers();
