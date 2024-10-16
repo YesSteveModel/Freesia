@@ -14,7 +14,6 @@ public class CyanidinTrackerScanEvent extends Event {
     private final Player viewer;
 
     public CyanidinTrackerScanEvent(Set<UUID> results, Player viewer) {
-        super(true);
         this.results = results;
         this.viewer = viewer;
     }

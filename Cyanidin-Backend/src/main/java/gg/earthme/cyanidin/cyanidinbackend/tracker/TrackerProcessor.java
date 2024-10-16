@@ -5,6 +5,7 @@ import gg.earthme.cyanidin.cyanidinbackend.Utils;
 import gg.earthme.cyanidin.cyanidinbackend.event.CyanidinRealPlayerTrackerUpdateEvent;
 import gg.earthme.cyanidin.cyanidinbackend.event.CyanidinTrackerScanEvent;
 import gg.earthme.cyanidin.cyanidinbackend.utils.FriendlyByteBuf;
+import io.github.retrooper.packetevents.util.folia.EntityScheduler;
 import io.netty.buffer.Unpooled;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -142,19 +143,26 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
 
             final CyanidinTrackerScanEvent trackerScanEvent = new CyanidinTrackerScanEvent(result, toScan);
 
-            Bukkit.getPluginManager().callEvent(trackerScanEvent);
+            sender.getScheduler().execute(
+                    CyanidinBackend.INSTANCE,
+                    () -> {
+                        Bukkit.getPluginManager().callEvent(trackerScanEvent);
 
-            final FriendlyByteBuf reply = new FriendlyByteBuf(Unpooled.buffer());
+                        final FriendlyByteBuf reply = new FriendlyByteBuf(Unpooled.buffer());
 
-            reply.writeVarInt(0);
-            reply.writeVarInt(callbackId);
-            reply.writeVarInt(result.size());
+                        reply.writeVarInt(0);
+                        reply.writeVarInt(callbackId);
+                        reply.writeVarInt(result.size());
 
-            for (UUID uuid : result) {
-                reply.writeUUID(uuid);
-            }
+                        for (UUID uuid : result) {
+                            reply.writeUUID(uuid);
+                        }
 
-            sender.sendPluginMessage(CyanidinBackend.INSTANCE, CHANNEL_NAME, reply.getBytes());
+                        sender.sendPluginMessage(CyanidinBackend.INSTANCE, CHANNEL_NAME, reply.getBytes());
+                    },
+                    null,
+                    1
+            );
         }
     }
 }
