@@ -57,7 +57,7 @@ public class Cyanidin implements PacketListener {
     public static ProxyServer PROXY_SERVER = null;
 
     public static YsmClientKickDetector kickChecker;
-    public static final YsmMapperPayloadManager mapperManager;
+    public static YsmMapperPayloadManager mapperManager;
     public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
     public static final IDataStorageManager realPlayerDataStorageManager = new DefaultRealPlayerDataStorageManagerImpl();
     public static final IDataStorageManager virtualPlayerDataStorageManager = new DefaultVirtualPlayerDataStorageManagerImpl();
