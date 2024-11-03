@@ -5,7 +5,6 @@ import gg.earthme.cyanidin.cyanidinbackend.Utils;
 import gg.earthme.cyanidin.cyanidinbackend.event.CyanidinRealPlayerTrackerUpdateEvent;
 import gg.earthme.cyanidin.cyanidinbackend.event.CyanidinTrackerScanEvent;
 import gg.earthme.cyanidin.cyanidinbackend.utils.FriendlyByteBuf;
-import io.github.retrooper.packetevents.util.folia.EntityScheduler;
 import io.netty.buffer.Unpooled;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;

@@ -1,19 +1,14 @@
 package gg.earthme.cyanidin.cyanidinbackend.misc;
 
-import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
-import com.github.retrooper.packetevents.protocol.nbt.serializer.DefaultNBTSerializer;
-import com.github.retrooper.packetevents.protocol.nbt.serializer.NBTSerializer;
 import gg.earthme.cyanidin.cyanidinbackend.CyanidinBackend;
 import gg.earthme.cyanidin.cyanidinbackend.Utils;
 import gg.earthme.cyanidin.cyanidinbackend.utils.FriendlyByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.DataOutputStream;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,24 +45,14 @@ public class VirtualPlayerManager implements PluginMessageListener, Listener {
         }
     }
 
-    public CompletableFuture<Boolean> setVirtualPlayerData(UUID playerUUID, NBTCompound data) {
+    public CompletableFuture<Boolean> setVirtualPlayerData(UUID playerUUID, byte[] data) {
         final FriendlyByteBuf packetBuffer = new FriendlyByteBuf(Unpooled.buffer());
         final int generatedEventId = this.eventIdGenerator.getAndIncrement();
 
         packetBuffer.writeByte(4);
         packetBuffer.writeVarInt(generatedEventId);
         packetBuffer.writeUUID(playerUUID);
-
-        final DataOutputStream dos = new DataOutputStream(new ByteBufOutputStream(packetBuffer));
-        final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
-
-        try {
-            serializer.serializeTag(dos, data);
-            dos.flush();
-            dos.close();
-        }catch (Exception e){
-            return CompletableFuture.failedFuture(e);
-        }
+        packetBuffer.writeBytes(data);
 
         final Player payload = Utils.randomPlayerIfNotFound(null);
 
