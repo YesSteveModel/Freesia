@@ -57,7 +57,7 @@ public class Cyanidin implements PacketListener {
     public static ProxyServer PROXY_SERVER = null;
 
     public static YsmClientKickDetector kickChecker;
-    public static final YsmMapperPayloadManager mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new, VirtualYsmPacketProxyImpl::new);
+    public static final YsmMapperPayloadManager mapperManager;
     public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
     public static final IDataStorageManager realPlayerDataStorageManager = new DefaultRealPlayerDataStorageManagerImpl();
     public static final IDataStorageManager virtualPlayerDataStorageManager = new DefaultVirtualPlayerDataStorageManagerImpl();
@@ -101,6 +101,7 @@ public class Cyanidin implements PacketListener {
         }
 
         LOGGER.info("Registering events and packet listeners.");
+        mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new, VirtualYsmPacketProxyImpl::new);
         PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.HIGHEST);
         this.proxyServer.getChannelRegistrar().register(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY);
         tracker.init();
