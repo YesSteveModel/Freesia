@@ -6,88 +6,28 @@ import gg.earthme.cyanidin.cyanidinbackend.event.CyanidinRealPlayerTrackerUpdate
 import gg.earthme.cyanidin.cyanidinbackend.event.CyanidinTrackerScanEvent;
 import gg.earthme.cyanidin.cyanidinbackend.utils.FriendlyByteBuf;
 import io.netty.buffer.Unpooled;
+import io.papermc.paper.event.player.PlayerTrackEntityEvent;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class TrackerProcessor implements PluginMessageListener, Listener {
     private static final String CHANNEL_NAME = "cyanidin:tracker_sync";
-    private final Map<Player, Set<Player>> visibleMap = new ConcurrentHashMap<>();
 
     @EventHandler
-    public void onPlayerLeft(@NotNull PlayerQuitEvent event){
-        this.visibleMap.remove(event.getPlayer());
-    }
+    public void onPlayerTrack(PlayerTrackEntityEvent trackEntityEvent) {
+        final Player watcher = trackEntityEvent.getPlayer();
+        final Entity beWatching = trackEntityEvent.getEntity();
 
-    @EventHandler
-    public void onPlayerDead(@NotNull PlayerDeathEvent event){
-        this.visibleMap.remove(event.getEntity());
-        for (Set<Player> others : this.visibleMap.values()){
-            others.remove(event.getEntity());
+        if (beWatching instanceof Player beWatchingPlayer) {
+            this.playerTrackedPlayer(watcher, beWatchingPlayer);
         }
-    }
-
-    @EventHandler
-    public void onPlayerRespawn(@NotNull PlayerRespawnEvent event){
-        final Player player = event.getPlayer();
-
-        this.visibleMap.put(player, new HashSet<>());
-        this.visibleMap.get(player).add(player);
-
-        Set<Player> visiblePlayers = new HashSet<>();
-
-        visiblePlayers.add(player);
-
-        for (Player singlePlayer : Bukkit.getOnlinePlayers()) {
-            if (player.canSee(singlePlayer)) {
-                visiblePlayers.add(singlePlayer);
-                this.playerTrackedPlayer(player, singlePlayer);
-            } else {
-                if (this.visibleMap.containsKey(player) && this.visibleMap.get(player).contains(singlePlayer)) {
-                    this.visibleMap.get(player).remove(singlePlayer);
-                }
-            }
-        }
-
-        this.visibleMap.replace(player, visiblePlayers);
-    }
-
-    @EventHandler
-    public void onPlayerJoin(@NotNull PlayerJoinEvent event){
-        this.visibleMap.put(event.getPlayer(), new HashSet<>());
-        this.visibleMap.get(event.getPlayer()).add(event.getPlayer());
-    }
-
-    @EventHandler
-    public void onPlayerMove(@NotNull PlayerMoveEvent event){
-        final Player player = event.getPlayer();
-        Set<Player> visiblePlayers = new HashSet<>();
-
-        visiblePlayers.add(player);
-
-        for (Player singlePlayer : Bukkit.getOnlinePlayers()) {
-            if (player.canSee(singlePlayer)) {
-                visiblePlayers.add(singlePlayer);
-                this.playerTrackedPlayer(player, singlePlayer);
-            } else {
-                if (this.visibleMap.containsKey(player) && this.visibleMap.get(player).contains(singlePlayer)) {
-                    this.visibleMap.get(player).remove(singlePlayer);
-                }
-            }
-        }
-
-        this.visibleMap.replace(player, visiblePlayers);
     }
 
     private void playerTrackedPlayer(@NotNull Player watcher, @NotNull Player beSeeing){
