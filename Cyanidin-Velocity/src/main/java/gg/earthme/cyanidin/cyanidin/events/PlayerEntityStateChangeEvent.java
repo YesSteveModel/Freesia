@@ -9,12 +9,12 @@ import com.velocitypowered.api.proxy.Player;
  * 注意:修改过后的nbt并不会被持久化即只会在当前进程发生作用而在重启后失效
  */
 public class PlayerEntityStateChangeEvent {
-    private final Player actuallyPlayer;
+    private final Player actualPlayer;
     private final int entityId;
     private final NBTCompound entityState;
 
-    public PlayerEntityStateChangeEvent(Player actuallyPlayer, int entityId, NBTCompound entityState) {
-        this.actuallyPlayer = actuallyPlayer;
+    public PlayerEntityStateChangeEvent(Player actualPlayer, int entityId, NBTCompound entityState) {
+        this.actualPlayer = actualPlayer;
         this.entityId = entityId;
         this.entityState = entityState;
     }
@@ -24,7 +24,7 @@ public class PlayerEntityStateChangeEvent {
      * @return 玩家
      */
     public Player getPlayer(){
-        return this.actuallyPlayer;
+        return this.actualPlayer;
     }
 
     /**

@@ -10,13 +10,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-public class YsmClientKickDetector implements Runnable{
+public class YsmClientKickingDetector implements Runnable{
     private final Map<Player, Long> lastNotDetected = new ConcurrentHashMap<>();
     private final long timeOut;
     private volatile boolean scheduleNext = true;
     private volatile ScheduledTask lastScheduled = null;
 
-    public YsmClientKickDetector() {
+    public YsmClientKickingDetector() {
         this.timeOut = CyanidinConfig.ysmDetectionTimeout * 1000L * 1000L;
     }
 

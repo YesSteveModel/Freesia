@@ -56,7 +56,7 @@ public class Cyanidin implements PacketListener {
     public static Logger LOGGER = null;
     public static ProxyServer PROXY_SERVER = null;
 
-    public static YsmClientKickDetector kickChecker;
+    public static YsmClientKickingDetector kickChecker;
     public static YsmMapperPayloadManager mapperManager;
     public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
     public static final IDataStorageManager realPlayerDataStorageManager = new DefaultRealPlayerDataStorageManagerImpl();
@@ -113,7 +113,7 @@ public class Cyanidin implements PacketListener {
         masterServer.bind();
 
         LOGGER.info("Initiating client kicker.");
-        kickChecker = new YsmClientKickDetector();
+        kickChecker = new YsmClientKickingDetector();
         kickChecker.bootstrap();
 
         WorkerCommandCommand.register();
