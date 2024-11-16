@@ -92,25 +92,8 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public void refreshToOthers() {
-        this.sendEntityStateTo(this.player); // Sync to self
-
-        Cyanidin.tracker.getCanSee(this.player.getUniqueId()).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
-            if (beingWatched != null){ // Actually there is impossible to be null
-                for (UUID targetUUID : beingWatched){
-                    final Optional<Player> targetNullable = Cyanidin.PROXY_SERVER.getPlayer(targetUUID);
-
-                    if (targetNullable.isPresent()){ // Skip send to NPCs
-                        final Player target = targetNullable.get();
-
-                        if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){ // Skip if target is not ysm-installed
-                            continue;
-                        }
-
-                        this.sendEntityStateTo(target); // Sync to target
-                    }
-                }
-            }
-        });
+        // Impossible to be called here
+        throw new UnsupportedOperationException();
     }
 
     @Override
