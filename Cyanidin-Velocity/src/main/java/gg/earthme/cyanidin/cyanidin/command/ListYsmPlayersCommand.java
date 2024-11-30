@@ -36,9 +36,11 @@ public class ListYsmPlayersCommand {
                             .filter(player -> Cyanidin.mapperManager.isPlayerInstalledYsm(player))
                             .toList();
 
-                    Component msg = Cyanidin.languageManager.i18n("cyanidin.list_player_command_header", List.of(), List.of());
+                    Component msg = Cyanidin.languageManager.i18n("cyanidin.list_player_command_header", List.of(), List.of()).appendNewline();
                     for (Player player : ysmPlayers) {
-                        msg = msg.append(Cyanidin.languageManager.i18n("cyanidin.list_player_command_body", List.of("name"), List.of(player.getUsername())));
+                        msg = msg
+                                .append(Cyanidin.languageManager.i18n("cyanidin.list_player_command_body", List.of("name"), List.of(player.getUsername())))
+                                .appendNewline();
                     }
 
                     context.getSource().sendMessage(msg);

@@ -4,4 +4,4 @@ cyanidin.worker_command.worker_not_found=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSy
 cyanidin.worker_command.command_feedback=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>][</#cdd6f4><workerName><#cdd6f4>]</#cdd6f4><feedback>
 cyanidin.mod_handshake_time_outed=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>]</#cdd6f4><#f38ba8>Handshake time outed, please ensure you have installed the corrected version of ysm
 cyanidin.list_player_command_header=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>]</#cdd6f4>Ysm Player List:
-cyanidin.list_player_command_body=</#cdd6f4><name>
+cyanidin.list_player_command_body=<#cdd6f4><name>
