@@ -3,3 +3,5 @@ cyanidin.backend.not_connected=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89
 cyanidin.worker_command.worker_not_found=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>]</#cdd6f4><#f38ba8>找不到该worker!
 cyanidin.worker_command.command_feedback=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>][</#cdd6f4><workerName><#cdd6f4>]</#cdd6f4><feedback>
 cyanidin.mod_handshake_time_outed=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>]</#cdd6f4><#f38ba8>Ysm握手超时,请确认您安装了正确版本的Ysm
+cyanidin.list_player_command_header=<#cdd6f4>[</#cdd6f4><#89dceb>CyanidinSystems</#89dceb><#cdd6f4>]</#cdd6f4>Ysm Player List:
+cyanidin.list_player_command_body=</#cdd6f4><name>

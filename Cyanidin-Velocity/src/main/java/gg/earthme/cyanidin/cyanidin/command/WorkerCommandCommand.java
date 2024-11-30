@@ -56,7 +56,7 @@ public class WorkerCommandCommand {
                                                             return;
                                                         }
 
-                                                        source.sendMessage(Cyanidin.languageManager.i18n("cyanidin.worker_command.command_feedback", List.of("feedback"), List.of(feedback)));
+                                                        source.sendMessage(Cyanidin.languageManager.i18n("cyanidin.worker_command.command_feedback", List.of("workerName", "feedback"), List.of(feedback)));
                                                     });
                                                     return Command.SINGLE_SUCCESS;
                                                 })

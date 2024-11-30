@@ -38,7 +38,7 @@ public class ListYsmPlayersCommand {
 
                     Component msg = Cyanidin.languageManager.i18n("cyanidin.list_player_command_header", List.of(), List.of());
                     for (Player player : ysmPlayers) {
-                        msg = msg.append(Cyanidin.languageManager.i18n("cyanidin.list_player_command_body", List.of(player.getUsername()), List.of()));
+                        msg = msg.append(Cyanidin.languageManager.i18n("cyanidin.list_player_command_body", List.of("name"), List.of(player.getUsername())));
                     }
 
                     context.getSource().sendMessage(msg);
