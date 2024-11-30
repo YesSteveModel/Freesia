@@ -20,6 +20,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import gg.earthme.cyanidin.cyanidin.command.ListYsmPlayersCommand;
 import gg.earthme.cyanidin.cyanidin.command.WorkerCommandCommand;
 import gg.earthme.cyanidin.cyanidin.network.misc.VirtualPlayerManager;
 import gg.earthme.cyanidin.cyanidin.network.ysm.VirtualYsmPacketProxyImpl;
@@ -117,6 +118,7 @@ public class Cyanidin implements PacketListener {
         kickChecker.bootstrap();
 
         WorkerCommandCommand.register();
+        ListYsmPlayersCommand.register();
     }
 
     @Subscribe
