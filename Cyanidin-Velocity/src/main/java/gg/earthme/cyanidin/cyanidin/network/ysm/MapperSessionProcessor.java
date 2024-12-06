@@ -16,7 +16,6 @@ import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.Serverbound
 import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundPongPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.LockSupport;
 
 public class MapperSessionProcessor implements SessionListener{
@@ -46,30 +45,21 @@ public class MapperSessionProcessor implements SessionListener{
 
     public void processPlayerPluginMessage(byte[] packetData){
         // Async packet processing
-        CompletableFuture.supplyAsync(
-                () -> this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData)),
-                task -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, task).schedule()
-        ).whenComplete((processed, throwable) -> {
-            if (throwable != null){
-                Cyanidin.LOGGER.warn("Error while processing packet from player: {}", this.bindPlayer.getUsername());
-                Cyanidin.LOGGER.warn("Error: ", throwable);
-                return;
+        final ProxyComputeResult result = this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData));
+
+        switch (result.result()){
+            case MODIFY -> {
+                final ByteBuf finalData = result.data();
+
+                finalData.resetReaderIndex();
+                byte[] data = new byte[finalData.readableBytes()];
+                finalData.readBytes(data);
+
+                this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, data));
             }
 
-            switch (processed.result()){
-                case MODIFY -> {
-                    final ByteBuf finalData = processed.data();
-
-                    finalData.resetReaderIndex();
-                    byte[] data = new byte[finalData.readableBytes()];
-                    finalData.readBytes(data);
-
-                    this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, data));
-                }
-
-                case PASS -> this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, packetData));
-            }
-        });
+            case PASS -> this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, packetData));
+        }
     }
 
     public Player getBindPlayer(){
@@ -89,28 +79,19 @@ public class MapperSessionProcessor implements SessionListener{
 
             if (channelKey.toString().equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE.toString())){
                 // Async packet processing
-                CompletableFuture.supplyAsync(
-                        () -> this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData)),
-                        task -> Cyanidin.PROXY_SERVER.getScheduler().buildTask(Cyanidin.INSTANCE, task).schedule()
-                ).whenComplete((result, throwable) -> {
-                    if (throwable != null){
-                        Cyanidin.LOGGER.warn("Error while processing packet from player: {}", this.bindPlayer.getUsername());
-                        Cyanidin.LOGGER.warn("Error: ", throwable);
-                        return;
+                final ProxyComputeResult result = this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData));
+
+                switch (result.result()){
+                    case MODIFY -> {
+                        final ByteBuf finalData = result.data();
+
+                        finalData.resetReaderIndex();
+
+                        this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), finalData);
                     }
 
-                    switch (result.result()){
-                        case MODIFY -> {
-                            final ByteBuf finalData = result.data();
-
-                            finalData.resetReaderIndex();
-
-                            this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), finalData);
-                        }
-
-                        case PASS -> this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
-                    }
-                });
+                    case PASS -> this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
+                }
             }
         }
 
