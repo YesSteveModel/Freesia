@@ -33,8 +33,16 @@ public class ServerLoader implements DedicatedServerModInitializer {
             throw new RuntimeException(e);
         }
 
-        playerDataCache = CacheBuilder.newBuilder().expireAfterWrite(CyanidinWorkerConfig.playerDataCacheInvalidateIntervalSeconds, TimeUnit.SECONDS).build();
-        clientInstance = new NettySocketClient(CyanidinWorkerConfig.masterServiceAddress, c -> workerConnection, CyanidinWorkerConfig.reconnectInterval);
+        playerDataCache = CacheBuilder
+                .newBuilder()
+                .expireAfterWrite(CyanidinWorkerConfig.playerDataCacheInvalidateIntervalSeconds, TimeUnit.SECONDS)
+                .build();
+        clientInstance = new NettySocketClient(CyanidinWorkerConfig.masterServiceAddress, c -> workerConnection, CyanidinWorkerConfig.reconnectInterval){
+            @Override
+            protected boolean shouldDoNextReconnect() {
+                return SERVER_INST.isRunning();
+            }
+        };
 
         connectToBackend();
     }

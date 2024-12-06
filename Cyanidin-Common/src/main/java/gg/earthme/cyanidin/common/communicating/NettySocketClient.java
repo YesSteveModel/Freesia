@@ -60,8 +60,17 @@ public class NettySocketClient {
         if (!this.isConnected){
             EntryPoint.LOGGER_INST.info("Trying to reconnect to the controller!");
             LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(this.reconnectInterval));
+
+            if (!this.shouldDoNextReconnect()){
+                return;
+            }
+
             this.connect();
         }
+    }
+
+    protected boolean shouldDoNextReconnect() {
+        return true;
     }
 
     public void onChannelInactive(){
