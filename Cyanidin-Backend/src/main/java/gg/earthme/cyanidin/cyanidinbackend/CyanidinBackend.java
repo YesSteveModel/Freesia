@@ -20,6 +20,7 @@ public final class CyanidinBackend extends JavaPlugin {
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "cyanidin:virtual_player_management");
 
         Bukkit.getPluginManager().registerEvents(this.trackerProcessor, this);
+        Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, unused -> this.trackerProcessor.tickTracker(), 1, 1);
     }
 
     public VirtualPlayerManager getVirtualPlayerManager() {

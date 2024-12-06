@@ -6,27 +6,44 @@ import gg.earthme.cyanidin.cyanidinbackend.event.CyanidinRealPlayerTrackerUpdate
 import gg.earthme.cyanidin.cyanidinbackend.event.CyanidinTrackerScanEvent;
 import gg.earthme.cyanidin.cyanidinbackend.utils.FriendlyByteBuf;
 import io.netty.buffer.Unpooled;
-import io.papermc.paper.event.player.PlayerTrackEntityEvent;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TrackerProcessor implements PluginMessageListener, Listener {
     private static final String CHANNEL_NAME = "cyanidin:tracker_sync";
+    private static final Map<Player, Set<Player>> visiblePlayers = new ConcurrentHashMap<>();
 
-    @EventHandler
-    public void onPlayerTrack(PlayerTrackEntityEvent trackEntityEvent) {
-        final Player watcher = trackEntityEvent.getPlayer();
-        final Entity beWatching = trackEntityEvent.getEntity();
+    public void tickTracker() {
+        final Collection<? extends Player> playersCopy = new ArrayList<>(Bukkit.getOnlinePlayers());
+        final List<Player> toCleanUp = new ArrayList<>();
 
-        if (beWatching instanceof Player beWatchingPlayer) {
-            this.playerTrackedPlayer(watcher, beWatchingPlayer);
+        for (Player player : playersCopy) {
+            final Set<Player> visibleMap = visiblePlayers.computeIfAbsent(player, (unused) -> ConcurrentHashMap.newKeySet());
+
+            if (!player.isOnline() || !player.isInWorld()) {
+                toCleanUp.add(player);
+                continue;
+            }
+
+            for (Player toScan : playersCopy) {
+                if (player.canSee(toScan)) { // Including ourselves
+                    if (!visibleMap.contains(player)) {
+                        visibleMap.add(toScan);
+
+                        this.playerTrackedPlayer(player, toScan);
+                    }
+                }
+            }
+        }
+
+        for (Player player : toCleanUp) {
+            visiblePlayers.remove(player);
         }
     }
 
