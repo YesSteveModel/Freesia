@@ -17,19 +17,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TrackerProcessor implements PluginMessageListener, Listener {
     private static final String CHANNEL_NAME = "cyanidin:tracker_sync";
-    private static final Map<Player, Set<Player>> visiblePlayers = new ConcurrentHashMap<>();
+    private static final Map<Player, Set<Player>> visiblePlayers = new HashMap<>();
 
     public void tickTracker() {
         final Collection<? extends Player> playersCopy = new ArrayList<>(Bukkit.getOnlinePlayers());
         final List<Player> toCleanUp = new ArrayList<>();
 
         for (Player player : playersCopy) {
-            final Set<Player> visibleMap = visiblePlayers.computeIfAbsent(player, (unused) -> ConcurrentHashMap.newKeySet());
-
             if (!player.isOnline() || !player.isInWorld()) {
                 toCleanUp.add(player);
                 continue;
             }
+
+            final Set<Player> visibleMap = visiblePlayers.computeIfAbsent(player, (unused) -> ConcurrentHashMap.newKeySet());
 
             for (Player toScan : playersCopy) {
                 if (player.canSee(toScan)) { // Including ourselves
@@ -38,7 +38,17 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
 
                         this.playerTrackedPlayer(player, toScan);
                     }
+                }else {
+                    if (visibleMap.contains(player)) {
+                        visibleMap.remove(toScan); // If out of view distance
+                    }
                 }
+            }
+        }
+
+        for (Player player : visiblePlayers.keySet()) {
+            if (!player.isOnline() || !player.isInWorld()) {
+                toCleanUp.add(player);
             }
         }
 
