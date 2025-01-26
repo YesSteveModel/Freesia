@@ -31,8 +31,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class YsmMapperPayloadManager {
-    public static final Key YSM_CHANNEL_KEY_ADVENTURE = Key.key("yes_steve_model:2_2_2");
-    public static final MinecraftChannelIdentifier YSM_CHANNEL_KEY_VELOCITY = MinecraftChannelIdentifier.create("yes_steve_model", "2_2_2");
+    public static final Key YSM_CHANNEL_KEY_ADVENTURE = Key.key("yes_steve_model:2_2_3");
+    public static final MinecraftChannelIdentifier YSM_CHANNEL_KEY_VELOCITY = MinecraftChannelIdentifier.create("yes_steve_model", "2_2_3");
 
     // Used for virtual players like NPCs
     private final Map<UUID, YsmPacketProxy> virtualProxies = new HashMap<>();
