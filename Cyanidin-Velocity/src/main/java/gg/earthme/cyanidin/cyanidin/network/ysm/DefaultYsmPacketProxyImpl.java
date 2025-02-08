@@ -6,6 +6,7 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.velocitypowered.api.event.ResultedEvent;
 import com.velocitypowered.api.proxy.Player;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
+import gg.earthme.cyanidin.cyanidin.YsmProtocolMetaFile;
 import gg.earthme.cyanidin.cyanidin.events.PlayerYsmHandshakeEvent;
 import gg.earthme.cyanidin.cyanidin.events.PlayerEntityStateChangeEvent;
 import gg.earthme.cyanidin.cyanidin.network.mc.NbtRemapper;
@@ -106,52 +107,52 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
         final byte packetId = mcBuffer.readByte();
 
-        switch (packetId){
-            case 51 -> {
-                final String backendVersion = mcBuffer.readUtf();
-                final boolean canSwitchModel = mcBuffer.readBoolean();
-                Cyanidin.LOGGER.info("Replying ysm client with server version {}.Can switch model? : {}", backendVersion, canSwitchModel);
-                return ProxyComputeResult.ofPass();
-            }
+        if (packetId == YsmProtocolMetaFile.getS2CPacketId(YsmProtocolMetaFile.ProtocolKeys.Clientbound.ENTITY_DATA_UPDATE)) {
+            final int workerEntityId = mcBuffer.readVarInt();
 
-            case 4 -> {
-                final int workerEntityId = mcBuffer.readVarInt();
-
-                try {
-                    if (!this.isEntityStateOfSelf(workerEntityId)){ // Check if the packet is current player and drop to prevent incorrect broadcasting
-                        return ProxyComputeResult.ofDrop(); // Do not process the entity state if it is not ours
-                    }
-
-                    Cyanidin.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
-                        this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
-
-                        this.sendEntityStateTo(this.player); // Sync to self
-
-                        Cyanidin.tracker.getCanSee(this.player.getUniqueId()).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
-                            if (beingWatched != null){ // Actually there is impossible to be null
-                                for (UUID targetUUID : beingWatched){
-                                    final Optional<Player> targetNullable = Cyanidin.PROXY_SERVER.getPlayer(targetUUID);
-
-                                    if (targetNullable.isPresent()){ // Skip send to NPCs
-                                        final Player target = targetNullable.get();
-
-                                        if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){ // Skip if target is not ysm-installed
-                                            continue;
-                                        }
-
-                                        this.sendEntityStateTo(target); // Sync to target
-                                    }
-                                }
-                            }
-                        });
-                    });
-                }catch (Exception e){
-                    Cyanidin.LOGGER.error("Error while in processing tracker!", e);
-                    return ProxyComputeResult.ofDrop();
+            try {
+                if (!this.isEntityStateOfSelf(workerEntityId)){ // Check if the packet is current player and drop to prevent incorrect broadcasting
+                    return ProxyComputeResult.ofDrop(); // Do not process the entity state if it is not ours
                 }
 
+                Cyanidin.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
+                    this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
+
+                    this.sendEntityStateTo(this.player); // Sync to self
+
+                    Cyanidin.tracker.getCanSee(this.player.getUniqueId()).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
+                        if (beingWatched != null){ // Actually there is impossible to be null
+                            for (UUID targetUUID : beingWatched){
+                                final Optional<Player> targetNullable = Cyanidin.PROXY_SERVER.getPlayer(targetUUID);
+
+                                if (targetNullable.isPresent()){ // Skip send to NPCs
+                                    final Player target = targetNullable.get();
+
+                                    if (!Cyanidin.mapperManager.isPlayerInstalledYsm(target)){ // Skip if target is not ysm-installed
+                                        continue;
+                                    }
+
+                                    this.sendEntityStateTo(target); // Sync to target
+                                }
+                            }
+                        }
+                    });
+                });
+            }catch (Exception e){
+                Cyanidin.LOGGER.error("Error while in processing tracker!", e);
                 return ProxyComputeResult.ofDrop();
             }
+
+            return ProxyComputeResult.ofDrop();
+        }
+
+        if (packetId == YsmProtocolMetaFile.getC2SPacketId(YsmProtocolMetaFile.ProtocolKeys.Clientbound.HAND_SHAKE_CONFIRMED)) {
+            final String backendVersion = mcBuffer.readUtf();
+            final boolean canSwitchModel = mcBuffer.readBoolean();
+
+            Cyanidin.LOGGER.info("Replying ysm client with server version {}.Can switch model? : {}", backendVersion, canSwitchModel);
+
+            return ProxyComputeResult.ofPass();
         }
 
         return ProxyComputeResult.ofPass();
@@ -162,7 +163,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
         final byte packetId = mcBuffer.readByte();
 
-        if (packetId == 52) {
+        if (packetId == YsmProtocolMetaFile.getC2SPacketId(YsmProtocolMetaFile.ProtocolKeys.Serverbound.HAND_SHAKE_REQUEST)) {
             final ResultedEvent.GenericResult result = Cyanidin.PROXY_SERVER.getEventManager().fire(new PlayerYsmHandshakeEvent(this.player)).join().getResult();
 
             if (!result.isAllowed()){

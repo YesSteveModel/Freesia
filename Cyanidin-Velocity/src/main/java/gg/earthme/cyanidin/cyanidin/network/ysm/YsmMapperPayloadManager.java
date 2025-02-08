@@ -7,6 +7,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import gg.earthme.cyanidin.cyanidin.Cyanidin;
 import gg.earthme.cyanidin.cyanidin.CyanidinConfig;
+import gg.earthme.cyanidin.cyanidin.YsmProtocolMetaFile;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.geysermc.mcprotocollib.auth.GameProfile;
@@ -31,8 +32,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class YsmMapperPayloadManager {
-    public static final Key YSM_CHANNEL_KEY_ADVENTURE = Key.key("yes_steve_model:2_2_3");
-    public static final MinecraftChannelIdentifier YSM_CHANNEL_KEY_VELOCITY = MinecraftChannelIdentifier.create("yes_steve_model", "2_2_3");
+    public static final Key YSM_CHANNEL_KEY_ADVENTURE = Key.key(YsmProtocolMetaFile.getYsmChannelNamespace() + ":" + YsmProtocolMetaFile.getYsmChannelPath());
+    public static final MinecraftChannelIdentifier YSM_CHANNEL_KEY_VELOCITY = MinecraftChannelIdentifier.create(YsmProtocolMetaFile.getYsmChannelNamespace(), YsmProtocolMetaFile.getYsmChannelPath());
 
     // Used for virtual players like NPCs
     private final Map<UUID, YsmPacketProxy> virtualProxies = new HashMap<>();
