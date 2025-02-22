@@ -72,7 +72,7 @@ public class Freesia implements PacketListener {
         PROXY_SERVER.sendMessage(Component.text("   / /___/ /_/ / /_/ / / / / / /_/ / / / / /"));
         PROXY_SERVER.sendMessage(Component.text("   \\____/\\__, /\\__,_/_/ /_/_/\\__,_/_/_/ /_/ "));
         PROXY_SERVER.sendMessage(Component.text("        /____/                              "));
-        PROXY_SERVER.sendMessage(Component.text("     Powered by CyanidinMC, Version: " + BuildConstants.VERSION));
+        PROXY_SERVER.sendMessage(Component.text("     Powered by CyanidinMC, Version: 2.3.2-universal"));
         PROXY_SERVER.sendMessage(Component.text("----------------------------------------------------------------"));
     }
 
