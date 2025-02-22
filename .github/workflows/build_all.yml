@@ -1,4 +1,4 @@
-name: Cyanidin CI - master
+name: Freesia CI - master
 
 on:
   push:
