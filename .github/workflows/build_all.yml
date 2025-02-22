@@ -23,7 +23,7 @@ jobs:
       - name: Build projects
         run: chmod 777 gradlew && ./gradlew build
       - name: Copy built jar
-        run: mkdir build_out && cp Cyanidin-Velocity/build/libs/*.jar ./build_out && cp Cyanidin-Worker/build/libs/*.jar ./build_out && cp Cyanidin-Backend/build/libs/*.jar ./build_out
+        run: mkdir build_out && cp Freesia-Velocity/build/libs/*.jar ./build_out && cp Freesia-Worker/build/libs/*.jar ./build_out && cp Freesia-Backend/build/libs/*.jar ./build_out
       - name: Upload Artifact
         uses: "actions/upload-artifact@v4"
         with:
