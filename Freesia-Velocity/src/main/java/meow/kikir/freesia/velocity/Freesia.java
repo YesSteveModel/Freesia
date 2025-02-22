@@ -28,7 +28,6 @@ import meow.kikir.freesia.velocity.storage.DefaultRealPlayerDataStorageManagerIm
 import meow.kikir.freesia.velocity.storage.DefaultVirtualPlayerDataStorageManagerImpl;
 import meow.kikir.freesia.velocity.storage.IDataStorageManager;
 import meow.kikir.freesia.velocity.i18n.I18NManager;
-import meow.kikir.freesia.velocity.metrics.Metrics;
 import meow.kikir.freesia.velocity.network.backend.MasterServerMessageHandler;
 import meow.kikir.freesia.velocity.network.mc.CyanidinPlayerTracker;
 import meow.kikir.freesia.velocity.network.ysm.DefaultYsmPacketProxyImpl;
@@ -50,8 +49,6 @@ public class Freesia implements PacketListener {
     private Logger logger;
     @Inject
     private ProxyServer proxyServer;
-    @Inject
-    private Metrics.Factory metricsFactory;
 
     public static Freesia INSTANCE = null;
     public static Logger LOGGER = null;
@@ -66,7 +63,6 @@ public class Freesia implements PacketListener {
     public static final Map<UUID, MasterServerMessageHandler> registedWorkers = Maps.newConcurrentMap();
     public static final I18NManager languageManager = new I18NManager();
     public static NettySocketServer masterServer;
-    private Metrics metrics;
 
     private static void printLogo(){
         PROXY_SERVER.sendMessage(Component.text("----------------------------------------------------------------"));
@@ -80,10 +76,6 @@ public class Freesia implements PacketListener {
         PROXY_SERVER.sendMessage(Component.text("----------------------------------------------------------------"));
     }
 
-    private void initMetrics(){
-        this.metrics = this.metricsFactory.make(this, 22734);
-    }
-
     @Subscribe
     public void onProxyStart(ProxyInitializeEvent event) {
         INSTANCE = this;
@@ -92,7 +84,6 @@ public class Freesia implements PacketListener {
         EntryPoint.initLogger(this.logger);
 
         printLogo();
-        initMetrics();
 
         try {
             FreesiaConfig.init();
