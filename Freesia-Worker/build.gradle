@@ -18,7 +18,6 @@ dependencies {
 
     modImplementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_version}"
-    modImplementation fileTree('libs')
 }
 
 loom {
