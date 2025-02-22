@@ -12,9 +12,9 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
 }
 
-rootProject.name = 'Cyanidin'
+rootProject.name = 'Freesia'
 
-include("Cyanidin-Velocity")
-include("Cyanidin-Backend")
-include("Cyanidin-Common")
-include("Cyanidin-Worker")
+include("Freesia-Velocity")
+include("Freesia-Backend")
+include("Freesia-Common")
+include("Freesia-Worker")

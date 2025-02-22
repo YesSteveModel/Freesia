@@ -1,0 +1,6 @@
+name: Freesia-Backend
+version: '${version}'
+main: meow.kikir.freesia.backend.FreesiaBackend
+api-version: '1.16'
+
+folia-supported: true

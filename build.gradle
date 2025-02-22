@@ -5,11 +5,11 @@ plugins {
     id 'io.github.goooler.shadow' version '8.1.2'
 }
 
-group = 'gg.earthme'
+group = 'meow.kikir'
 version = project.version
 
 allprojects {
-    group = 'gg.earthme'
+    group = 'meow.kikir'
     version = rootProject.version
 
     apply {
