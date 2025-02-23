@@ -37,7 +37,7 @@ public class ServerLoader implements DedicatedServerModInitializer {
                 .newBuilder()
                 .expireAfterWrite(FreesiaWorkerConfig.playerDataCacheInvalidateIntervalSeconds, TimeUnit.SECONDS)
                 .build();
-        clientInstance = new NettySocketClient(FreesiaWorkerConfig.masterServiceAddress, c -> workerConnection, FreesiaWorkerConfig.reconnectInterval){
+        clientInstance = new NettySocketClient(FreesiaWorkerConfig.masterServiceAddress, c -> workerConnection = new WorkerMessageHandlerImpl(), FreesiaWorkerConfig.reconnectInterval){
             @Override
             protected boolean shouldDoNextReconnect() {
                 return SERVER_INST.isRunning();

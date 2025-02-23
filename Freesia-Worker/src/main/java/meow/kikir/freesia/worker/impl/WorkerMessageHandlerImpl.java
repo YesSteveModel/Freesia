@@ -37,8 +37,8 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        ServerLoader.workerConnection = this;
         this.getClient().sendToMaster(new W2MWorkerInfoMessage(ServerLoader.workerInfoFile.workerUUID(), ServerLoader.workerInfoFile.workerName()));
+        ServerLoader.workerConnection = this;
     }
 
     @Override
