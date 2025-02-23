@@ -1,4 +1,9 @@
 # 香雪兰
+[![Issues](https://img.shields.io/github/issues/KikirMeow/Freesia?style=flat-square)](https://github.com/KikirMeow/Freesia/issues)
+![Commit Activity](https://img.shields.io/github/commit-activity/w/KikirMeow/Freesia?style=flat-square)
+![GitHub Repo stars](https://img.shields.io/github/stars/KikirMeow/Freesia?style=flat-square)
+![GitHub License](https://img.shields.io/github/license/KikirMeow/Freesia)
+
 Cyanidin的延续版(正在施工中)
 
 # 简介
