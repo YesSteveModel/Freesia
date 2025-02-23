@@ -146,7 +146,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
             return ProxyComputeResult.ofDrop();
         }
 
-        if (packetId == YsmProtocolMetaFile.getC2SPacketId(YsmProtocolMetaFile.ProtocolKeys.Clientbound.HAND_SHAKE_CONFIRMED)) {
+        if (packetId == YsmProtocolMetaFile.getS2CPacketId(YsmProtocolMetaFile.ProtocolKeys.Clientbound.HAND_SHAKE_CONFIRMED)) {
             final String backendVersion = mcBuffer.readUtf();
             final boolean canSwitchModel = mcBuffer.readBoolean();
 

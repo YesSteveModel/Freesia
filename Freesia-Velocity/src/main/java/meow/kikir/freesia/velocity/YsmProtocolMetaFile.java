@@ -28,15 +28,15 @@ public class YsmProtocolMetaFile {
     }
 
     public static int getC2SPacketId(String type) {
-        return Integer.parseInt(INTERNAL_PROPERTIES.getProperty("clientbound_" + type + "_pkt_id"));
-    }
-
-    public static int getS2CPacketId(String type) {
         return Integer.parseInt(INTERNAL_PROPERTIES.getProperty("serverbound_" + type + "_pkt_id"));
     }
 
+    public static int getS2CPacketId(String type) {
+        return Integer.parseInt(INTERNAL_PROPERTIES.getProperty("clientbound_" + type + "_pkt_id"));
+    }
+
     public static class ProtocolKeys {
-        public static class Serverbound{
+        public static class Serverbound {
             public static final String HAND_SHAKE_REQUEST = "handshake_request";
         }
 
