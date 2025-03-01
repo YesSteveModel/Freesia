@@ -6,7 +6,7 @@
   "description": "",
   "authors": [],
   "contact": {},
-  "license": "All-Rights-Reserved",
+  "license": "MPL-2.0",
   "icon": "assets/fabric_worker/icon.png",
   "environment": "*",
   "entrypoints": {
@@ -19,8 +19,8 @@
   ],
   "accessWidener": "freesia_worker.accesswidener",
   "depends": {
-    "fabricloader": ">=${loader_version}",
-    "fabric": "*",
+    "fabricloader": ">=${fabric_loader_version}",
+    "fabric-api": "*",
     "minecraft": "${minecraft_version}"
   }
 }

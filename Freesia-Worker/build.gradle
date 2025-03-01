@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'fabric-loom' version '1.10-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -11,12 +11,15 @@ configurations {
 dependencies {
     // To change the versions see the gradle.properties2 file
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
-    mappings loom.officialMojangMappings()
+    mappings loom.layered() {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:${rootProject.parchment_version}@zip")
+    }
 
     include(implementation(project(":Freesia-Common")))
     include(implementation("com.electronwill.night-config:toml:${rootProject.night_config_version}"))
 
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_version}"
 }
 
@@ -27,13 +30,13 @@ loom {
 processResources {
     inputs.property "version", rootProject.version
     inputs.property "minecraft_version", rootProject.minecraft_version
-    inputs.property "loader_version", rootProject.loader_version
+    inputs.property "fabric_loader_version", rootProject.fabric_loader_version
     filteringCharset "UTF-8"
 
     filesMatching("fabric.mod.json") {
         expand "version": rootProject.version,
                 "minecraft_version": rootProject.minecraft_version,
-                "loader_version": rootProject.loader_version
+                fabric_loader_version: rootProject.fabric_loader_version
     }
 }
 
