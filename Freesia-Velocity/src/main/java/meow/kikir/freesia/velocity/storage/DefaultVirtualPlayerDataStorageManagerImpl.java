@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class DefaultVirtualPlayerDataStorageManagerImpl implements IDataStorageManager {
-    private static final File PLUGIN_FOLDER = new File(new File("plugins"), "Cyanidin");
+    private static final File PLUGIN_FOLDER = new File(new File("plugins"), "Freesia");
     private static final File PLAYER_DATA_FOLDER = new File(PLUGIN_FOLDER, "playerdata_virtual");
 
     static {
