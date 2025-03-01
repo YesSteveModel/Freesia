@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class WorkerCommandCommand {
-    public static void register(){
+    public static void register() {
         final CommandMeta meta = Freesia.PROXY_SERVER.getCommandManager()
                 .metaBuilder("dworkerc")
                 .plugin(Freesia.INSTANCE)
@@ -26,11 +26,11 @@ public class WorkerCommandCommand {
                 .requires(source -> source.hasPermission("cyanidin.commands.dworkerc"))
                 .then(
                         BrigadierCommand.requiredArgumentBuilder("workerName", StringArgumentType.word()).suggests((ctx, builder) -> {
-                            for (MasterServerMessageHandler connection : Freesia.registedWorkers.values()){
-                                builder.suggest(connection.getWorkerName());
-                            }
-                            return builder.buildFuture();
-                        })
+                                    for (MasterServerMessageHandler connection : Freesia.registedWorkers.values()) {
+                                        builder.suggest(connection.getWorkerName());
+                                    }
+                                    return builder.buildFuture();
+                                })
                                 .then(
                                         BrigadierCommand.requiredArgumentBuilder("mcCommand", StringArgumentType.word())
                                                 .executes(context -> {
@@ -39,14 +39,14 @@ public class WorkerCommandCommand {
                                                     final String command = StringArgumentType.getString(context, "mcCommand");
 
                                                     MasterServerMessageHandler targetWorkerConnection = null;
-                                                    for (MasterServerMessageHandler connection : Freesia.registedWorkers.values()){
-                                                        if (workerName.equals(connection.getWorkerName())){
+                                                    for (MasterServerMessageHandler connection : Freesia.registedWorkers.values()) {
+                                                        if (workerName.equals(connection.getWorkerName())) {
                                                             targetWorkerConnection = connection;
                                                             break;
                                                         }
                                                     }
 
-                                                    if (targetWorkerConnection == null){
+                                                    if (targetWorkerConnection == null) {
                                                         source.sendMessage(Freesia.languageManager.i18n("cyanidin.worker_command.worker_not_found", List.of(), List.of()));
                                                         return -1;
                                                     }

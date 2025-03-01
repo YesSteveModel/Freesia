@@ -3,9 +3,9 @@ package meow.kikir.freesia.velocity.network.mc.impl;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.nbt.NBTLimiter;
 import com.github.retrooper.packetevents.protocol.nbt.serializer.DefaultNBTSerializer;
+import io.netty.buffer.ByteBufInputStream;
 import meow.kikir.freesia.velocity.network.mc.NbtRemapper;
 import meow.kikir.freesia.velocity.utils.FriendlyByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;

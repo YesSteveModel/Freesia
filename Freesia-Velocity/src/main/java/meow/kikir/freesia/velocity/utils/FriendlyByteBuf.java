@@ -881,7 +881,7 @@ public class FriendlyByteBuf extends ByteBuf {
         return this.source.release(i);
     }
 
-    public byte[] getBytes(){
+    public byte[] getBytes() {
         byte[] bytes = new byte[this.source.readableBytes()];
         this.source.readBytes(bytes);
         return bytes;

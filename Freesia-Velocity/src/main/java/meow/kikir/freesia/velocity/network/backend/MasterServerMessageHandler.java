@@ -1,13 +1,13 @@
 package meow.kikir.freesia.velocity.network.backend;
 
 import com.google.common.collect.Maps;
-import meow.kikir.freesia.velocity.Freesia;
+import io.netty.channel.ChannelHandlerContext;
 import meow.kikir.freesia.common.EntryPoint;
 import meow.kikir.freesia.common.communicating.handler.NettyServerChannelHandlerLayer;
 import meow.kikir.freesia.common.communicating.message.m2w.M2WDispatchCommandMessage;
+import meow.kikir.freesia.velocity.Freesia;
 import meow.kikir.freesia.velocity.events.PlayerEntityDataLoadEvent;
 import meow.kikir.freesia.velocity.events.PlayerEntityDataStoreEvent;
-import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.jetbrains.annotations.NotNull;
@@ -25,13 +25,13 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
     private volatile UUID workerUUID;
     private volatile String workerName;
 
-    public void dispatchCommandToWorker(String command, Consumer<Component> onDispatched){
+    public void dispatchCommandToWorker(String command, Consumer<Component> onDispatched) {
         final int traceId = this.traceIdGenerator.getAndIncrement();
         final Consumer<String> wrappedDecoder = json -> {
-            try{
+            try {
                 final Component decoded = LegacyComponentSerializer.builder().build().deserialize(json);
                 onDispatched.accept(decoded);
-            }catch (Exception e){
+            } catch (Exception e) {
                 EntryPoint.LOGGER_INST.error("Failed to decode command result from worker", e);
             }
         };
@@ -53,7 +53,7 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
 
     @Override
     public void channelInactive(@NotNull ChannelHandlerContext ctx) {
-        if (this.workerUUID == null){
+        if (this.workerUUID == null) {
             return;
         }
 
@@ -70,7 +70,7 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
                         .fire(new PlayerEntityDataLoadEvent(playerUUID, data))
                         .thenApply(PlayerEntityDataLoadEvent::getSerializedNbtData)
                         .whenComplete((result, ex) -> {
-                            if (ex != null){
+                            if (ex != null) {
                                 callback.completeExceptionally(ex);
                                 return;
                             }
@@ -94,7 +94,7 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
     public void onCommandDispatchResult(int traceId, @Nullable String result) {
         final Consumer<String> removedDecoder = this.pendingCommandDispatches.remove(traceId);
 
-        if (removedDecoder != null){
+        if (removedDecoder != null) {
             removedDecoder.accept(result);
         }
     }

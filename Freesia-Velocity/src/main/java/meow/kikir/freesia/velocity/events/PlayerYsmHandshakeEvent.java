@@ -8,8 +8,8 @@ import com.velocitypowered.api.proxy.Player;
  * 注意: 阻塞事件
  */
 public class PlayerYsmHandshakeEvent implements ResultedEvent<ResultedEvent.GenericResult> {
-    private GenericResult result = GenericResult.allowed();
     private final Player player;
+    private GenericResult result = GenericResult.allowed();
 
     public PlayerYsmHandshakeEvent(Player player) {
         this.player = player;
@@ -17,6 +17,7 @@ public class PlayerYsmHandshakeEvent implements ResultedEvent<ResultedEvent.Gene
 
     /**
      * 获取当前的玩家
+     *
      * @return 玩家
      */
     public Player getPlayer() {

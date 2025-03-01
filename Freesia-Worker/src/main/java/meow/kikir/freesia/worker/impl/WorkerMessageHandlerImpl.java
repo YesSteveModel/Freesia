@@ -3,15 +3,15 @@ package meow.kikir.freesia.worker.impl;
 import com.google.common.collect.Maps;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.ParseResults;
-import meow.kikir.freesia.worker.ServerLoader;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
 import meow.kikir.freesia.common.EntryPoint;
 import meow.kikir.freesia.common.communicating.NettySocketClient;
 import meow.kikir.freesia.common.communicating.handler.NettyClientChannelHandlerLayer;
 import meow.kikir.freesia.common.communicating.message.w2m.W2MPlayerDataGetRequestMessage;
 import meow.kikir.freesia.common.communicating.message.w2m.W2MUpdatePlayerDataRequestMessage;
 import meow.kikir.freesia.common.communicating.message.w2m.W2MWorkerInfoMessage;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
+import meow.kikir.freesia.worker.ServerLoader;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.CompoundTag;
@@ -47,19 +47,19 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
         ServerLoader.SERVER_INST.execute(ServerLoader::connectToBackend);
     }
 
-    public void getPlayerData(UUID playerUUID, Consumer<CompoundTag> onGot){
+    public void getPlayerData(UUID playerUUID, Consumer<CompoundTag> onGot) {
         final int generatedTraceId = this.traceIdGenerator.getAndIncrement();
         final Consumer<byte[]> wrappedDecoder = content -> {
             CompoundTag decoded = null;
 
-            if (content == null){
+            if (content == null) {
                 onGot.accept(null);
                 return;
             }
 
             try {
                 decoded = (CompoundTag) NbtIo.readAnyTag(new DataInputStream(new ByteArrayInputStream(content)), NbtAccounter.unlimitedHeap());
-            }catch (Exception e){
+            } catch (Exception e) {
                 EntryPoint.LOGGER_INST.error("Failed to decode nbt!", e);
             }
 
@@ -77,17 +77,17 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     }
 
     @Override
-    public void onMasterPlayerDataResponse(int traceId, byte[] content){
+    public void onMasterPlayerDataResponse(int traceId, byte[] content) {
         final Consumer<byte[]> removed = this.playerDataGetCallbacks.remove(traceId);
 
-        if (removed == null){
+        if (removed == null) {
             EntryPoint.LOGGER_INST.warn("Null traceId {} !", traceId);
             return;
         }
 
         try {
             removed.accept(content);
-        }catch (Exception e){
+        } catch (Exception e) {
             EntryPoint.LOGGER_INST.error("Failed to fire player data callback!", e);
         }
     }
@@ -127,7 +127,7 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
         return callback;
     }
 
-    public void updatePlayerData(UUID playerUUID, CompoundTag data){
+    public void updatePlayerData(UUID playerUUID, CompoundTag data) {
         try {
             final ByteArrayOutputStream bos = new ByteArrayOutputStream();
             final DataOutputStream dos = new DataOutputStream(bos);
@@ -138,7 +138,7 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
             final byte[] content = bos.toByteArray();
 
             ServerLoader.clientInstance.sendToMaster(new W2MUpdatePlayerDataRequestMessage(playerUUID, content));
-        }catch (Exception e){
+        } catch (Exception e) {
             EntryPoint.LOGGER_INST.error("Failed to encode nbt!", e);
         }
     }

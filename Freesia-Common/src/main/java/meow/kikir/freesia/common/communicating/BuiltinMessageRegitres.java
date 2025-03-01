@@ -27,7 +27,7 @@ public class BuiltinMessageRegitres {
         registerMessage(W2MWorkerInfoMessage.class, W2MWorkerInfoMessage::new);
     }
 
-    public static void registerMessage(Class<? extends IMessage<?>> clazz, Supplier<IMessage<?>> creator){
+    public static void registerMessage(Class<? extends IMessage<?>> clazz, Supplier<IMessage<?>> creator) {
         final int packetId = idGenerator.getAndIncrement();
 
         id2MessageCreators.put(packetId, creator);
@@ -35,11 +35,11 @@ public class BuiltinMessageRegitres {
     }
 
 
-    public static Supplier<? extends IMessage<?>> getMessageCreator(int packetId){
+    public static Supplier<? extends IMessage<?>> getMessageCreator(int packetId) {
         return id2MessageCreators.get(packetId);
     }
 
-    public static int getMessageId(Class<IMessage<?>> clazz){
+    public static int getMessageId(Class<IMessage<?>> clazz) {
         return messageClasses2Ids.get(clazz);
     }
 }

@@ -12,20 +12,6 @@ public record ProxyComputeResult(EnumResult result, ByteBuf data) {
         this.data = data;
     }
 
-    @Override
-    @NotNull
-    public ByteBuf data() {
-        if (this.result != EnumResult.MODIFY) {
-            throw new UnsupportedOperationException();
-        }
-
-        if (this.data == null) {
-            throw new NullPointerException();
-        }
-
-        return this.data;
-    }
-
     @Contract(value = "_ -> new", pure = true)
     public static @NotNull ProxyComputeResult ofModify(@NotNull ByteBuf data) {
         return new ProxyComputeResult(EnumResult.MODIFY, data);
@@ -39,6 +25,20 @@ public record ProxyComputeResult(EnumResult result, ByteBuf data) {
     @Contract(value = " -> new", pure = true)
     public static @NotNull ProxyComputeResult ofDrop() {
         return new ProxyComputeResult(EnumResult.DROP, null);
+    }
+
+    @Override
+    @NotNull
+    public ByteBuf data() {
+        if (this.result != EnumResult.MODIFY) {
+            throw new UnsupportedOperationException();
+        }
+
+        if (this.data == null) {
+            throw new NullPointerException();
+        }
+
+        return this.data;
     }
 
     public enum EnumResult {

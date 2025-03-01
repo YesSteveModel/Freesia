@@ -1,14 +1,12 @@
 {
   "schemaVersion": 1,
-  "id": "cyanidin_worker",
+  "id": "freesia_worker",
   "version": "${version}",
-  "name": "Cyanidin-Worker",
+  "name": "Freesia Worker",
   "description": "",
   "authors": [],
-  "contact": {},
   "license": "MPL-2.0",
-  "icon": "assets/fabric_worker/icon.png",
-  "environment": "*",
+  "environment": "server",
   "entrypoints": {
     "server": [
       "meow.kikir.freesia.worker.ServerLoader"

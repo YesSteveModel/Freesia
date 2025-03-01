@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class I18NManager {
-    private final Map<String,String> loadedLanguageKeys = new ConcurrentHashMap<>();
+    private final Map<String, String> loadedLanguageKeys = new ConcurrentHashMap<>();
 
     public void loadLanguageFile(String languageName) throws IOException {
         final InputStream languageFileInStream = this.getClass().getClassLoader().getResourceAsStream("lang/" + languageName + ".lang");
@@ -27,10 +27,10 @@ public class I18NManager {
         final BufferedReader lineReader = new BufferedReader(languageFileReader);
 
         String languageLine;
-        while (((languageLine = lineReader.readLine()) != null)){
+        while (((languageLine = lineReader.readLine()) != null)) {
             final String[] languageLineSplit = languageLine.split("=");
 
-            if (languageLineSplit.length == 2){
+            if (languageLineSplit.length == 2) {
                 this.loadedLanguageKeys.put(languageLineSplit[0], languageLineSplit[1]);
                 continue;
             }
@@ -39,15 +39,15 @@ public class I18NManager {
         }
     }
 
-    public Component i18n(String key, @NotNull List<String> subKeys, @NotNull List<Object> args){
-        if (subKeys.size() != args.size()){
+    public Component i18n(String key, @NotNull List<String> subKeys, @NotNull List<Object> args) {
+        if (subKeys.size() != args.size()) {
             throw new IllegalArgumentException("Subkeys and args must be the same length");
         }
 
         final List<TagResolver> builtResolvers = new ArrayList<>();
 
         int idx = 0;
-        for (Object arg : args){
+        for (Object arg : args) {
             builtResolvers.add(
                     Placeholder
                             .component(subKeys.get(idx), arg instanceof Component ? (Component) arg : Component.text(String.valueOf(arg)))

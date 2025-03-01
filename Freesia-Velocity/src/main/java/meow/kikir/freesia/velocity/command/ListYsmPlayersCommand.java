@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.List;
 
 public class ListYsmPlayersCommand {
-    public static void register(){
+    public static void register() {
         final CommandMeta meta = Freesia.PROXY_SERVER.getCommandManager()
                 .metaBuilder("listysmplayers")
                 .plugin(Freesia.INSTANCE)

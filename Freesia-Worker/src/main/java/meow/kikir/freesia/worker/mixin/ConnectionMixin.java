@@ -1,15 +1,19 @@
 package meow.kikir.freesia.worker.mixin;
 
-import meow.kikir.freesia.worker.impl.FakeCompressionEncoder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
+import meow.kikir.freesia.worker.impl.FakeCompressionEncoder;
 import net.minecraft.network.CompressionDecoder;
 import net.minecraft.network.Connection;
 import net.minecraft.network.PacketSendListener;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.common.*;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.ClientboundKeepAlivePacket;
+import net.minecraft.network.protocol.common.ClientboundPingPacket;
+import net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket;
 import net.minecraft.network.protocol.configuration.*;
-import net.minecraft.network.protocol.game.*;
+import net.minecraft.network.protocol.game.ClientboundLoginPacket;
+import net.minecraft.network.protocol.game.ClientboundStartConfigurationPacket;
 import net.minecraft.network.protocol.login.ClientboundGameProfilePacket;
 import net.minecraft.network.protocol.login.ClientboundHelloPacket;
 import net.minecraft.network.protocol.login.ClientboundLoginCompressionPacket;
@@ -23,9 +27,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Connection.class)
-public class ConnectionMixin {
+public abstract class ConnectionMixin {
 
-    @Shadow private Channel channel;
+    @Shadow
+    private Channel channel;
 
     /**
      * @author MrHua269
@@ -59,16 +64,16 @@ public class ConnectionMixin {
     }
 
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;)V", at = @At(value = "HEAD"), cancellable = true)
-    public void sendPacketPInject(Packet<?> packet, CallbackInfo ci){
-        if (!this.checkPacket(packet)){
+    public void sendPacketPInject(Packet<?> packet, CallbackInfo ci) {
+        if (!this.checkPacket(packet)) {
             ci.cancel(); //Drop useless packets to reduce I/O load
         }
     }
 
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketSendListener;)V", at = @At(value = "HEAD"), cancellable = true)
-    public void sendPacketPCInject(Packet<?> packet, PacketSendListener packetSendListener, CallbackInfo ci){
-        if (!this.checkPacket(packet)){
-            if (packetSendListener != null){
+    public void sendPacketPCInject(Packet<?> packet, PacketSendListener packetSendListener, CallbackInfo ci) {
+        if (!this.checkPacket(packet)) {
+            if (packetSendListener != null) {
                 packetSendListener.onSuccess();
             }
             ci.cancel(); //Drop useless packets to reduce I/O load
@@ -76,9 +81,9 @@ public class ConnectionMixin {
     }
 
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketSendListener;Z)V", at = @At(value = "HEAD"), cancellable = true)
-    public void sendPacketPCBInject(Packet<?> packet, PacketSendListener packetSendListener, boolean bl, CallbackInfo ci){
-        if (!this.checkPacket(packet)){
-            if (packetSendListener != null){
+    public void sendPacketPCBInject(Packet<?> packet, PacketSendListener packetSendListener, boolean bl, CallbackInfo ci) {
+        if (!this.checkPacket(packet)) {
+            if (packetSendListener != null) {
                 packetSendListener.onSuccess();
             }
             ci.cancel(); //Drop useless packets to reduce I/O load

@@ -25,25 +25,25 @@ public interface YsmPacketProxy {
 
     NBTCompound getCurrentEntityState();
 
-    default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, byte[] data){
+    default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, byte[] data) {
         this.sendPluginMessageTo(this.getOwner(), channel, data);
     }
 
-    default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, @NotNull ByteBuf data){
+    default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, @NotNull ByteBuf data) {
         final byte[] dataArray = new byte[data.readableBytes()];
         data.readBytes(dataArray);
 
         this.sendPluginMessageToOwner(channel, dataArray);
     }
 
-    default void sendPluginMessageTo(@NotNull Player target, @NotNull MinecraftChannelIdentifier channel, @NotNull ByteBuf data){
+    default void sendPluginMessageTo(@NotNull Player target, @NotNull MinecraftChannelIdentifier channel, @NotNull ByteBuf data) {
         final byte[] dataArray = new byte[data.readableBytes()];
         data.readBytes(dataArray);
 
         this.sendPluginMessageTo(target, channel, dataArray);
     }
 
-    default void sendPluginMessageTo(@NotNull Player target, @NotNull MinecraftChannelIdentifier channel, byte[] data){
+    default void sendPluginMessageTo(@NotNull Player target, @NotNull MinecraftChannelIdentifier channel, byte[] data) {
         target.sendPluginMessage(channel, data);
     }
 }

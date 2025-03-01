@@ -1,8 +1,8 @@
 package meow.kikir.freesia.worker.mixin;
 
 import com.mojang.authlib.GameProfile;
-import meow.kikir.freesia.worker.ServerLoader;
 import meow.kikir.freesia.common.EntryPoint;
+import meow.kikir.freesia.worker.ServerLoader;
 import net.minecraft.network.protocol.login.ServerboundHelloPacket;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import org.jetbrains.annotations.NotNull;
@@ -14,9 +14,12 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(ServerLoginPacketListenerImpl.class)
 public abstract class ServerLoginPacketListenerImplMixin {
 
-    @Shadow @Nullable
+    @Shadow
+    @Nullable
     String requestedUsername;
-    @Shadow abstract void startClientVerification(GameProfile gameProfile);
+
+    @Shadow
+    abstract void startClientVerification(GameProfile gameProfile);
 
     /**
      * @author MrHua269
@@ -29,7 +32,7 @@ public abstract class ServerLoginPacketListenerImplMixin {
 
         //Preload it to prevent load it blocking
         ServerLoader.workerConnection.getPlayerData(requestedProfile.getId(), data -> {
-            if (data != null){
+            if (data != null) {
                 ServerLoader.playerDataCache.put(requestedProfile.getId(), data);
             }
 

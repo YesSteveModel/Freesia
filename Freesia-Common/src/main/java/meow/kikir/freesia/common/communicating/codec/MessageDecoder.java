@@ -1,10 +1,10 @@
 package meow.kikir.freesia.common.communicating.codec;
 
-import meow.kikir.freesia.common.communicating.message.IMessage;
-import meow.kikir.freesia.common.communicating.BuiltinMessageRegitres;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import meow.kikir.freesia.common.communicating.BuiltinMessageRegitres;
+import meow.kikir.freesia.common.communicating.message.IMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -21,7 +21,7 @@ public class MessageDecoder extends ByteToMessageDecoder {
             final IMessage<?> wrapped = packetCreator.get();
             wrapped.readMessageData(byteBuf);
             list.add(wrapped);
-        }catch (Exception e){
+        } catch (Exception e) {
             throw new IOException(e);
         }
     }

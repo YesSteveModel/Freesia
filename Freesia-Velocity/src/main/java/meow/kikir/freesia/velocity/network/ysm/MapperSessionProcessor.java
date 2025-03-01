@@ -2,9 +2,9 @@ package meow.kikir.freesia.velocity.network.ysm;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
-import meow.kikir.freesia.velocity.Freesia;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import meow.kikir.freesia.velocity.Freesia;
 import net.kyori.adventure.key.Key;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.*;
@@ -18,7 +18,7 @@ import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.Clientbound
 
 import java.util.concurrent.locks.LockSupport;
 
-public class MapperSessionProcessor implements SessionListener{
+public class MapperSessionProcessor implements SessionListener {
     private final Player bindPlayer;
     private final YsmPacketProxy packetProxy;
     private final YsmMapperPayloadManager mapperPayloadManager;
@@ -31,7 +31,7 @@ public class MapperSessionProcessor implements SessionListener{
         this.mapperPayloadManager = mapperPayloadManager;
     }
 
-    public YsmPacketProxy getPacketProxy(){
+    public YsmPacketProxy getPacketProxy() {
         return this.packetProxy;
     }
 
@@ -39,15 +39,15 @@ public class MapperSessionProcessor implements SessionListener{
         return this.session;
     }
 
-    public void setKickMasterWhenDisconnect(boolean kickMasterWhenDisconnect){
+    public void setKickMasterWhenDisconnect(boolean kickMasterWhenDisconnect) {
         this.kickMasterWhenDisconnect = kickMasterWhenDisconnect;
     }
 
-    public void processPlayerPluginMessage(byte[] packetData){
+    public void processPlayerPluginMessage(byte[] packetData) {
         // Async packet processing
         final ProxyComputeResult result = this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData));
 
-        switch (result.result()){
+        switch (result.result()) {
             case MODIFY -> {
                 final ByteBuf finalData = result.data();
 
@@ -58,30 +58,31 @@ public class MapperSessionProcessor implements SessionListener{
                 this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, data));
             }
 
-            case PASS -> this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, packetData));
+            case PASS ->
+                    this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, packetData));
         }
     }
 
-    public Player getBindPlayer(){
+    public Player getBindPlayer() {
         return this.bindPlayer;
     }
 
     @Override
     public void packetReceived(Session session, Packet packet) {
-        if (packet instanceof ClientboundLoginPacket loginPacket){
+        if (packet instanceof ClientboundLoginPacket loginPacket) {
             Freesia.mapperManager.updateWorkerPlayerEntityId(this.bindPlayer, loginPacket.getEntityId());
             Freesia.mapperManager.onProxyLoggedin(this.bindPlayer, this, ((TcpClientSession) session));
         }
 
-        if (packet instanceof ClientboundCustomPayloadPacket payloadPacket){
+        if (packet instanceof ClientboundCustomPayloadPacket payloadPacket) {
             final Key channelKey = payloadPacket.getChannel();
             final byte[] packetData = payloadPacket.getData();
 
-            if (channelKey.toString().equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE.toString())){
+            if (channelKey.toString().equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE.toString())) {
                 // Async packet processing
                 final ProxyComputeResult result = this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData));
 
-                switch (result.result()){
+                switch (result.result()) {
                     case MODIFY -> {
                         final ByteBuf finalData = result.data();
 
@@ -90,13 +91,14 @@ public class MapperSessionProcessor implements SessionListener{
                         this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), finalData);
                     }
 
-                    case PASS -> this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
+                    case PASS ->
+                            this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
                 }
             }
         }
 
         // Reply the fabric mod loader ping checks
-        if (packet instanceof ClientboundPingPacket pingPacket){
+        if (packet instanceof ClientboundPingPacket pingPacket) {
             session.send(new ServerboundPongPacket(pingPacket.getId()));
         }
     }
@@ -129,14 +131,14 @@ public class MapperSessionProcessor implements SessionListener{
     @Override
     public void disconnected(DisconnectedEvent event) {
         Freesia.LOGGER.info("Mapper session has disconnected for reason(non-deserialized): {}", event.getReason()); // Log disconnected
-        if (event.getCause() != null){
+        if (event.getCause() != null) {
             Freesia.LOGGER.info("Mapper session has disconnected for throwable: {}", event.getCause().getLocalizedMessage()); // Log errors
         }
         this.mapperPayloadManager.onWorkerSessionDisconnect(this, this.kickMasterWhenDisconnect, event.getReason()); // Fire events
         this.session = null; //Set session to null to finalize the mapper connection
     }
 
-    public void waitForDisconnected(){
+    public void waitForDisconnected() {
         while (this.session != null) {
             Thread.yield();
             LockSupport.parkNanos(1_000);

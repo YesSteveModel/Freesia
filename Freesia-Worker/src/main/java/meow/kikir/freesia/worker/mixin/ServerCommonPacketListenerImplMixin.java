@@ -11,17 +11,20 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ServerCommonPacketListenerImpl.class)
-public class ServerCommonPacketListenerImplMixin {
-    @Shadow private long keepAliveTime;
+public abstract class ServerCommonPacketListenerImplMixin {
+    @Shadow
+    private long keepAliveTime;
 
-    @Shadow private int latency;
+    @Shadow
+    private int latency;
 
-    @Shadow private boolean keepAlivePending;
+    @Shadow
+    private boolean keepAlivePending;
 
     @Inject(method = "handleKeepAlive", at = @At(value = "HEAD"), cancellable = true)
-    public void onKeepaliveHandle(ServerboundKeepAlivePacket serverboundKeepAlivePacket, @NotNull CallbackInfo ci){
+    public void onKeepaliveHandle(ServerboundKeepAlivePacket serverboundKeepAlivePacket, @NotNull CallbackInfo ci) {
         //Do not check keepalive id
-        int i = (int)(Util.getMillis() - this.keepAliveTime);
+        int i = (int) (Util.getMillis() - this.keepAliveTime);
         this.latency = (this.latency * 3 + i) / 4;
         this.keepAlivePending = false;
         ci.cancel();

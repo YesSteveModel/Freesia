@@ -21,25 +21,28 @@ public class PlayerEntityStateChangeEvent {
 
     /**
      * 获取持有这个数据的玩家
+     *
      * @return 玩家
      */
-    public Player getPlayer(){
+    public Player getPlayer() {
         return this.actualPlayer;
     }
 
     /**
      * 获取这个玩家在worker侧的实体id
+     *
      * @return 实体id
      */
-    public int getEntityId(){
+    public int getEntityId() {
         return this.entityId;
     }
 
     /**
      * 获取玩家的ysm实体数据
+     *
      * @return 实体数据的nbt形式
      */
-    public NBTCompound getEntityState(){
+    public NBTCompound getEntityState() {
         return this.entityState;
     }
 }

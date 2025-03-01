@@ -12,9 +12,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.net.SocketAddress;
 
 @Mixin(PlayerList.class)
-public class PlayerListMixin {
+public abstract class PlayerListMixin {
     @Inject(method = "canPlayerLogin", at = @At(value = "HEAD"), cancellable = true)
-    public void playerList$canJoin$kill(SocketAddress socketAddress, GameProfile gameProfile, @NotNull CallbackInfoReturnable<Component> cir){
+    public void playerList$canJoin$kill(SocketAddress socketAddress, GameProfile gameProfile, @NotNull CallbackInfoReturnable<Component> cir) {
         cir.setReturnValue(null);
     }
 }

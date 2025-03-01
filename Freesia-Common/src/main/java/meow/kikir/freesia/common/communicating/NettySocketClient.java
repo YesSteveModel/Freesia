@@ -1,10 +1,10 @@
 package meow.kikir.freesia.common.communicating;
 
-import meow.kikir.freesia.common.EntryPoint;
-import meow.kikir.freesia.common.communicating.message.IMessage;
-import meow.kikir.freesia.common.NettyUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
+import meow.kikir.freesia.common.EntryPoint;
+import meow.kikir.freesia.common.NettyUtils;
+import meow.kikir.freesia.common.communicating.message.IMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.InetSocketAddress;
@@ -18,12 +18,12 @@ public class NettySocketClient {
     private final EventLoopGroup clientEventLoopGroup = NettyUtils.eventLoopGroup();
     private final Class<? extends Channel> clientChannelType = NettyUtils.channelClass();
     private final InetSocketAddress masterAddress;
-    private volatile ChannelFuture clientChannelFuture;
-    private volatile Channel channel;
-    private volatile boolean isConnecting = false;
     private final Queue<IMessage<?>> packetFlushQueue = new ConcurrentLinkedQueue<>();
     private final Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator;
     private final int reconnectInterval;
+    private volatile ChannelFuture clientChannelFuture;
+    private volatile Channel channel;
+    private volatile boolean isConnecting = false;
     private volatile boolean isConnected = false;
 
     public NettySocketClient(InetSocketAddress masterAddress, Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator, int reconnectInterval) {
@@ -32,7 +32,7 @@ public class NettySocketClient {
         this.reconnectInterval = reconnectInterval;
     }
 
-    public void connect(){
+    public void connect() {
         this.isConnecting = true;
         EntryPoint.LOGGER_INST.info("Connecting to master controller service.");
         try {
@@ -51,17 +51,17 @@ public class NettySocketClient {
                     .syncUninterruptibly();
             this.channel = this.clientChannelFuture.channel();
             this.isConnected = true;
-        }catch (Exception e){
+        } catch (Exception e) {
             EntryPoint.LOGGER_INST.error("Failed to connect master controller service!", e);
-        }finally {
+        } finally {
             this.isConnecting = false;
         }
 
-        if (!this.isConnected){
+        if (!this.isConnected) {
             EntryPoint.LOGGER_INST.info("Trying to reconnect to the controller!");
             LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(this.reconnectInterval));
 
-            if (!this.shouldDoNextReconnect()){
+            if (!this.shouldDoNextReconnect()) {
                 return;
             }
 
@@ -73,18 +73,18 @@ public class NettySocketClient {
         return true;
     }
 
-    public void onChannelInactive(){
+    public void onChannelInactive() {
         EntryPoint.LOGGER_INST.warn("Master controller has been disconnected!");
         this.isConnected = false;
     }
 
-    public void sendToMaster(IMessage<?> message){
-        if (this.channel == null && !this.isConnecting){
+    public void sendToMaster(IMessage<?> message) {
+        if (this.channel == null && !this.isConnecting) {
             throw new IllegalStateException("Not connected");
         }
 
-        if (!this.channel.isOpen()){
-            if (this.isConnecting){
+        if (!this.channel.isOpen()) {
+            if (this.isConnecting) {
                 this.packetFlushQueue.offer(message);
                 return;
             }
@@ -92,14 +92,14 @@ public class NettySocketClient {
             throw new IllegalStateException("Not connected");
         }
 
-        if (!this.channel.eventLoop().inEventLoop()){
+        if (!this.channel.eventLoop().inEventLoop()) {
             this.channel.eventLoop().execute(() -> this.sendToMaster(message));
             return;
         }
 
-        if (!this.packetFlushQueue.isEmpty()){
+        if (!this.packetFlushQueue.isEmpty()) {
             IMessage<?> toSend;
-            while ((toSend = this.packetFlushQueue.poll()) != null){
+            while ((toSend = this.packetFlushQueue.poll()) != null) {
                 this.channel.writeAndFlush(toSend);
             }
         }

@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public class DefaultVirtualPlayerDataStorageManagerImpl implements IDataStorageManager{
+public class DefaultVirtualPlayerDataStorageManagerImpl implements IDataStorageManager {
     private static final File PLUGIN_FOLDER = new File(new File("plugins"), "Cyanidin");
     private static final File PLAYER_DATA_FOLDER = new File(PLUGIN_FOLDER, "playerdata_virtual");
 
@@ -21,7 +21,7 @@ public class DefaultVirtualPlayerDataStorageManagerImpl implements IDataStorageM
         return CompletableFuture.supplyAsync(() -> {
             final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".dat");
 
-            if (!targetFile.exists()){
+            if (!targetFile.exists()) {
                 return null;
             }
 
@@ -40,12 +40,12 @@ public class DefaultVirtualPlayerDataStorageManagerImpl implements IDataStorageM
             final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".dat");
 
             try {
-                if (!targetFile.exists()){
+                if (!targetFile.exists()) {
                     targetFile.createNewFile();
                 }
 
                 Files.write(targetFile.toPath(), content);
-            }catch (IOException e){
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }, ioTask -> Freesia.PROXY_SERVER.getScheduler().buildTask(Freesia.INSTANCE, ioTask).schedule());

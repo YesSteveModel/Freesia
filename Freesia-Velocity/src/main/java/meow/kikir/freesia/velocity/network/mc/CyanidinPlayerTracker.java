@@ -5,9 +5,9 @@ import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import io.netty.buffer.Unpooled;
 import meow.kikir.freesia.velocity.Freesia;
 import meow.kikir.freesia.velocity.utils.FriendlyByteBuf;
-import io.netty.buffer.Unpooled;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -26,18 +26,18 @@ public class CyanidinPlayerTracker {
     private final Map<Integer, Consumer<Set<UUID>>> pendingCanSeeTasks = new ConcurrentHashMap<>();
     private final AtomicInteger idGenerator = new AtomicInteger(0);
 
-    public void init(){
+    public void init() {
         Freesia.PROXY_SERVER.getChannelRegistrar().register(SYNC_CHANNEL_KEY);
         Freesia.PROXY_SERVER.getEventManager().register(Freesia.INSTANCE, this);
     }
 
     @Subscribe
-    public void onChannelMsg(@NotNull PluginMessageEvent event){
-        if (!(event.getSource() instanceof ServerConnection)){
+    public void onChannelMsg(@NotNull PluginMessageEvent event) {
+        if (!(event.getSource() instanceof ServerConnection)) {
             return;
         }
 
-        if (!event.getIdentifier().getId().equals(SYNC_CHANNEL_KEY.getId())){
+        if (!event.getIdentifier().getId().equals(SYNC_CHANNEL_KEY.getId())) {
             return;
         }
 
@@ -45,7 +45,7 @@ public class CyanidinPlayerTracker {
 
         final FriendlyByteBuf packetData = new FriendlyByteBuf(Unpooled.wrappedBuffer(event.getData()));
 
-        switch (packetData.readVarInt()){
+        switch (packetData.readVarInt()) {
             case 0 -> {
                 final int taskId = packetData.readVarInt();
                 final int collectionSize = packetData.readVarInt();
@@ -59,7 +59,7 @@ public class CyanidinPlayerTracker {
 
                 try {
                     targetTask.accept(result);
-                }catch (Exception e){
+                } catch (Exception e) {
                     Freesia.LOGGER.error("Can not process tracker callback task !", e);
                 }
             }
@@ -71,16 +71,16 @@ public class CyanidinPlayerTracker {
                 final Optional<Player> watcherPlayerNullable = Freesia.PROXY_SERVER.getPlayer(watcherUUID);
                 final Optional<Player> beSeeingPlayerNullable = Freesia.PROXY_SERVER.getPlayer(beSeeingUUID);
 
-                if (watcherPlayerNullable.isPresent()){
+                if (watcherPlayerNullable.isPresent()) {
                     final Player watcherPlayer = watcherPlayerNullable.get();
 
-                    if (beSeeingPlayerNullable.isPresent()){
+                    if (beSeeingPlayerNullable.isPresent()) {
                         final Player beSeeingPlayer = beSeeingPlayerNullable.get();
 
-                        for (BiConsumer<Player, Player> listener : this.realPlayerListeners){
+                        for (BiConsumer<Player, Player> listener : this.realPlayerListeners) {
                             try {
                                 listener.accept(beSeeingPlayer, watcherPlayer);
-                            }catch (Exception e){
+                            } catch (Exception e) {
                                 Freesia.LOGGER.error("Can not process real tracker update!", e);
                             }
                         }
@@ -88,10 +88,10 @@ public class CyanidinPlayerTracker {
                         return;
                     }
 
-                    for (BiConsumer<UUID, Player> listener : this.virtualPlayerListeners){
+                    for (BiConsumer<UUID, Player> listener : this.virtualPlayerListeners) {
                         try {
                             listener.accept(beSeeingUUID, watcherPlayer);
-                        }catch (Exception e){
+                        } catch (Exception e) {
                             Freesia.LOGGER.error("Can not process virtual tracker update!", e);
                         }
                     }
@@ -100,7 +100,7 @@ public class CyanidinPlayerTracker {
         }
     }
 
-    public CompletableFuture<Set<UUID>> getCanSee(@NotNull UUID target){
+    public CompletableFuture<Set<UUID>> getCanSee(@NotNull UUID target) {
         CompletableFuture<Set<UUID>> callback = new CompletableFuture<>();
         final int callbackId = this.idGenerator.getAndIncrement();
 
@@ -114,14 +114,16 @@ public class CyanidinPlayerTracker {
 
         final Optional<Player> targetPlayerNullable = Freesia.PROXY_SERVER.getPlayer(target);
 
-        if (targetPlayerNullable.isPresent()){
+        if (targetPlayerNullable.isPresent()) {
             final Player targetPlayer = targetPlayerNullable.get();
 
             targetPlayer.getCurrentServer().ifPresentOrElse(
                     server -> server.getServer().sendPluginMessage(SYNC_CHANNEL_KEY, callbackRequest.getBytes()),
-                    () -> { throw new IllegalStateException(); } // Throw exception when we didn't find that server
+                    () -> {
+                        throw new IllegalStateException();
+                    } // Throw exception when we didn't find that server
             );
-        }else{
+        } else {
             callback.complete(null);
         }
 

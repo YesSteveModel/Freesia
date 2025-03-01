@@ -14,7 +14,7 @@ public class Utils {
             return expected;
         }
 
-        final Optional<? extends Player> any =  Bukkit.getOnlinePlayers().stream().findAny();
+        final Optional<? extends Player> any = Bukkit.getOnlinePlayers().stream().findAny();
 
         return any.orElse(null);
     }

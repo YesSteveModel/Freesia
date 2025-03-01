@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-public class YsmClientKickingDetector implements Runnable{
+public class YsmClientKickingDetector implements Runnable {
     private final Map<Player, Long> lastNotDetected = new ConcurrentHashMap<>();
     private final long timeOut;
     private volatile boolean scheduleNext = true;
@@ -70,7 +70,7 @@ public class YsmClientKickingDetector implements Runnable{
                     target.disconnect(Freesia.languageManager.i18n("cyanidin.mod_handshake_time_outed", List.of(), List.of()));
                 }
             }
-        }finally {
+        } finally {
             if (this.scheduleNext) {
                 this.lastScheduled = Freesia.PROXY_SERVER.getScheduler().buildTask(Freesia.INSTANCE, this).delay(50, TimeUnit.MILLISECONDS).schedule();
             }

@@ -1,10 +1,10 @@
 package meow.kikir.freesia.common.communicating.handler;
 
-import meow.kikir.freesia.common.EntryPoint;
-import meow.kikir.freesia.common.communicating.message.IMessage;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import meow.kikir.freesia.common.EntryPoint;
+import meow.kikir.freesia.common.communicating.message.IMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,8 +14,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public abstract class NettyServerChannelHandlerLayer extends SimpleChannelInboundHandler<IMessage<NettyServerChannelHandlerLayer>> {
-    private Channel channel;
     private final Queue<IMessage<NettyClientChannelHandlerLayer>> pendingPackets = new ConcurrentLinkedQueue<>();
+    private Channel channel;
 
     @Override
     public void channelActive(@NotNull ChannelHandlerContext ctx) {
@@ -27,29 +27,29 @@ public abstract class NettyServerChannelHandlerLayer extends SimpleChannelInboun
     protected void channelRead0(ChannelHandlerContext ctx, IMessage<NettyServerChannelHandlerLayer> msg) {
         try {
             msg.process(this);
-        }catch (Exception e){
+        } catch (Exception e) {
             EntryPoint.LOGGER_INST.error("Failed to process packet! ", e);
         }
     }
 
-    public void sendMessage(IMessage<NettyClientChannelHandlerLayer> packet){
-        if (!this.channel.isOpen()){
+    public void sendMessage(IMessage<NettyClientChannelHandlerLayer> packet) {
+        if (!this.channel.isOpen()) {
             return;
         }
 
-        if (this.channel == null){
+        if (this.channel == null) {
             this.pendingPackets.offer(packet);
             return;
         }
 
-        if (!this.channel.eventLoop().inEventLoop()){
+        if (!this.channel.eventLoop().inEventLoop()) {
             this.channel.eventLoop().execute(() -> this.sendMessage(packet));
             return;
         }
 
-        if (!this.pendingPackets.isEmpty()){
+        if (!this.pendingPackets.isEmpty()) {
             IMessage<NettyClientChannelHandlerLayer> pending;
-            while ((pending = this.pendingPackets.poll()) != null){
+            while ((pending = this.pendingPackets.poll()) != null) {
                 this.channel.writeAndFlush(pending);
             }
         }
@@ -61,7 +61,7 @@ public abstract class NettyServerChannelHandlerLayer extends SimpleChannelInboun
 
     public abstract CompletableFuture<Void> savePlayerData(UUID playerUUID, byte[] content);
 
-    public abstract void onCommandDispatchResult(int traceId,@Nullable String result);
+    public abstract void onCommandDispatchResult(int traceId, @Nullable String result);
 
     public abstract void updateWorkerInfo(UUID workerUUID, String workerName);
 }

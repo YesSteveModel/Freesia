@@ -12,17 +12,16 @@ public class FreesiaWorkerConfig {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final File CONFIG_FILE_DIR = new File("config");
     private static final File CONFIG_FILE = new File(CONFIG_FILE_DIR, "cyanidin_config.toml");
-    private static CommentedFileConfig CONFIG_INSTANCE;
-
     public static InetSocketAddress masterServiceAddress = new InetSocketAddress("127.0.0.1", 19200);
     public static int reconnectInterval = 1;
     public static int playerDataCacheInvalidateIntervalSeconds = 30;
+    private static CommentedFileConfig CONFIG_INSTANCE;
 
     static {
         CONFIG_FILE_DIR.mkdirs();
     }
 
-    private static void loadOrDefaultValues(){
+    private static void loadOrDefaultValues() {
         masterServiceAddress = new InetSocketAddress(
                 get("worker.worker_master_ip", masterServiceAddress.getHostName()),
                 get("worker.worker_master_port", masterServiceAddress.getPort())
@@ -31,8 +30,8 @@ public class FreesiaWorkerConfig {
         playerDataCacheInvalidateIntervalSeconds = get("worker.player_data_cache_invalidate_interval_seconds", playerDataCacheInvalidateIntervalSeconds);
     }
 
-    private static <T> T get(String key, T def){
-        if (!CONFIG_INSTANCE.contains(key)){
+    private static <T> T get(String key, T def) {
+        if (!CONFIG_INSTANCE.contains(key)) {
             CONFIG_INSTANCE.add(key, def);
             return def;
         }
@@ -43,7 +42,7 @@ public class FreesiaWorkerConfig {
     public static void init() throws IOException {
         LOGGER.info("Loading config file.");
 
-        if (!CONFIG_FILE.exists()){
+        if (!CONFIG_FILE.exists()) {
             LOGGER.info("Config file not found! Creating new config file.");
             CONFIG_FILE.createNewFile();
         }
@@ -54,7 +53,7 @@ public class FreesiaWorkerConfig {
 
         try {
             loadOrDefaultValues();
-        }catch (Exception e){
+        } catch (Exception e) {
             LOGGER.error("Failed to load config file!", e);
         }
 

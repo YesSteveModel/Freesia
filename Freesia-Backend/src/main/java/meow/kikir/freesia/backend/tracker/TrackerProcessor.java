@@ -1,11 +1,11 @@
 package meow.kikir.freesia.backend.tracker;
 
+import io.netty.buffer.Unpooled;
 import meow.kikir.freesia.backend.FreesiaBackend;
 import meow.kikir.freesia.backend.Utils;
 import meow.kikir.freesia.backend.event.CyanidinRealPlayerTrackerUpdateEvent;
 import meow.kikir.freesia.backend.event.CyanidinTrackerScanEvent;
 import meow.kikir.freesia.backend.utils.FriendlyByteBuf;
-import io.netty.buffer.Unpooled;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -38,7 +38,7 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
 
                         this.playerTrackedPlayer(player, toScan);
                     }
-                }else {
+                } else {
                     if (visibleMap.contains(player)) {
                         visibleMap.remove(toScan); // If out of view distance
                     }
@@ -57,7 +57,7 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
         }
     }
 
-    private void playerTrackedPlayer(@NotNull Player watcher, @NotNull Player beSeeing){
+    private void playerTrackedPlayer(@NotNull Player watcher, @NotNull Player beSeeing) {
         if (!new CyanidinRealPlayerTrackerUpdateEvent(watcher, beSeeing).callEvent()) {
             return;
         }
@@ -84,7 +84,7 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
 
     @Override
     public void onPluginMessageReceived(@NotNull String channel, @NotNull Player sender, byte @NotNull [] data) {
-        if (!channel.equals(CHANNEL_NAME)){
+        if (!channel.equals(CHANNEL_NAME)) {
             return;
         }
 

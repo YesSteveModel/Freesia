@@ -1,13 +1,11 @@
 package meow.kikir.freesia.velocity.events;
 
-import com.velocitypowered.api.proxy.Player;
-
 import java.util.UUID;
 
 /**
  * 玩家数据保存时触发该事件
  */
-public class PlayerEntityDataStoreEvent{
+public class PlayerEntityDataStoreEvent {
     private final UUID player;
     private byte[] serializedNbtData;
 

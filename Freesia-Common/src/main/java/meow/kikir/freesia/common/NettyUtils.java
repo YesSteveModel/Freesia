@@ -13,15 +13,15 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.jetbrains.annotations.NotNull;
 
 public class NettyUtils {
-    public static Class<? extends ServerChannel> serverChannelClass(){
+    public static Class<? extends ServerChannel> serverChannelClass() {
         return Epoll.isAvailable() ? EpollServerSocketChannel.class : NioServerSocketChannel.class;
     }
 
-    public static @NotNull EventLoopGroup eventLoopGroup(){
+    public static @NotNull EventLoopGroup eventLoopGroup() {
         return Epoll.isAvailable() ? new EpollEventLoopGroup() : new NioEventLoopGroup();
     }
 
-    public static Class<? extends Channel> channelClass(){
+    public static Class<? extends Channel> channelClass() {
         return Epoll.isAvailable() ? EpollSocketChannel.class : NioSocketChannel.class;
     }
 }

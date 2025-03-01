@@ -3,9 +3,9 @@ package meow.kikir.freesia.worker;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.mojang.logging.LogUtils;
-import meow.kikir.freesia.worker.impl.WorkerMessageHandlerImpl;
 import meow.kikir.freesia.common.EntryPoint;
 import meow.kikir.freesia.common.communicating.NettySocketClient;
+import meow.kikir.freesia.worker.impl.WorkerMessageHandlerImpl;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
@@ -22,6 +22,11 @@ public class ServerLoader implements DedicatedServerModInitializer {
     public static WorkerInfoFile workerInfoFile;
     public static Cache<UUID, CompoundTag> playerDataCache;
 
+    public static void connectToBackend() {
+        EntryPoint.LOGGER_INST.info("Connecting to the master.");
+        clientInstance.connect();
+    }
+
     @Override
     public void onInitializeServer() {
         EntryPoint.initLogger(LogUtils.getLogger());
@@ -37,7 +42,7 @@ public class ServerLoader implements DedicatedServerModInitializer {
                 .newBuilder()
                 .expireAfterWrite(FreesiaWorkerConfig.playerDataCacheInvalidateIntervalSeconds, TimeUnit.SECONDS)
                 .build();
-        clientInstance = new NettySocketClient(FreesiaWorkerConfig.masterServiceAddress, c -> workerConnection = new WorkerMessageHandlerImpl(), FreesiaWorkerConfig.reconnectInterval){
+        clientInstance = new NettySocketClient(FreesiaWorkerConfig.masterServiceAddress, c -> workerConnection = new WorkerMessageHandlerImpl(), FreesiaWorkerConfig.reconnectInterval) {
             @Override
             protected boolean shouldDoNextReconnect() {
                 return SERVER_INST.isRunning();
@@ -45,10 +50,5 @@ public class ServerLoader implements DedicatedServerModInitializer {
         };
 
         connectToBackend();
-    }
-
-    public static void connectToBackend(){
-        EntryPoint.LOGGER_INST.info("Connecting to the master.");
-        clientInstance.connect();
     }
 }

@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public class DefaultRealPlayerDataStorageManagerImpl implements IDataStorageManager{
+public class DefaultRealPlayerDataStorageManagerImpl implements IDataStorageManager {
     private static final File PLUGIN_FOLDER = new File(new File("plugins"), "Cyanidin");
     private static final File PLAYER_DATA_FOLDER = new File(PLUGIN_FOLDER, "playerdata");
 
@@ -21,7 +21,7 @@ public class DefaultRealPlayerDataStorageManagerImpl implements IDataStorageMana
         return CompletableFuture.supplyAsync(() -> {
             final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".nbt");
 
-            if (!targetFile.exists()){
+            if (!targetFile.exists()) {
                 return null;
             }
 
@@ -40,12 +40,12 @@ public class DefaultRealPlayerDataStorageManagerImpl implements IDataStorageMana
             final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".nbt");
 
             try {
-                if (!targetFile.exists()){
+                if (!targetFile.exists()) {
                     targetFile.createNewFile();
                 }
 
                 Files.write(targetFile.toPath(), content);
-            }catch (IOException e){
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }, ioTask -> Freesia.PROXY_SERVER.getScheduler().buildTask(Freesia.INSTANCE, ioTask).schedule());

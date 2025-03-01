@@ -1,8 +1,8 @@
 package meow.kikir.freesia.common.communicating.message.w2m;
 
+import io.netty.buffer.ByteBuf;
 import meow.kikir.freesia.common.communicating.handler.NettyServerChannelHandlerLayer;
 import meow.kikir.freesia.common.communicating.message.IMessage;
-import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -11,7 +11,8 @@ public class W2MWorkerInfoMessage implements IMessage<NettyServerChannelHandlerL
     private UUID workerUUID;
     private String workerName;
 
-    public W2MWorkerInfoMessage() {}
+    public W2MWorkerInfoMessage() {
+    }
 
     public W2MWorkerInfoMessage(UUID workerUUID, String workerName) {
         this.workerUUID = workerUUID;

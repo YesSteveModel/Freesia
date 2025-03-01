@@ -25,17 +25,20 @@ import java.util.function.BooleanSupplier;
 
 @Mixin(value = MinecraftServer.class, priority = 600)
 public abstract class MinecraftServerMixin {
-    @Shadow public abstract ServerConnectionListener getConnection();
-    @Unique volatile boolean shouldPollTask = true;
+    @Unique
+    volatile boolean shouldPollTask = true;
+
+    @Shadow
+    public abstract ServerConnectionListener getConnection();
 
     @Inject(method = "stopServer", at = @At(value = "HEAD"))
-    public void onServerStop(CallbackInfo ci){
+    public void onServerStop(CallbackInfo ci) {
         this.shouldPollTask = true;
     }
 
     @Inject(method = "pollTaskInternal", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/ServerTickRateManager;isSprinting()Z", shift = At.Shift.BEFORE), cancellable = true)
-    public void onExecutingChunkSystemTasks(@NotNull CallbackInfoReturnable<Boolean> cir){
-        if (this.shouldPollTask){
+    public void onExecutingChunkSystemTasks(@NotNull CallbackInfoReturnable<Boolean> cir) {
+        if (this.shouldPollTask) {
             return;
         }
 
@@ -53,17 +56,17 @@ public abstract class MinecraftServerMixin {
     }
 
     @Redirect(method = "saveEverything", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;saveAllChunks(ZZZ)Z"))
-    public boolean saveAllChunksHook(MinecraftServer instance, boolean bl, boolean bl2, boolean bl3){
+    public boolean saveAllChunksHook(MinecraftServer instance, boolean bl, boolean bl2, boolean bl3) {
         return true;  //Do not run game logics because it is just a worker
     }
 
     @Inject(method = "<init>", at = @At(value = "TAIL"))
-    private void staticBlockInject(Thread thread, LevelStorageSource.LevelStorageAccess levelStorageAccess, PackRepository packRepository, WorldStem worldStem, Proxy proxy, DataFixer dataFixer, Services services, ChunkProgressListenerFactory chunkProgressListenerFactory, CallbackInfo ci){
-        ServerLoader.SERVER_INST = (MinecraftServer)((Object) this); //For communicating and other functions
+    private void staticBlockInject(Thread thread, LevelStorageSource.LevelStorageAccess levelStorageAccess, PackRepository packRepository, WorldStem worldStem, Proxy proxy, DataFixer dataFixer, Services services, ChunkProgressListenerFactory chunkProgressListenerFactory, CallbackInfo ci) {
+        ServerLoader.SERVER_INST = (MinecraftServer) ((Object) this); //For communicating and other functions
     }
 
     @Inject(method = "tickChildren", at = @At(value = "HEAD"), cancellable = true)
-    public void onTickChildrenCall(BooleanSupplier booleanSupplier, @NotNull CallbackInfo ci){
+    public void onTickChildrenCall(BooleanSupplier booleanSupplier, @NotNull CallbackInfo ci) {
         ci.cancel();
         //Only tick connections to keep the mappers' communicating
         this.getConnection().tick();

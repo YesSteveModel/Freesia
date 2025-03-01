@@ -1,19 +1,19 @@
 package meow.kikir.freesia.common.communicating.message.m2w;
 
+import io.netty.buffer.ByteBuf;
 import meow.kikir.freesia.common.communicating.handler.NettyClientChannelHandlerLayer;
 import meow.kikir.freesia.common.communicating.message.IMessage;
-import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 
 public class M2WPlayerDataResponseMessage implements IMessage<NettyClientChannelHandlerLayer> {
     private int traceId;
     private byte[] content;
 
-    public M2WPlayerDataResponseMessage(){
+    public M2WPlayerDataResponseMessage() {
 
     }
 
-    public M2WPlayerDataResponseMessage(byte[] content, int traceId){
+    public M2WPlayerDataResponseMessage(byte[] content, int traceId) {
         this.content = content;
         this.traceId = traceId;
     }
@@ -23,7 +23,7 @@ public class M2WPlayerDataResponseMessage implements IMessage<NettyClientChannel
         buffer.writeInt(this.traceId);
         buffer.writeBoolean(this.content != null);
 
-        if (this.content == null){
+        if (this.content == null) {
             return;
         }
 
@@ -34,7 +34,7 @@ public class M2WPlayerDataResponseMessage implements IMessage<NettyClientChannel
     @Override
     public void readMessageData(@NotNull ByteBuf buffer) {
         this.traceId = buffer.readInt();
-        if (!buffer.readBoolean()){
+        if (!buffer.readBoolean()) {
             this.content = null;
             return;
         }

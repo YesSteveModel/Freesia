@@ -1,9 +1,9 @@
 package meow.kikir.freesia.common.communicating.message.w2m;
 
+import io.netty.buffer.ByteBuf;
 import meow.kikir.freesia.common.communicating.handler.NettyServerChannelHandlerLayer;
 import meow.kikir.freesia.common.communicating.message.IMessage;
 import meow.kikir.freesia.common.communicating.message.m2w.M2WPlayerDataResponseMessage;
-import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -12,11 +12,11 @@ public class W2MPlayerDataGetRequestMessage implements IMessage<NettyServerChann
     private int traceId;
     private UUID playerUUID;
 
-    public W2MPlayerDataGetRequestMessage(){
+    public W2MPlayerDataGetRequestMessage() {
 
     }
 
-    public W2MPlayerDataGetRequestMessage(UUID playerUUID, int traceId){
+    public W2MPlayerDataGetRequestMessage(UUID playerUUID, int traceId) {
         this.playerUUID = playerUUID;
         this.traceId = traceId;
     }

@@ -20,15 +20,15 @@ public class WorkerBackendInfo {
         return this.connectAddress;
     }
 
-    public int getActiveMappers(){
+    public int getActiveMappers() {
         return this.activeMappersCount.get();
     }
 
-    public void increaseActiveMapperCount(){
+    public void increaseActiveMapperCount() {
         this.activeMappersCount.getAndIncrement();
     }
 
-    public void decreaseActiveMapperCount(){
+    public void decreaseActiveMapperCount() {
         this.activeMappersCount.getAndDecrement();
     }
 }

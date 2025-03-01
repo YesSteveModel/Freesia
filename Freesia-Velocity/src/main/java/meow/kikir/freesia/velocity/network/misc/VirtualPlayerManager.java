@@ -8,9 +8,9 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import io.netty.buffer.Unpooled;
 import meow.kikir.freesia.velocity.Freesia;
 import meow.kikir.freesia.velocity.utils.FriendlyByteBuf;
-import io.netty.buffer.Unpooled;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
@@ -21,19 +21,19 @@ import java.util.UUID;
 public class VirtualPlayerManager {
     private static final MinecraftChannelIdentifier MANAGEMENT_CHANNEL_KEY = MinecraftChannelIdentifier.create("cyanidin", "virtual_player_management");
 
-    public void init(){
+    public void init() {
         Freesia.PROXY_SERVER.getChannelRegistrar().register(MANAGEMENT_CHANNEL_KEY);
         Freesia.PROXY_SERVER.getEventManager().register(Freesia.INSTANCE, this);
     }
 
     @Subscribe
-    public EventTask onPluginMessage(@NotNull PluginMessageEvent event){
+    public EventTask onPluginMessage(@NotNull PluginMessageEvent event) {
         return EventTask.async(() -> {
-            if (!(event.getSource() instanceof ServerConnection)){
+            if (!(event.getSource() instanceof ServerConnection)) {
                 return;
             }
 
-            if (!event.getIdentifier().getId().equals(MANAGEMENT_CHANNEL_KEY.getId())){
+            if (!event.getIdentifier().getId().equals(MANAGEMENT_CHANNEL_KEY.getId())) {
                 return;
             }
 
@@ -41,7 +41,7 @@ public class VirtualPlayerManager {
 
             final FriendlyByteBuf packetData = new FriendlyByteBuf(Unpooled.wrappedBuffer(event.getData()));
 
-            switch (packetData.readByte()){
+            switch (packetData.readByte()) {
                 case 0 -> { // Create virtual player packet
                     final int eventId = packetData.readVarInt();
                     final int entityId = packetData.readVarInt();

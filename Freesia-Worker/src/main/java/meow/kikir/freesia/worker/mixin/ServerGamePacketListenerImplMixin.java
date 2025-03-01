@@ -7,15 +7,16 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(ServerGamePacketListenerImpl.class)
-public class ServerGamePacketListenerImplMixin {
-    @Shadow private int tickCount;
+public abstract class ServerGamePacketListenerImplMixin {
+    @Shadow
+    private int tickCount;
 
     /**
      * @author MrHua269
      * @reason Only keep basic logics
      */
     @Overwrite
-    public void tick(){
+    public void tick() {
         ++this.tickCount;
         ((ServerCommonPacketListenerImpl) (Object) this).keepConnectionAlive();
     }
