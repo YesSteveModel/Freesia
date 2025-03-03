@@ -122,7 +122,7 @@ public class Freesia implements PacketListener {
    
     @Subscribe
     public EventTask onPlayerPostConnected(@NotNull ServerPostConnectedEvent event){
-        final Player targetPlayer event.getPlayer();
+        final Player targetPlayer = event.getPlayer();
 
 	return EventTask.async(() -> {
 	     mapperManager.forceUpdateRealPlayerTracker(targetPlayer);
