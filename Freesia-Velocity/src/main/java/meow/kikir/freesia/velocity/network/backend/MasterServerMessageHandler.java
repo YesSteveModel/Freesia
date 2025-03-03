@@ -102,8 +102,10 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
     @Override
     public void updateWorkerInfo(UUID workerUUID, String workerName) {
         EntryPoint.LOGGER_INST.info("Worker {} (UUID: {}) connected", workerName, workerUUID);
+
         this.workerName = workerName;
         this.workerUUID = workerUUID;
+
         Freesia.registedWorkers.put(workerUUID, this);
     }
 }
