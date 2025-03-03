@@ -23,9 +23,13 @@ public interface YsmPacketProxy {
 
     NBTCompound getCurrentEntityState();
 
-    default void setPlayerWorkerEntityId(int id) {}
+    void setPlayerWorkerEntityId(int id);
 
-    default void setPlayerEntityId(int id) {}
+    void setPlayerEntityId(int id);
+
+    int getPlayerEntityId();
+
+    int getPlayerWorkerEntityId();
 
     default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, byte[] data){
         this.sendPluginMessageTo(this.getOwner(), channel, data);

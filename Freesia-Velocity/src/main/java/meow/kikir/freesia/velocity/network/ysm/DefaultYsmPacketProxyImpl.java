@@ -49,6 +49,16 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     }
 
     @Override
+    public int getPlayerEntityId() {
+        return this.playerEntityId;
+    }
+
+    @Override
+    public int getPlayerWorkerEntityId() {
+        return this.workerPlayerEntityId;
+    }
+
+    @Override
     public Player getOwner() {
         return this.player;
     }

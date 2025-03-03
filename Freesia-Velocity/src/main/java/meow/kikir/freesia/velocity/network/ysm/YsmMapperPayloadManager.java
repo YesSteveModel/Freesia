@@ -35,7 +35,6 @@ public class YsmMapperPayloadManager {
 
     // Used for virtual players like NPCs
     private final Map<UUID, YsmPacketProxy> virtualProxies = new HashMap<>();
-    private final Map<UUID, Integer> virtualPlayerEntityIds = new HashMap<>();
     private final Function<UUID, YsmPacketProxy> packetProxyCreatorVirtual;
 
     // Player to worker mappers connections
@@ -84,7 +83,7 @@ public class YsmMapperPayloadManager {
         mapper.getPacketProxy().setPlayerEntityId(entityId);
     }
 
-    public boolean setVirtualPlayerEntityState(UUID playerUUID, NBTCompound nbt) {
+    public CompletableFuture<Boolean> setVirtualPlayerEntityState(UUID playerUUID, NBTCompound nbt) {
         final YsmPacketProxy virtualProxy;
 
         synchronized (this.virtualProxies) {
@@ -92,7 +91,7 @@ public class YsmMapperPayloadManager {
         }
 
         if (virtualProxy == null) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
 
         virtualProxy.setEntityDataRaw(nbt);
@@ -102,46 +101,59 @@ public class YsmMapperPayloadManager {
 
         //Probably be reset
         if (entityData == null) {
-            return false;
+            return CompletableFuture.completedFuture(true);
         }
 
-        try {
-            final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
-            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            final DataOutputStream dos = new DataOutputStream(bos);
+        // Async io
+        final CompletableFuture<Boolean> callback = new CompletableFuture<>();
 
-            serializer.serializeTag(dos, entityData, true);
-            dos.flush();
+        Freesia.PROXY_SERVER.getScheduler().buildTask(Freesia.INSTANCE, () -> {
+            try {
+                final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
+                final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                final DataOutputStream dos = new DataOutputStream(bos);
 
-            Freesia.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+                serializer.serializeTag(dos, entityData, true);
+                dos.flush();
 
-        return true;
+                Freesia.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray()).whenComplete((unused, ex) -> {
+                    if (ex != null) {
+                        callback.completeExceptionally(ex);
+                        return;
+                    }
+
+                    callback.complete(true);
+                });
+            } catch (Exception e) {
+                callback.completeExceptionally(e);
+            }
+        }).schedule();
+
+        return callback;
     }
 
-    public boolean addVirtualPlayer(UUID playerUUID, int playerEntityId) {
+    public CompletableFuture<Boolean> addVirtualPlayer(UUID playerUUID, int playerEntityId) {
         if (Freesia.PROXY_SERVER.getPlayer(playerUUID).isPresent()) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
 
         synchronized (this.virtualProxies) {
             if (this.virtualProxies.containsKey(playerUUID)) {
-                return false;
+                return CompletableFuture.completedFuture(false);
             }
 
-            final YsmPacketProxy createdVirtualProxy = this.virtualProxies.computeIfAbsent(playerUUID, this.packetProxyCreatorVirtual);
+            final CompletableFuture<Boolean> callback = new CompletableFuture<>();
 
-            this.updateVirtualPlayerEntityId(playerUUID, playerEntityId);
+            final YsmPacketProxy createdVirtualProxy = this.virtualProxies.computeIfAbsent(playerUUID, this.packetProxyCreatorVirtual);
 
             //Load from data storage
             Freesia.virtualPlayerDataStorageManager.loadPlayerData(playerUUID).whenComplete((data, ex) -> {
                 if (ex != null) {
-                    throw new RuntimeException(ex);
+                    callback.completeExceptionally(ex);
                 }
 
                 if (data == null) {
+                    callback.complete(true);
                     return;
                 }
 
@@ -150,75 +162,61 @@ public class YsmMapperPayloadManager {
                     final NBTCompound read = (NBTCompound) serializer.deserializeTag(NBTLimiter.forBuffer(data, Integer.MAX_VALUE), new DataInputStream(new ByteArrayInputStream(data)), true);
 
                     createdVirtualProxy.setEntityDataRaw(read);
-                    createdVirtualProxy.refreshToOthers();
+                    createdVirtualProxy.setPlayerEntityId(playerEntityId); // Will fired tracker update when entity id changed
                 } catch (Exception ex1) {
-                    throw new RuntimeException(ex1);
+                    callback.completeExceptionally(ex1);
+                    return;
                 }
-            });
-        }
 
-        return true;
+                callback.complete(true);
+            });
+
+            return callback;
+        }
     }
 
-    public boolean removeVirtualPlayer(UUID playerUUID) {
-        final CompletableFuture<Void> saveWaiter = new CompletableFuture<>();
-
+    public CompletableFuture<Boolean> removeVirtualPlayer(UUID playerUUID) {
         final YsmPacketProxy removedProxy;
+
         synchronized (this.virtualProxies) {
             removedProxy = this.virtualProxies.remove(playerUUID);
 
             if (removedProxy == null) {
-                return false;
+                return CompletableFuture.completedFuture(false);
             }
-
-            this.virtualPlayerEntityIds.remove(playerUUID);
         }
 
         final NBTCompound entityData = removedProxy.getCurrentEntityState();
 
         if (entityData == null) {
-            return true;
+            return CompletableFuture.completedFuture(true);
         }
 
-        try {
-            final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
-            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            final DataOutputStream dos = new DataOutputStream(bos);
+        final CompletableFuture<Boolean> callback = new CompletableFuture<>();
 
-            serializer.serializeTag(dos, entityData, true);
-            dos.flush();
+        Freesia.PROXY_SERVER.getScheduler().buildTask(Freesia.INSTANCE, () -> {
+            try {
+                final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
+                final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                final DataOutputStream dos = new DataOutputStream(bos);
 
-            Freesia.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray()).whenComplete((r, e) -> {
-                if (e != null) {
-                    saveWaiter.completeExceptionally(e);
-                    return;
-                }
+                serializer.serializeTag(dos, entityData, true);
+                dos.flush();
 
-                saveWaiter.complete(null);
-            });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+                Freesia.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray()).whenComplete((r, e) -> {
+                    if (e != null) {
+                        callback.completeExceptionally(e);
+                        return;
+                    }
 
-        saveWaiter.join();
-        return true;
-    }
+                    callback.complete(true);
+                });
+            } catch (Exception e) {
+                callback.completeExceptionally(e);
+            }
+        }).schedule();
 
-    public int getVirtualPlayerEntityId(UUID target) {
-        if (!this.virtualPlayerEntityIds.containsKey(target)) {
-            return -1;
-        }
-
-        return this.virtualPlayerEntityIds.get(target);
-    }
-
-    public void updateVirtualPlayerEntityId(UUID target, int entityId) {
-        if (!this.virtualPlayerEntityIds.containsKey(target)) {
-            this.virtualPlayerEntityIds.put(target, entityId);
-            return;
-        }
-
-        this.virtualPlayerEntityIds.replace(target, entityId);
+        return callback;
     }
 
     public void reconnectWorker(@NotNull Player master, @NotNull InetSocketAddress target) {

@@ -17,6 +17,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class VirtualPlayerManager {
     private static final MinecraftChannelIdentifier MANAGEMENT_CHANNEL_KEY = MinecraftChannelIdentifier.create("cyanidin", "virtual_player_management");
@@ -47,28 +48,46 @@ public class VirtualPlayerManager {
                     final int entityId = packetData.readVarInt();
                     final UUID virtualPlayerUUID = packetData.readUUID();
 
-                    final boolean result = Freesia.mapperManager.addVirtualPlayer(virtualPlayerUUID, entityId);
+                    final Consumer<Boolean> operationCallback = result -> {
+                        final FriendlyByteBuf response = new FriendlyByteBuf(Unpooled.buffer());
+                        response.writeByte(2);
+                        response.writeVarInt(eventId);
+                        response.writeBoolean(result);
 
-                    final FriendlyByteBuf response = new FriendlyByteBuf(Unpooled.buffer());
-                    response.writeByte(2);
-                    response.writeVarInt(eventId);
-                    response.writeBoolean(result);
+                        ((ServerConnection) event.getSource()).sendPluginMessage(MANAGEMENT_CHANNEL_KEY, response.getBytes());
+                    };
 
-                    ((ServerConnection) event.getSource()).sendPluginMessage(MANAGEMENT_CHANNEL_KEY, response.getBytes());
+                    Freesia.mapperManager.addVirtualPlayer(virtualPlayerUUID, entityId).whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            operationCallback.accept(false);
+                            return;
+                        }
+
+                        operationCallback.accept(result);
+                    });
                 }
 
                 case 1 -> { // Remove virtual player packet
                     final int eventId = packetData.readVarInt();
                     final UUID virtualPlayerUUID = packetData.readUUID();
 
-                    final boolean result = Freesia.mapperManager.removeVirtualPlayer(virtualPlayerUUID);
+                    final Consumer<Boolean> operationCallback = result -> {
+                        final FriendlyByteBuf response = new FriendlyByteBuf(Unpooled.buffer());
+                        response.writeByte(2);
+                        response.writeVarInt(eventId);
+                        response.writeBoolean(result);
 
-                    final FriendlyByteBuf response = new FriendlyByteBuf(Unpooled.buffer());
-                    response.writeByte(2);
-                    response.writeVarInt(eventId);
-                    response.writeBoolean(result);
+                        ((ServerConnection) event.getSource()).sendPluginMessage(MANAGEMENT_CHANNEL_KEY, response.getBytes());
+                    };
 
-                    ((ServerConnection) event.getSource()).sendPluginMessage(MANAGEMENT_CHANNEL_KEY, response.getBytes());
+                    Freesia.mapperManager.removeVirtualPlayer(virtualPlayerUUID).whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            operationCallback.accept(false);
+                            return;
+                        }
+
+                        operationCallback.accept(result);
+                    });
                 }
 
                 case 4 -> {
@@ -77,23 +96,35 @@ public class VirtualPlayerManager {
                     final byte[] serializedNbt = new byte[packetData.readableBytes()];
                     packetData.readBytes(serializedNbt);
 
-                    final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
-                    final NBTCompound deserializedTag;
+                    // Async io
+                    Freesia.PROXY_SERVER.getScheduler().buildTask(Freesia.INSTANCE, () -> {
+                        final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
+                        final NBTCompound deserializedTag;
 
-                    try {
-                        deserializedTag = (NBTCompound) serializer.deserializeTag(NBTLimiter.forBuffer(null, Integer.MAX_VALUE), new DataInputStream(new ByteArrayInputStream(serializedNbt)));
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                        try {
+                            deserializedTag = (NBTCompound) serializer.deserializeTag(NBTLimiter.forBuffer(null, Integer.MAX_VALUE), new DataInputStream(new ByteArrayInputStream(serializedNbt)));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
 
-                    final boolean result = Freesia.mapperManager.setVirtualPlayerEntityState(virtualPlayerUUID, deserializedTag);
+                        final Consumer<Boolean> operationCallback = result -> {
+                            final FriendlyByteBuf response = new FriendlyByteBuf(Unpooled.buffer());
+                            response.writeByte(2);
+                            response.writeVarInt(eventId);
+                            response.writeBoolean(result);
 
-                    final FriendlyByteBuf response = new FriendlyByteBuf(Unpooled.buffer());
-                    response.writeByte(2);
-                    response.writeVarInt(eventId);
-                    response.writeBoolean(result);
+                            ((ServerConnection) event.getSource()).sendPluginMessage(MANAGEMENT_CHANNEL_KEY, response.getBytes());
+                        };
 
-                    ((ServerConnection) event.getSource()).sendPluginMessage(MANAGEMENT_CHANNEL_KEY, response.getBytes());
+                        Freesia.mapperManager.setVirtualPlayerEntityState(virtualPlayerUUID, deserializedTag).whenComplete((result ,ex) -> {
+                            if (ex != null) {
+                                operationCallback.accept(false);
+                                return;
+                            }
+
+                            operationCallback.accept(result);
+                        });
+                    }).schedule();
                 }
             }
         });
