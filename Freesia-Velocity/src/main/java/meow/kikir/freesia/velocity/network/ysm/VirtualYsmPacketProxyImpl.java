@@ -36,11 +36,6 @@ public class VirtualYsmPacketProxyImpl implements YsmPacketProxy {
     }
 
     @Override
-    public void blockUntilProxyReady() {
-        //It's not necessary to wait for virtual player as it will be loaded at once
-    }
-
-    @Override
     public Player getOwner() {
         return null;
     }

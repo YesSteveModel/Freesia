@@ -5,15 +5,15 @@ import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.velocitypowered.api.event.ResultedEvent;
 import com.velocitypowered.api.proxy.Player;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import meow.kikir.freesia.velocity.Freesia;
 import meow.kikir.freesia.velocity.YsmProtocolMetaFile;
-import meow.kikir.freesia.velocity.events.PlayerEntityStateChangeEvent;
 import meow.kikir.freesia.velocity.events.PlayerYsmHandshakeEvent;
+import meow.kikir.freesia.velocity.events.PlayerEntityStateChangeEvent;
 import meow.kikir.freesia.velocity.network.mc.NbtRemapper;
 import meow.kikir.freesia.velocity.network.mc.impl.StandardNbtRemapperImpl;
 import meow.kikir.freesia.velocity.utils.FriendlyByteBuf;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.kyori.adventure.key.Key;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,21 +21,30 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
 
-public class DefaultYsmPacketProxyImpl implements YsmPacketProxy {
+public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     private final Player player;
     private final NbtRemapper nbtRemapper = new StandardNbtRemapperImpl();
     private volatile NBTCompound lastYsmEntityStatus = null;
+    private volatile int playerEntityId = -1;
+    private volatile int workerPlayerEntityId = -1;
 
     public DefaultYsmPacketProxyImpl(@NotNull Player player) {
         this.player = player;
     }
 
     @Override
-    public void blockUntilProxyReady() {
-        // Must block until the player joined to the backend server
-        while (Freesia.mapperManager.getRealPlayerEntityId(this.player) == -1) {
-            Thread.yield();
-            LockSupport.parkNanos(1_000);
+    public void setPlayerWorkerEntityId(int id) {
+        this.workerPlayerEntityId = id;
+    }
+
+    @Override
+    public void setPlayerEntityId(int id) {
+        final int oldEntityId = this.playerEntityId;
+
+        this.playerEntityId = id;
+
+        if (oldEntityId == -1 && id != -1) {
+            this.refreshToOthers();
         }
     }
 
@@ -44,8 +53,8 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy {
         return this.player;
     }
 
-    private boolean isEntityStateOfSelf(int entityId) {
-        final int currentWorkerEntityId = Freesia.mapperManager.getWorkerPlayerEntityId(this.player);
+    private boolean isEntityStateOfSelf(int entityId){
+        final int currentWorkerEntityId = this.workerPlayerEntityId;
 
         if (currentWorkerEntityId == -1) {
             return false;
@@ -55,8 +64,8 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy {
     }
 
     @Override
-    public void sendEntityStateTo(@NotNull Player target) {
-        final int currentEntityId = Freesia.mapperManager.getRealPlayerEntityId(this.player); // Get current entity id on the server of the player
+    public void sendEntityStateTo(@NotNull Player target){
+        final int currentEntityId = this.playerEntityId; // Get current entity id on the server of the player
 
         final NBTCompound lastEntityStatusTemp = this.lastYsmEntityStatus; // Copy the value instead of the reference
 
@@ -115,7 +124,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy {
                     return ProxyComputeResult.ofDrop(); // Do not process the entity state if it is not ours
                 }
 
-                Freesia.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player, workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
+                Freesia.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
                     this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
 
                     this.sendEntityStateTo(this.player); // Sync to self

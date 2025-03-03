@@ -51,10 +51,6 @@ public class YsmMapperPayloadManager {
     private final Map<InetSocketAddress, Integer> backend2Players = new LinkedHashMap<>();
     private final Function<Player, YsmPacketProxy> packetProxyCreator;
 
-    // The entity id of the worker session(Used for tracker updates remapping)
-    private final Map<Player, Integer> player2WorkerEntityIds = new ConcurrentHashMap<>();
-    // The entity id of the real server session(Used for tracker updates remapping)
-    private final Map<Player, Integer> player2ServerEntityIds = new ConcurrentHashMap<>();
     // The players who installed ysm(Used for packet sending reduction)
     private final Set<Player> ysmInstalledPlayers = ConcurrentHashMap.newKeySet();
 
@@ -72,38 +68,24 @@ public class YsmMapperPayloadManager {
         this.ysmInstalledPlayers.add(target);
     }
 
-    public void updateWorkerPlayerEntityId(Player target, int entityId) {
-        if (!this.player2WorkerEntityIds.containsKey(target)) {
-            this.player2WorkerEntityIds.put(target, entityId);
+    public void updateWorkerPlayerEntityId(Player target, int entityId){
+        final MapperSessionProcessor mapper = this.mapperSessions.get(target);
+
+        if (mapper == null) {
             return;
         }
 
-        this.player2WorkerEntityIds.replace(target, entityId);
+        mapper.getPacketProxy().setPlayerWorkerEntityId(entityId);
     }
 
-    public int getWorkerPlayerEntityId(Player target) {
-        if (!this.player2WorkerEntityIds.containsKey(target)) {
-            return -1;
-        }
+    public void updateRealPlayerEntityId(Player target, int entityId){
+        final MapperSessionProcessor mapper = this.mapperSessions.get(target);
 
-        return this.player2WorkerEntityIds.get(target);
-    }
-
-    public void updateRealPlayerEntityId(Player target, int entityId) {
-        if (!this.player2ServerEntityIds.containsKey(target)) {
-            this.player2ServerEntityIds.put(target, entityId);
+        if (mapper == null) {
             return;
         }
 
-        this.player2ServerEntityIds.replace(target, entityId);
-    }
-
-    public int getRealPlayerEntityId(Player target) {
-        if (!this.player2ServerEntityIds.containsKey(target)) {
-            return -1;
-        }
-
-        return this.player2ServerEntityIds.get(target);
+        mapper.getPacketProxy().setPlayerEntityId(entityId);
     }
 
     public boolean setVirtualPlayerEntityState(UUID playerUUID, NBTCompound nbt) {
@@ -279,8 +261,6 @@ public class YsmMapperPayloadManager {
 
     public void onPlayerDisconnect(Player player) {
         this.ysmInstalledPlayers.remove(player);
-        this.player2ServerEntityIds.remove(player);
-        this.player2WorkerEntityIds.remove(player);
 
         final MapperSessionProcessor mapperSession = this.mapperSessions.remove(player);
         final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.remove(player);
@@ -361,19 +341,16 @@ public class YsmMapperPayloadManager {
 
         mapperSession.addListener(packetProcessor);
 
-        mapperSession.setFlag(BuiltinFlags.READ_TIMEOUT, 30_000);
-        mapperSession.setFlag(BuiltinFlags.WRITE_TIMEOUT, 30_000);
-        mapperSession.connect(true, false);
+        mapperSession.setFlag(BuiltinFlags.READ_TIMEOUT,30_000);
+        mapperSession.setFlag(BuiltinFlags.WRITE_TIMEOUT,30_000);
+        this.mapperSessions.put(player, packetProcessor);
+        mapperSession.connect(true,false);
     }
 
-    public void onProxyLoggedin(Player player, MapperSessionProcessor packetProcessor, TcpClientSession session) {
-        this.mapperSessions.put(player, packetProcessor);
+    public void onProxyLoggedin(Player player, MapperSessionProcessor packetProcessor, TcpClientSession session){
         this.player2Mappers.put(player, session);
-
         //Finish the callbacks
         Freesia.PROXY_SERVER.getScheduler().buildTask(Freesia.INSTANCE, () -> {
-            packetProcessor.getPacketProxy().blockUntilProxyReady();
-
             Consumer<MapperSessionProcessor> callback;
             while ((callback = this.mapperCreateCallbacks.get(player).poll()) != null) {
                 try {

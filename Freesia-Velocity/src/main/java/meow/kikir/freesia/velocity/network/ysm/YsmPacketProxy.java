@@ -13,8 +13,6 @@ public interface YsmPacketProxy {
 
     ProxyComputeResult processC2S(Key channelKey, ByteBuf copiedPacketData);
 
-    void blockUntilProxyReady();
-
     Player getOwner();
 
     void sendEntityStateTo(@NotNull Player target);
@@ -25,7 +23,11 @@ public interface YsmPacketProxy {
 
     NBTCompound getCurrentEntityState();
 
-    default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, byte[] data) {
+    default void setPlayerWorkerEntityId(int id) {}
+
+    default void setPlayerEntityId(int id) {}
+
+    default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, byte[] data){
         this.sendPluginMessageTo(this.getOwner(), channel, data);
     }
 
