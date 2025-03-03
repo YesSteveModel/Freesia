@@ -117,7 +117,12 @@ public class CyanidinPlayerTracker {
         if (targetPlayerNullable.isPresent()) {
             final Player targetPlayer = targetPlayerNullable.get();
 
-            targetPlayer.sendPluginMessage(SYNC_CHANNEL_KEY, callbackRequest.getBytes());
+            targetPlayer.getCurrentServer().ifPresentOrElse(
+                    server -> server.getServer().sendPluginMessage(SYNC_CHANNEL_KEY, callbackRequest.getBytes()),
+                    () -> {
+                        callback.complete(null); // Maybe at the early stage
+                    } // Throw exception when we didn't find that server
+            );
         } else {
             callback.complete(null);
         }
