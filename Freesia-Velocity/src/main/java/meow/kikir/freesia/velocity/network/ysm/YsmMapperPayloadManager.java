@@ -343,6 +343,16 @@ public class YsmMapperPayloadManager {
         }
     }
 
+    public void forceUpdateRealPlayerTracker(Player owner){
+	final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
+
+	if (mapperSession == null) {
+	     throw new IllegalStateException("???");
+	}
+
+	mapperSession.getPacketProxy().refreshToOthers();
+    }
+
     @Nullable
     private InetSocketAddress selectLessPlayer() {
         this.backendIpsAccessLock.readLock().lock();
