@@ -20,6 +20,7 @@ public class VirtualYsmPacketProxyImpl implements YsmPacketProxy {
     private final UUID virtualPlayerUUID;
     private final NbtRemapper nbtRemapper = new StandardNbtRemapperImpl();
     private volatile NBTCompound lastYsmEntityStatus = null;
+    private volatile int playerEntityId = -1;
 
     public VirtualYsmPacketProxyImpl(UUID virtualPlayerUUID) {
         this.virtualPlayerUUID = virtualPlayerUUID;
@@ -33,11 +34,6 @@ public class VirtualYsmPacketProxyImpl implements YsmPacketProxy {
     @Override
     public ProxyComputeResult processC2S(Key channelKey, ByteBuf copiedPacketData) {
         return null;
-    }
-
-    @Override
-    public void blockUntilProxyReady() {
-        //It's not necessary to wait for virtual player as it will be loaded at once
     }
 
     @Override
@@ -77,8 +73,35 @@ public class VirtualYsmPacketProxyImpl implements YsmPacketProxy {
     }
 
     @Override
+    public void setPlayerWorkerEntityId(int id) {
+        // We are no mapper on the worker
+    }
+
+    @Override
+    public void setPlayerEntityId(int id) {
+        final int oldValue = this.playerEntityId;
+
+        this.playerEntityId = id;
+
+        // State changed
+        if (oldValue != id) {
+            this.refreshToOthers();
+        }
+    }
+
+    @Override
+    public int getPlayerEntityId() {
+        return this.playerEntityId;
+    }
+
+    @Override
+    public int getPlayerWorkerEntityId() {
+        return -1; // No worker entity id
+    }
+
+    @Override
     public void sendEntityStateTo(@NotNull Player target) {
-        final int currentEntityId = Freesia.mapperManager.getVirtualPlayerEntityId(this.virtualPlayerUUID); // Get current entity id on the server of the player
+        final int currentEntityId = this.playerEntityId; // Get current entity id on the server of the player
 
         final NBTCompound lastEntityStatusTemp = this.lastYsmEntityStatus; // Copy the value instead of the reference
 

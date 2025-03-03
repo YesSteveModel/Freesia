@@ -30,7 +30,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-@ChannelHandler.Sharable
 public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     private final AtomicInteger traceIdGenerator = new AtomicInteger(0);
     private final Map<Integer, Consumer<byte[]>> playerDataGetCallbacks = Maps.newConcurrentMap();
@@ -38,6 +37,7 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         this.getClient().sendToMaster(new W2MWorkerInfoMessage(ServerLoader.workerInfoFile.workerUUID(), ServerLoader.workerInfoFile.workerName()));
+
         ServerLoader.workerConnection = this;
     }
 

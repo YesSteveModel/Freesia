@@ -25,10 +25,8 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class YsmMapperPayloadManager {
@@ -37,24 +35,17 @@ public class YsmMapperPayloadManager {
 
     // Used for virtual players like NPCs
     private final Map<UUID, YsmPacketProxy> virtualProxies = new HashMap<>();
-    private final Map<UUID, Integer> virtualPlayerEntityIds = new HashMap<>();
     private final Function<UUID, YsmPacketProxy> packetProxyCreatorVirtual;
 
     // Player to worker mappers connections
     private final Map<Player, TcpClientSession> player2Mappers = new ConcurrentHashMap<>();
     private final Map<Player, MapperSessionProcessor> mapperSessions = new ConcurrentHashMap<>();
-    // Creation callbacks
-    private final Map<Player, Queue<Consumer<MapperSessionProcessor>>> mapperCreateCallbacks = new ConcurrentHashMap<>();
 
     // Backend connect infos
     private final ReadWriteLock backendIpsAccessLock = new ReentrantReadWriteLock(false);
     private final Map<InetSocketAddress, Integer> backend2Players = new LinkedHashMap<>();
     private final Function<Player, YsmPacketProxy> packetProxyCreator;
 
-    // The entity id of the worker session(Used for tracker updates remapping)
-    private final Map<Player, Integer> player2WorkerEntityIds = new ConcurrentHashMap<>();
-    // The entity id of the real server session(Used for tracker updates remapping)
-    private final Map<Player, Integer> player2ServerEntityIds = new ConcurrentHashMap<>();
     // The players who installed ysm(Used for packet sending reduction)
     private final Set<Player> ysmInstalledPlayers = ConcurrentHashMap.newKeySet();
 
@@ -72,41 +63,27 @@ public class YsmMapperPayloadManager {
         this.ysmInstalledPlayers.add(target);
     }
 
-    public void updateWorkerPlayerEntityId(Player target, int entityId) {
-        if (!this.player2WorkerEntityIds.containsKey(target)) {
-            this.player2WorkerEntityIds.put(target, entityId);
+    public void updateWorkerPlayerEntityId(Player target, int entityId){
+        final MapperSessionProcessor mapper = this.mapperSessions.get(target);
+
+        if (mapper == null) {
             return;
         }
 
-        this.player2WorkerEntityIds.replace(target, entityId);
+        mapper.getPacketProxy().setPlayerWorkerEntityId(entityId);
     }
 
-    public int getWorkerPlayerEntityId(Player target) {
-        if (!this.player2WorkerEntityIds.containsKey(target)) {
-            return -1;
-        }
+    public void updateRealPlayerEntityId(Player target, int entityId){
+        final MapperSessionProcessor mapper = this.mapperSessions.get(target);
 
-        return this.player2WorkerEntityIds.get(target);
-    }
-
-    public void updateRealPlayerEntityId(Player target, int entityId) {
-        if (!this.player2ServerEntityIds.containsKey(target)) {
-            this.player2ServerEntityIds.put(target, entityId);
+        if (mapper == null) {
             return;
         }
 
-        this.player2ServerEntityIds.replace(target, entityId);
+        mapper.getPacketProxy().setPlayerEntityId(entityId);
     }
 
-    public int getRealPlayerEntityId(Player target) {
-        if (!this.player2ServerEntityIds.containsKey(target)) {
-            return -1;
-        }
-
-        return this.player2ServerEntityIds.get(target);
-    }
-
-    public boolean setVirtualPlayerEntityState(UUID playerUUID, NBTCompound nbt) {
+    public CompletableFuture<Boolean> setVirtualPlayerEntityState(UUID playerUUID, NBTCompound nbt) {
         final YsmPacketProxy virtualProxy;
 
         synchronized (this.virtualProxies) {
@@ -114,7 +91,7 @@ public class YsmMapperPayloadManager {
         }
 
         if (virtualProxy == null) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
 
         virtualProxy.setEntityDataRaw(nbt);
@@ -124,46 +101,59 @@ public class YsmMapperPayloadManager {
 
         //Probably be reset
         if (entityData == null) {
-            return false;
+            return CompletableFuture.completedFuture(true);
         }
 
-        try {
-            final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
-            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            final DataOutputStream dos = new DataOutputStream(bos);
+        // Async io
+        final CompletableFuture<Boolean> callback = new CompletableFuture<>();
 
-            serializer.serializeTag(dos, entityData, true);
-            dos.flush();
+        Freesia.PROXY_SERVER.getScheduler().buildTask(Freesia.INSTANCE, () -> {
+            try {
+                final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
+                final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                final DataOutputStream dos = new DataOutputStream(bos);
 
-            Freesia.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+                serializer.serializeTag(dos, entityData, true);
+                dos.flush();
 
-        return true;
+                Freesia.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray()).whenComplete((unused, ex) -> {
+                    if (ex != null) {
+                        callback.completeExceptionally(ex);
+                        return;
+                    }
+
+                    callback.complete(true);
+                });
+            } catch (Exception e) {
+                callback.completeExceptionally(e);
+            }
+        }).schedule();
+
+        return callback;
     }
 
-    public boolean addVirtualPlayer(UUID playerUUID, int playerEntityId) {
+    public CompletableFuture<Boolean> addVirtualPlayer(UUID playerUUID, int playerEntityId) {
         if (Freesia.PROXY_SERVER.getPlayer(playerUUID).isPresent()) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
 
         synchronized (this.virtualProxies) {
             if (this.virtualProxies.containsKey(playerUUID)) {
-                return false;
+                return CompletableFuture.completedFuture(false);
             }
 
-            final YsmPacketProxy createdVirtualProxy = this.virtualProxies.computeIfAbsent(playerUUID, this.packetProxyCreatorVirtual);
+            final CompletableFuture<Boolean> callback = new CompletableFuture<>();
 
-            this.updateVirtualPlayerEntityId(playerUUID, playerEntityId);
+            final YsmPacketProxy createdVirtualProxy = this.virtualProxies.computeIfAbsent(playerUUID, this.packetProxyCreatorVirtual);
 
             //Load from data storage
             Freesia.virtualPlayerDataStorageManager.loadPlayerData(playerUUID).whenComplete((data, ex) -> {
                 if (ex != null) {
-                    throw new RuntimeException(ex);
+                    callback.completeExceptionally(ex);
                 }
 
                 if (data == null) {
+                    callback.complete(true);
                     return;
                 }
 
@@ -172,75 +162,61 @@ public class YsmMapperPayloadManager {
                     final NBTCompound read = (NBTCompound) serializer.deserializeTag(NBTLimiter.forBuffer(data, Integer.MAX_VALUE), new DataInputStream(new ByteArrayInputStream(data)), true);
 
                     createdVirtualProxy.setEntityDataRaw(read);
-                    createdVirtualProxy.refreshToOthers();
+                    createdVirtualProxy.setPlayerEntityId(playerEntityId); // Will fired tracker update when entity id changed
                 } catch (Exception ex1) {
-                    throw new RuntimeException(ex1);
+                    callback.completeExceptionally(ex1);
+                    return;
                 }
-            });
-        }
 
-        return true;
+                callback.complete(true);
+            });
+
+            return callback;
+        }
     }
 
-    public boolean removeVirtualPlayer(UUID playerUUID) {
-        final CompletableFuture<Void> saveWaiter = new CompletableFuture<>();
-
+    public CompletableFuture<Boolean> removeVirtualPlayer(UUID playerUUID) {
         final YsmPacketProxy removedProxy;
+
         synchronized (this.virtualProxies) {
             removedProxy = this.virtualProxies.remove(playerUUID);
 
             if (removedProxy == null) {
-                return false;
+                return CompletableFuture.completedFuture(false);
             }
-
-            this.virtualPlayerEntityIds.remove(playerUUID);
         }
 
         final NBTCompound entityData = removedProxy.getCurrentEntityState();
 
         if (entityData == null) {
-            return true;
+            return CompletableFuture.completedFuture(true);
         }
 
-        try {
-            final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
-            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            final DataOutputStream dos = new DataOutputStream(bos);
+        final CompletableFuture<Boolean> callback = new CompletableFuture<>();
 
-            serializer.serializeTag(dos, entityData, true);
-            dos.flush();
+        Freesia.PROXY_SERVER.getScheduler().buildTask(Freesia.INSTANCE, () -> {
+            try {
+                final DefaultNBTSerializer serializer = new DefaultNBTSerializer();
+                final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                final DataOutputStream dos = new DataOutputStream(bos);
 
-            Freesia.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray()).whenComplete((r, e) -> {
-                if (e != null) {
-                    saveWaiter.completeExceptionally(e);
-                    return;
-                }
+                serializer.serializeTag(dos, entityData, true);
+                dos.flush();
 
-                saveWaiter.complete(null);
-            });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+                Freesia.virtualPlayerDataStorageManager.save(playerUUID, bos.toByteArray()).whenComplete((r, e) -> {
+                    if (e != null) {
+                        callback.completeExceptionally(e);
+                        return;
+                    }
 
-        saveWaiter.join();
-        return true;
-    }
+                    callback.complete(true);
+                });
+            } catch (Exception e) {
+                callback.completeExceptionally(e);
+            }
+        }).schedule();
 
-    public int getVirtualPlayerEntityId(UUID target) {
-        if (!this.virtualPlayerEntityIds.containsKey(target)) {
-            return -1;
-        }
-
-        return this.virtualPlayerEntityIds.get(target);
-    }
-
-    public void updateVirtualPlayerEntityId(UUID target, int entityId) {
-        if (!this.virtualPlayerEntityIds.containsKey(target)) {
-            this.virtualPlayerEntityIds.put(target, entityId);
-            return;
-        }
-
-        this.virtualPlayerEntityIds.replace(target, entityId);
+        return callback;
     }
 
     public void reconnectWorker(@NotNull Player master, @NotNull InetSocketAddress target) {
@@ -265,10 +241,6 @@ public class YsmMapperPayloadManager {
         return this.player2Mappers.containsKey(player);
     }
 
-    public void onPlayerConnected(Player player) {
-        this.mapperCreateCallbacks.putIfAbsent(player, new ConcurrentLinkedQueue<>());
-    }
-
     public void firstCreateMapper(Player player) {
         this.createMapperSession(player, Objects.requireNonNull(this.selectLessPlayer()));
     }
@@ -279,22 +251,8 @@ public class YsmMapperPayloadManager {
 
     public void onPlayerDisconnect(Player player) {
         this.ysmInstalledPlayers.remove(player);
-        this.player2ServerEntityIds.remove(player);
-        this.player2WorkerEntityIds.remove(player);
 
         final MapperSessionProcessor mapperSession = this.mapperSessions.remove(player);
-        final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.remove(player);
-
-        if (removedQueue != null) {
-            Consumer<MapperSessionProcessor> unprocessed;
-            while ((unprocessed = removedQueue.poll()) != null) {
-                try {
-                    unprocessed.accept(mapperSession);
-                } catch (Exception e) {
-                    Freesia.LOGGER.error("Failed to retire connect callback!", e);
-                }
-            }
-        }
 
         if (mapperSession != null) {
             mapperSession.setKickMasterWhenDisconnect(false); //Player already offline, so we don't disconnect again
@@ -310,20 +268,6 @@ public class YsmMapperPayloadManager {
             mapperSession.getBindPlayer().disconnect(Freesia.languageManager.i18n("cyanidin.backend.disconnected", List.of("reason"), List.of(reason)));
         this.player2Mappers.remove(mapperSession.getBindPlayer());
         this.mapperSessions.remove(mapperSession.getBindPlayer());
-
-        final Queue<Consumer<MapperSessionProcessor>> removedQueue = this.mapperCreateCallbacks.get(mapperSession.getBindPlayer());
-
-        //Finalize the callbacks
-        if (removedQueue != null) {
-            Consumer<MapperSessionProcessor> unprocessed;
-            while ((unprocessed = removedQueue.poll()) != null) {
-                try {
-                    unprocessed.accept(mapperSession);
-                } catch (Exception e) {
-                    Freesia.LOGGER.error("Failed to retire connect callback!", e);
-                }
-            }
-        }
     }
 
     public void onPluginMessageIn(@NotNull Player player, @NotNull MinecraftChannelIdentifier channel, byte[] packetData) {
@@ -361,28 +305,14 @@ public class YsmMapperPayloadManager {
 
         mapperSession.addListener(packetProcessor);
 
-        mapperSession.setFlag(BuiltinFlags.READ_TIMEOUT, 30_000);
-        mapperSession.setFlag(BuiltinFlags.WRITE_TIMEOUT, 30_000);
-        mapperSession.connect(true, false);
+        mapperSession.setFlag(BuiltinFlags.READ_TIMEOUT,30_000);
+        mapperSession.setFlag(BuiltinFlags.WRITE_TIMEOUT,30_000);
+        this.mapperSessions.put(player, packetProcessor);
+        mapperSession.connect(true,false);
     }
 
-    public void onProxyLoggedin(Player player, MapperSessionProcessor packetProcessor, TcpClientSession session) {
-        this.mapperSessions.put(player, packetProcessor);
+    public void onProxyLoggedin(Player player, MapperSessionProcessor packetProcessor, TcpClientSession session){
         this.player2Mappers.put(player, session);
-
-        //Finish the callbacks
-        Freesia.PROXY_SERVER.getScheduler().buildTask(Freesia.INSTANCE, () -> {
-            packetProcessor.getPacketProxy().blockUntilProxyReady();
-
-            Consumer<MapperSessionProcessor> callback;
-            while ((callback = this.mapperCreateCallbacks.get(player).poll()) != null) {
-                try {
-                    callback.accept(packetProcessor);
-                } catch (Exception e) {
-                    Freesia.LOGGER.info("Error occurs while processing connect callbacks!", e);
-                }
-            }
-        }).schedule();
     }
 
     public void onVirtualPlayerTrackerUpdate(UUID owner, Player watcher) {
@@ -401,16 +331,11 @@ public class YsmMapperPayloadManager {
     public void onRealPlayerTrackerUpdate(Player owner, Player watcher) {
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
 
+        // The mapper was created earlier than the player's connection turned in-game state
+        // so as the result, we could simply pass it down directly
         if (mapperSession == null) {
-            //Commit to callback if the mapper session of the player not finished connecting currently
-            this.mapperCreateCallbacks.computeIfAbsent(owner, player -> new ConcurrentLinkedQueue<>()).offer((mapper) -> {
-                if (mapper == null) {
-                    return;
-                }
-
-                mapper.getPacketProxy().sendEntityStateTo(watcher);
-            });
-            return;
+            // Should not be happened
+            throw new IllegalStateException("???");
         }
 
         if (this.isPlayerInstalledYsm(watcher)) {

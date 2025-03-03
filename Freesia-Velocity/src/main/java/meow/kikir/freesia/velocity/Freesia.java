@@ -122,7 +122,6 @@ public class Freesia implements PacketListener {
     @Subscribe
     public EventTask onPlayerConnected(@NotNull ServerConnectedEvent event) {
         final Player targetPlayer = event.getPlayer();
-        mapperManager.onPlayerConnected(targetPlayer);
 
         return EventTask.async(() -> {
             if (!mapperManager.hasPlayer(targetPlayer)) {
@@ -158,7 +157,7 @@ public class Freesia implements PacketListener {
     public void onPacketSend(@NotNull PacketSendEvent event) {
         if (event.getPacketType() == PacketType.Play.Server.JOIN_GAME) {
             final WrapperPlayServerJoinGame playerSpawnPacket = new WrapperPlayServerJoinGame(event);
-            final Player target = (Player) event.getPlayer();
+            final Player target = event.getPlayer();
 
             logger.info("Entity id update for player {} to {}", target.getUsername(), playerSpawnPacket.getEntityId());
             mapperManager.updateRealPlayerEntityId(target, playerSpawnPacket.getEntityId());

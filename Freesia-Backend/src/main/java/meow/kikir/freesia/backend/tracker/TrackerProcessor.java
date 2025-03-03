@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TrackerProcessor implements PluginMessageListener, Listener {
-    private static final String CHANNEL_NAME = "cyanidin:tracker_sync";
+    private static final String CHANNEL_NAME = "freesia:tracker_sync";
     private static final Map<Player, Set<Player>> visiblePlayers = new HashMap<>();
 
     public void tickTracker() {
