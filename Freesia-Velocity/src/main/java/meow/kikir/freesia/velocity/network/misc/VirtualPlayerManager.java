@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 public class VirtualPlayerManager {
-    private static final MinecraftChannelIdentifier MANAGEMENT_CHANNEL_KEY = MinecraftChannelIdentifier.create("cyanidin", "virtual_player_management");
+    private static final MinecraftChannelIdentifier MANAGEMENT_CHANNEL_KEY = MinecraftChannelIdentifier.create("freesia", "virtual_player_management");
 
     public void init() {
         Freesia.PROXY_SERVER.getChannelRegistrar().register(MANAGEMENT_CHANNEL_KEY);
