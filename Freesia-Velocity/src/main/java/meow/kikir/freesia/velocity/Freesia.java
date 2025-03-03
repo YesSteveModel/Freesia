@@ -14,7 +14,7 @@ import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
-import com.velocitypowered.api.event.player.ServerPostConnectedEvent;
+import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.Player;
@@ -121,7 +121,7 @@ public class Freesia implements PacketListener {
     }
    
     @Subscribe
-    public EventTask onPlayerPostConnected(@NotNull ServerPostConnectedEvent event){
+    public EventTask onPlayerPostConnected(@NotNull ServerPostConnectEvent event){
         final Player targetPlayer = event.getPlayer();
 
 	return EventTask.async(() -> {
