@@ -112,8 +112,25 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public void refreshToOthers() {
-        // Impossible to be called here
-        throw new UnsupportedOperationException();
+        this.sendEntityStateTo(this.player); // Sync to self
+
+        Freesia.tracker.getCanSee(this.player.getUniqueId()).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
+            if (beingWatched != null) { // Actually there is impossible to be null
+                for (UUID targetUUID : beingWatched) {
+                    final Optional<Player> targetNullable = Freesia.PROXY_SERVER.getPlayer(targetUUID);
+
+                    if (targetNullable.isPresent()) { // Skip send to NPCs
+                        final Player target = targetNullable.get();
+
+                        if (!Freesia.mapperManager.isPlayerInstalledYsm(target)) { // Skip if target is not ysm-installed
+                            continue;
+                        }
+
+                        this.sendEntityStateTo(target); // Sync to target
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -137,25 +154,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                 Freesia.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
                     this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
 
-                    this.sendEntityStateTo(this.player); // Sync to self
-
-                    Freesia.tracker.getCanSee(this.player.getUniqueId()).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
-                        if (beingWatched != null) { // Actually there is impossible to be null
-                            for (UUID targetUUID : beingWatched) {
-                                final Optional<Player> targetNullable = Freesia.PROXY_SERVER.getPlayer(targetUUID);
-
-                                if (targetNullable.isPresent()) { // Skip send to NPCs
-                                    final Player target = targetNullable.get();
-
-                                    if (!Freesia.mapperManager.isPlayerInstalledYsm(target)) { // Skip if target is not ysm-installed
-                                        continue;
-                                    }
-
-                                    this.sendEntityStateTo(target); // Sync to target
-                                }
-                            }
-                        }
-                    });
+                    this.refreshToOthers();
                 });
             } catch (Exception e) {
                 Freesia.LOGGER.error("Error while in processing tracker!", e);
