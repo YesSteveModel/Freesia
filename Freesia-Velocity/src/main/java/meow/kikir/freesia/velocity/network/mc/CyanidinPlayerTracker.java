@@ -18,7 +18,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class CyanidinPlayerTracker {
-    private static final MinecraftChannelIdentifier SYNC_CHANNEL_KEY = MinecraftChannelIdentifier.create("cyanidin", "tracker_sync");
+    private static final MinecraftChannelIdentifier SYNC_CHANNEL_KEY = MinecraftChannelIdentifier.create("freesia", "tracker_sync");
 
     private final Set<BiConsumer<Player, Player>> realPlayerListeners = ConcurrentHashMap.newKeySet();
     private final Set<BiConsumer<UUID, Player>> virtualPlayerListeners = ConcurrentHashMap.newKeySet();
