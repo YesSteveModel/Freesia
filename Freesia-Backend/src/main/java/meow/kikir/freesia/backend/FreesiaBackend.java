@@ -15,7 +15,7 @@ public final class FreesiaBackend extends JavaPlugin {
     public void onEnable() {
         INSTANCE = this;
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "freesia:tracker_sync", this.trackerProcessor);
-        Bukkit.getMessenger().registerOutgoingPluginChannel(this, "freesis:tracker_sync");
+        Bukkit.getMessenger().registerOutgoingPluginChannel(this, "freesia:tracker_sync");
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "freesia:virtual_player_management", this.virtualPlayerManager);
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "freesia:virtual_player_management");
 
