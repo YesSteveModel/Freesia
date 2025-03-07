@@ -4,6 +4,7 @@ import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.nbt.NBTLimiter;
 import com.github.retrooper.packetevents.protocol.nbt.serializer.DefaultNBTSerializer;
 import io.netty.buffer.ByteBufInputStream;
+import meow.kikir.freesia.velocity.FreesiaConstants;
 import meow.kikir.freesia.velocity.network.mc.NbtRemapper;
 import meow.kikir.freesia.velocity.utils.FriendlyByteBuf;
 
@@ -16,7 +17,7 @@ public class StandardNbtRemapperImpl implements NbtRemapper {
 
     @Override
     public boolean shouldRemap(int pid) {
-        return pid < 764; //1.20.2
+        return pid < FreesiaConstants.MCProtocolConstants.PROTOCOL_NUM_V1202; //1.20.2
     }
 
     @Override

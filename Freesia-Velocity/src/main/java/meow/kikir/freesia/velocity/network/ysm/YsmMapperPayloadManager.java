@@ -3,8 +3,11 @@ package meow.kikir.freesia.velocity.network.ysm;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.nbt.NBTLimiter;
 import com.github.retrooper.packetevents.protocol.nbt.serializer.DefaultNBTSerializer;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
+import meow.kikir.freesia.velocity.FreesiaConstants;
 import meow.kikir.freesia.velocity.Freesia;
 import meow.kikir.freesia.velocity.FreesiaConfig;
 import meow.kikir.freesia.velocity.YsmProtocolMetaFile;
@@ -30,24 +33,24 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
 public class YsmMapperPayloadManager {
+    // Ysm channel key name
     public static final Key YSM_CHANNEL_KEY_ADVENTURE = Key.key(YsmProtocolMetaFile.getYsmChannelNamespace() + ":" + YsmProtocolMetaFile.getYsmChannelPath());
     public static final MinecraftChannelIdentifier YSM_CHANNEL_KEY_VELOCITY = MinecraftChannelIdentifier.create(YsmProtocolMetaFile.getYsmChannelNamespace(), YsmProtocolMetaFile.getYsmChannelPath());
 
     // Used for virtual players like NPCs
-    private final Map<UUID, YsmPacketProxy> virtualProxies = new HashMap<>();
+    private final Map<UUID, YsmPacketProxy> virtualProxies = Maps.newHashMap();
     private final Function<UUID, YsmPacketProxy> packetProxyCreatorVirtual;
 
     // Player to worker mappers connections
-    private final Map<Player, TcpClientSession> player2Mappers = new ConcurrentHashMap<>();
-    private final Map<Player, MapperSessionProcessor> mapperSessions = new ConcurrentHashMap<>();
+    private final Map<Player, MapperSessionProcessor> mapperSessions = Maps.newConcurrentMap();
 
     // Backend connect infos
     private final ReadWriteLock backendIpsAccessLock = new ReentrantReadWriteLock(false);
-    private final Map<InetSocketAddress, Integer> backend2Players = new LinkedHashMap<>();
+    private final Map<InetSocketAddress, Integer> backend2Players = Maps.newLinkedHashMap();
     private final Function<Player, YsmPacketProxy> packetProxyCreator;
 
     // The players who installed ysm(Used for packet sending reduction)
-    private final Set<Player> ysmInstalledPlayers = ConcurrentHashMap.newKeySet();
+    private final Set<Player> ysmInstalledPlayers = Sets.newConcurrentHashSet();
 
     public YsmMapperPayloadManager(Function<Player, YsmPacketProxy> packetProxyCreator, Function<UUID, YsmPacketProxy> packetProxyCreatorVirtual) {
         this.packetProxyCreator = packetProxyCreator;
@@ -220,11 +223,11 @@ public class YsmMapperPayloadManager {
     }
 
     public void reconnectWorker(@NotNull Player master, @NotNull InetSocketAddress target) {
-        if (!this.mapperSessions.containsKey(master)) {
+        final MapperSessionProcessor currentMapper = this.mapperSessions.get(master);
+
+        if (currentMapper == null) {
             throw new IllegalStateException("Player is not connected to mapper!");
         }
-
-        final MapperSessionProcessor currentMapper = this.mapperSessions.get(master);
 
         currentMapper.setKickMasterWhenDisconnect(false);
         currentMapper.getSession().disconnect("RECONNECT");
@@ -238,7 +241,7 @@ public class YsmMapperPayloadManager {
     }
 
     public boolean hasPlayer(@NotNull Player player) {
-        return this.player2Mappers.containsKey(player);
+        return this.mapperSessions.containsKey(player);
     }
 
     public void firstCreateMapper(Player player) {
@@ -255,28 +258,20 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapperSession = this.mapperSessions.remove(player);
 
         if (mapperSession != null) {
-            mapperSession.setKickMasterWhenDisconnect(false); //Player already offline, so we don't disconnect again
+            mapperSession.setKickMasterWhenDisconnect(false); // Player already offline, so we don't disconnect again
             mapperSession.getSession().disconnect("PLAYER DISCONNECTED");
             mapperSession.waitForDisconnected();
         }
-
-        this.player2Mappers.remove(player);
     }
 
     protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster, Component reason) {
         if (kickMaster)
-            mapperSession.getBindPlayer().disconnect(Freesia.languageManager.i18n("cyanidin.backend.disconnected", List.of("reason"), List.of(reason)));
-        this.player2Mappers.remove(mapperSession.getBindPlayer());
+            mapperSession.getBindPlayer().disconnect(Freesia.languageManager.i18n(FreesiaConstants.LanguageConstants.WORKER_TERMINATED_CONNECTION, List.of("reason"), List.of(reason)));
         this.mapperSessions.remove(mapperSession.getBindPlayer());
     }
 
     public void onPluginMessageIn(@NotNull Player player, @NotNull MinecraftChannelIdentifier channel, byte[] packetData) {
         if (!channel.equals(YSM_CHANNEL_KEY_VELOCITY)) {
-            return;
-        }
-
-        if (!this.player2Mappers.containsKey(player)) {
-            player.disconnect(Freesia.languageManager.i18n("cyanidin.backend.not_connected", Collections.emptyList(), Collections.emptyList()));
             return;
         }
 
@@ -307,12 +302,15 @@ public class YsmMapperPayloadManager {
 
         mapperSession.setFlag(BuiltinFlags.READ_TIMEOUT,30_000);
         mapperSession.setFlag(BuiltinFlags.WRITE_TIMEOUT,30_000);
-        this.mapperSessions.put(player, packetProcessor);
+
+        this.mapperSessions.put(player, packetProcessor); // Add to the mappers
+
+        // Do connect
         mapperSession.connect(true,false);
     }
 
     public void onProxyLoggedin(Player player, MapperSessionProcessor packetProcessor, TcpClientSession session){
-        this.player2Mappers.put(player, session);
+        // TODO : Are we still using this callback ?
     }
 
     public void onVirtualPlayerTrackerUpdate(UUID owner, Player watcher) {
@@ -328,8 +326,8 @@ public class YsmMapperPayloadManager {
         }
     }
 
-    public void onRealPlayerTrackerUpdate(Player owner, Player watcher) {
-        final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
+    public void onRealPlayerTrackerUpdate(Player beingWatched, Player watcher) {
+        final MapperSessionProcessor mapperSession = this.mapperSessions.get(beingWatched);
 
         // The mapper was created earlier than the player's connection turned in-game state
         // so as the result, we could simply pass it down directly
@@ -341,16 +339,6 @@ public class YsmMapperPayloadManager {
         if (this.isPlayerInstalledYsm(watcher)) {
             mapperSession.getPacketProxy().sendEntityStateTo(watcher);
         }
-    }
-
-    public void forceUpdateRealPlayerTracker(Player owner){
-	final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
-
-	if (mapperSession == null) {
-	     throw new IllegalStateException("???");
-	}
-
-	mapperSession.getPacketProxy().refreshToOthers();
     }
 
     @Nullable

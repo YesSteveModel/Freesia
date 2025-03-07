@@ -5,6 +5,7 @@ import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.velocitypowered.api.event.ResultedEvent;
 import com.velocitypowered.api.proxy.Player;
+import meow.kikir.freesia.velocity.FreesiaConstants;
 import meow.kikir.freesia.velocity.Freesia;
 import meow.kikir.freesia.velocity.YsmProtocolMetaFile;
 import meow.kikir.freesia.velocity.events.PlayerYsmHandshakeEvent;
@@ -19,12 +20,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.locks.LockSupport;
 
 public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     private final Player player;
     private final NbtRemapper nbtRemapper = new StandardNbtRemapperImpl();
+
     private volatile NBTCompound lastYsmEntityStatus = null;
+
     private volatile int playerEntityId = -1;
     private volatile int workerPlayerEntityId = -1;
 
@@ -44,6 +46,9 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         this.playerEntityId = id;
 
         if (oldEntityId == -1 && id != -1) {
+            // Try sync tracker status once
+            // We could hardly say there is no out-of-ordering issue here
+            // So we had better to force fire the update
             this.refreshToOthers();
         }
     }
@@ -115,7 +120,13 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         this.sendEntityStateTo(this.player); // Sync to self
 
         Freesia.tracker.getCanSee(this.player.getUniqueId()).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
-            if (beingWatched != null) { // Actually there is impossible to be null
+            // Exception handling
+            if (exception != null) {
+                Freesia.LOGGER.warn("Failed to fetch tracker info!", exception);
+                return;
+            }
+
+            if (beingWatched != null) { // When backend is not fully initialized yet or other reasons
                 for (UUID targetUUID : beingWatched) {
                     final Optional<Player> targetNullable = Freesia.PROXY_SERVER.getPlayer(targetUUID);
 
@@ -143,7 +154,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
         final byte packetId = mcBuffer.readByte();
 
-        if (packetId == YsmProtocolMetaFile.getS2CPacketId(YsmProtocolMetaFile.ProtocolKeys.Clientbound.ENTITY_DATA_UPDATE)) {
+        if (packetId == YsmProtocolMetaFile.getS2CPacketId(FreesiaConstants.YsmProtocolMetaConstants.Clientbound.ENTITY_DATA_UPDATE)) {
             final int workerEntityId = mcBuffer.readVarInt();
 
             try {
@@ -151,6 +162,8 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                     return ProxyComputeResult.ofDrop(); // Do not process the entity state if it is not ours
                 }
 
+                // We process this actions async
+                // TODO : Is here any race condition ?
                 Freesia.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
                     this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
 
@@ -164,7 +177,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
             return ProxyComputeResult.ofDrop();
         }
 
-        if (packetId == YsmProtocolMetaFile.getS2CPacketId(YsmProtocolMetaFile.ProtocolKeys.Clientbound.HAND_SHAKE_CONFIRMED)) {
+        if (packetId == YsmProtocolMetaFile.getS2CPacketId(FreesiaConstants.YsmProtocolMetaConstants.Clientbound.HAND_SHAKE_CONFIRMED)) {
             final String backendVersion = mcBuffer.readUtf();
             final boolean canSwitchModel = mcBuffer.readBoolean();
 
@@ -181,7 +194,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         final FriendlyByteBuf mcBuffer = new FriendlyByteBuf(copiedPacketData);
         final byte packetId = mcBuffer.readByte();
 
-        if (packetId == YsmProtocolMetaFile.getC2SPacketId(YsmProtocolMetaFile.ProtocolKeys.Serverbound.HAND_SHAKE_REQUEST)) {
+        if (packetId == YsmProtocolMetaFile.getC2SPacketId(FreesiaConstants.YsmProtocolMetaConstants.Serverbound.HAND_SHAKE_REQUEST)) {
             final ResultedEvent.GenericResult result = Freesia.PROXY_SERVER.getEventManager().fire(new PlayerYsmHandshakeEvent(this.player)).join().getResult();
 
             if (!result.isAllowed()) {

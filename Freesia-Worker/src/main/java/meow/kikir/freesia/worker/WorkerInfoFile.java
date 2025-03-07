@@ -11,7 +11,7 @@ public record WorkerInfoFile(UUID workerUUID, String workerName) {
 
     public static @NotNull WorkerInfoFile readOrCreate(@NotNull File targetFile) throws IOException {
         if (!targetFile.exists()) {
-            final String workerName = "cyanidin_node_" + System.currentTimeMillis();
+            final String workerName = "freesia_node_" + System.currentTimeMillis();
             WorkerInfoFile created = new WorkerInfoFile(UUID.nameUUIDFromBytes(workerName.getBytes(StandardCharsets.UTF_8)), workerName);
 
             final ByteArrayOutputStream bos = new ByteArrayOutputStream();

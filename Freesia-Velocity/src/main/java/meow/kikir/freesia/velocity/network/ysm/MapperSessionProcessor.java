@@ -44,7 +44,6 @@ public class MapperSessionProcessor implements SessionListener {
     }
 
     public void processPlayerPluginMessage(byte[] packetData) {
-        // Async packet processing
         final ProxyComputeResult result = this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData));
 
         switch (result.result()) {
@@ -79,7 +78,6 @@ public class MapperSessionProcessor implements SessionListener {
             final byte[] packetData = payloadPacket.getData();
 
             if (channelKey.toString().equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE.toString())) {
-                // Async packet processing
                 final ProxyComputeResult result = this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData));
 
                 switch (result.result()) {
@@ -140,8 +138,7 @@ public class MapperSessionProcessor implements SessionListener {
 
     public void waitForDisconnected() {
         while (this.session != null) {
-            Thread.yield();
-            LockSupport.parkNanos(1_000);
+            Thread.onSpinWait(); // Spin wait instead of block waiting
         }
     }
 }

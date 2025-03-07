@@ -1,6 +1,7 @@
 package meow.kikir.freesia.common.communicating.message.w2m;
 
 import io.netty.buffer.ByteBuf;
+import meow.kikir.freesia.common.EntryPoint;
 import meow.kikir.freesia.common.communicating.handler.NettyServerChannelHandlerLayer;
 import meow.kikir.freesia.common.communicating.message.IMessage;
 import meow.kikir.freesia.common.communicating.message.m2w.M2WPlayerDataResponseMessage;
@@ -39,6 +40,15 @@ public class W2MPlayerDataGetRequestMessage implements IMessage<NettyServerChann
 
     @Override
     public void process(@NotNull NettyServerChannelHandlerLayer handler) {
-        handler.readPlayerData(this.playerUUID).whenComplete((result, error) -> handler.sendMessage(new M2WPlayerDataResponseMessage(result, this.traceId)));
+        handler.readPlayerData(this.playerUUID).whenComplete((result, error) -> {
+            // Exception handling
+            if (error != null) {
+                EntryPoint.LOGGER_INST.warn("Failed to get player data!", error);
+                handler.sendMessage(new M2WPlayerDataResponseMessage(null, this.traceId));
+                return;
+            }
+
+            handler.sendMessage(new M2WPlayerDataResponseMessage(result, this.traceId));
+        });
     }
 }

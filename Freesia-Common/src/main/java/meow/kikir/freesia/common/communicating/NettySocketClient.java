@@ -21,9 +21,7 @@ public class NettySocketClient {
     private final Queue<IMessage<?>> packetFlushQueue = new ConcurrentLinkedQueue<>();
     private final Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator;
     private final int reconnectInterval;
-    private volatile ChannelFuture clientChannelFuture;
     private volatile Channel channel;
-    private volatile boolean isConnecting = false;
     private volatile boolean isConnected = false;
 
     public NettySocketClient(InetSocketAddress masterAddress, Function<Channel, SimpleChannelInboundHandler<?>> handlerCreator, int reconnectInterval) {
@@ -33,10 +31,9 @@ public class NettySocketClient {
     }
 
     public void connect() {
-        this.isConnecting = true;
         EntryPoint.LOGGER_INST.info("Connecting to master controller service.");
         try {
-            this.clientChannelFuture = new Bootstrap()
+            new Bootstrap()
                     .group(this.clientEventLoopGroup)
                     .channel(this.clientChannelType)
                     .option(ChannelOption.TCP_NODELAY, true)
@@ -49,12 +46,9 @@ public class NettySocketClient {
                     })
                     .connect(this.masterAddress.getHostName(), this.masterAddress.getPort())
                     .syncUninterruptibly();
-            this.channel = this.clientChannelFuture.channel();
             this.isConnected = true;
         } catch (Exception e) {
             EntryPoint.LOGGER_INST.error("Failed to connect master controller service!", e);
-        } finally {
-            this.isConnecting = false;
         }
 
         if (!this.isConnected) {
@@ -78,18 +72,27 @@ public class NettySocketClient {
         this.isConnected = false;
     }
 
+    public void onChannelActive(Channel channel) {
+        this.channel = channel;
+
+        this.flushMessageQueueIfNeeded();
+    }
+
+    private void flushMessageQueueIfNeeded() {
+        IMessage<?> toSend;
+        while ((toSend = this.packetFlushQueue.poll()) != null) {
+            this.channel.writeAndFlush(toSend);
+        }
+    }
+
     public void sendToMaster(IMessage<?> message) {
-        if (this.channel == null && !this.isConnecting) {
+        if (this.channel == null) {
             throw new IllegalStateException("Not connected");
         }
 
-        if (!this.channel.isOpen()) {
-            if (this.isConnecting) {
-                this.packetFlushQueue.offer(message);
-                return;
-            }
-
-            throw new IllegalStateException("Not connected");
+        if (!this.channel.isActive()) {
+            this.packetFlushQueue.offer(message);
+            return;
         }
 
         if (!this.channel.eventLoop().inEventLoop()) {
@@ -97,12 +100,7 @@ public class NettySocketClient {
             return;
         }
 
-        if (!this.packetFlushQueue.isEmpty()) {
-            IMessage<?> toSend;
-            while ((toSend = this.packetFlushQueue.poll()) != null) {
-                this.channel.writeAndFlush(toSend);
-            }
-        }
+        this.flushMessageQueueIfNeeded();
 
         this.channel.writeAndFlush(message);
     }

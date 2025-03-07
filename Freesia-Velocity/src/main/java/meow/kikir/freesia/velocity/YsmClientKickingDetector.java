@@ -67,7 +67,7 @@ public class YsmClientKickingDetector implements Runnable {
                 this.lastNotDetected.remove(target);
 
                 if (target.isActive()) {
-                    target.disconnect(Freesia.languageManager.i18n("cyanidin.mod_handshake_time_outed", List.of(), List.of()));
+                    target.disconnect(Freesia.languageManager.i18n(FreesiaConstants.LanguageConstants.HANDSHAKE_TIMED_OUT, List.of(), List.of()));
                 }
             }
         } finally {

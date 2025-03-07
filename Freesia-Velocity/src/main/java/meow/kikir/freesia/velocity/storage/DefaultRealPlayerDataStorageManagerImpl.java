@@ -1,5 +1,6 @@
 package meow.kikir.freesia.velocity.storage;
 
+import meow.kikir.freesia.velocity.FreesiaConstants;
 import meow.kikir.freesia.velocity.Freesia;
 
 import java.io.File;
@@ -9,17 +10,10 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class DefaultRealPlayerDataStorageManagerImpl implements IDataStorageManager {
-    private static final File PLUGIN_FOLDER = new File(new File("plugins"), "Freesia");
-    private static final File PLAYER_DATA_FOLDER = new File(PLUGIN_FOLDER, "playerdata");
-
-    static {
-        PLAYER_DATA_FOLDER.mkdirs();
-    }
-
     @Override
     public CompletableFuture<byte[]> loadPlayerData(UUID playerUUID) {
         return CompletableFuture.supplyAsync(() -> {
-            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".nbt");
+            final File targetFile = new File(FreesiaConstants.FileConstants.PLAYER_DATA_DIR, playerUUID + ".nbt");
 
             if (!targetFile.exists()) {
                 return null;
@@ -37,13 +31,9 @@ public class DefaultRealPlayerDataStorageManagerImpl implements IDataStorageMana
     @Override
     public CompletableFuture<Void> save(UUID playerUUID, byte[] content) {
         return CompletableFuture.runAsync(() -> {
-            final File targetFile = new File(PLAYER_DATA_FOLDER, playerUUID + ".nbt");
+            final File targetFile = new File(FreesiaConstants.FileConstants.PLAYER_DATA_DIR, playerUUID + ".nbt");
 
             try {
-                if (!targetFile.exists()) {
-                    targetFile.createNewFile();
-                }
-
                 Files.write(targetFile.toPath(), content);
             } catch (IOException e) {
                 throw new RuntimeException(e);

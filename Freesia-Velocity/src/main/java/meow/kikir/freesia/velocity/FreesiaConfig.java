@@ -2,24 +2,17 @@ package meow.kikir.freesia.velocity;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
 public class FreesiaConfig {
-    private static final File PLUGIN_DIR = new File("plugins");
-    private static final File CONFIG_FILE_DIR = new File(PLUGIN_DIR, "Freesia");
-    private static final File CONFIG_FILE = new File(CONFIG_FILE_DIR, "freesia_config.toml");
     public static InetSocketAddress workerMSessionAddress = new InetSocketAddress("127.0.0.1", 19199);
     public static InetSocketAddress masterServiceAddress = new InetSocketAddress("127.0.0.1", 19200);
     public static String languageName = "zh_CN";
     public static boolean kickIfYsmNotInstalled = false;
     public static int ysmDetectionTimeout = 3000;
-    private static CommentedFileConfig CONFIG_INSTANCE;
 
-    static {
-        CONFIG_FILE_DIR.mkdirs();
-    }
+    private static CommentedFileConfig CONFIG_INSTANCE;
 
     private static void loadOrDefaultValues() {
         workerMSessionAddress = new InetSocketAddress(
@@ -48,12 +41,12 @@ public class FreesiaConfig {
     public static void init() throws IOException {
         Freesia.LOGGER.info("Loading config file.");
 
-        if (!CONFIG_FILE.exists()) {
+        if (!FreesiaConstants.FileConstants.CONFIG_FILE.exists()) {
             Freesia.LOGGER.info("Config file not found! Creating new config file.");
-            CONFIG_FILE.createNewFile();
+            FreesiaConstants.FileConstants. CONFIG_FILE.createNewFile();
         }
 
-        CONFIG_INSTANCE = CommentedFileConfig.ofConcurrent(CONFIG_FILE);
+        CONFIG_INSTANCE = CommentedFileConfig.ofConcurrent(FreesiaConstants.FileConstants.CONFIG_FILE);
 
         CONFIG_INSTANCE.load();
 
