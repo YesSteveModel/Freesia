@@ -19,6 +19,10 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+/**
+ * A simplified FriendlyByteBuf reimplementation
+ * Taken from minecraft-stress-test(<a href="https://github.com/PureGero/minecraft-stress-test">...</a>)
+ */
 public class FriendlyByteBuf extends ByteBuf {
     private final ByteBuf source;
 

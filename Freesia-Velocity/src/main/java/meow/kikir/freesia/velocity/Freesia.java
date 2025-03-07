@@ -24,10 +24,10 @@ import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import meow.kikir.freesia.common.EntryPoint;
 import meow.kikir.freesia.common.communicating.NettySocketServer;
 import meow.kikir.freesia.velocity.command.ListYsmPlayersCommand;
-import meow.kikir.freesia.velocity.command.WorkerCommandCommand;
+import meow.kikir.freesia.velocity.command.DispatchWorkerCommandCommand;
 import meow.kikir.freesia.velocity.i18n.I18NManager;
 import meow.kikir.freesia.velocity.network.backend.MasterServerMessageHandler;
-import meow.kikir.freesia.velocity.network.mc.CyanidinPlayerTracker;
+import meow.kikir.freesia.velocity.network.mc.FreesiaPlayerTracker;
 import meow.kikir.freesia.velocity.network.misc.VirtualPlayerManager;
 import meow.kikir.freesia.velocity.network.ysm.DefaultYsmPacketProxyImpl;
 import meow.kikir.freesia.velocity.network.ysm.VirtualYsmPacketProxyImpl;
@@ -46,7 +46,7 @@ import java.util.UUID;
 
 @Plugin(id = "freesia", name = "Freesia", version = "2.3.2-universal", authors = {"Earthme", "HappyRespawnanchor", "xiaozhangup"}, dependencies = @Dependency(id = "packetevents"))
 public class Freesia implements PacketListener {
-    public static final CyanidinPlayerTracker tracker = new CyanidinPlayerTracker();
+    public static final FreesiaPlayerTracker tracker = new FreesiaPlayerTracker();
     public static final IDataStorageManager realPlayerDataStorageManager = new DefaultRealPlayerDataStorageManagerImpl();
     public static final IDataStorageManager virtualPlayerDataStorageManager = new DefaultVirtualPlayerDataStorageManagerImpl();
     public static final VirtualPlayerManager virtualPlayerManager = new VirtualPlayerManager();
@@ -58,6 +58,7 @@ public class Freesia implements PacketListener {
     public static YsmClientKickingDetector kickChecker;
     public static YsmMapperPayloadManager mapperManager;
     public static NettySocketServer masterServer;
+
     @Inject
     private Logger logger;
     @Inject
@@ -79,10 +80,13 @@ public class Freesia implements PacketListener {
         INSTANCE = this;
         LOGGER = this.logger;
         PROXY_SERVER = this.proxyServer;
-        EntryPoint.initLogger(this.logger);
+
+        EntryPoint.initLogger(this.logger); // Common module
 
         printLogo();
 
+        // Load config and i18n
+        LOGGER.info("Loading config file and i18n");
         try {
             FreesiaConfig.init();
             languageManager.loadLanguageFile(FreesiaConfig.languageName);
@@ -91,22 +95,32 @@ public class Freesia implements PacketListener {
         }
 
         LOGGER.info("Registering events and packet listeners.");
+        // Mapper (Core function)
         mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new, VirtualYsmPacketProxyImpl::new);
+        // Register mc packet listener
         PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.HIGHEST);
+        // Attach to ysm channel
         this.proxyServer.getChannelRegistrar().register(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY);
+        // Init tracker
         tracker.init();
         tracker.addRealPlayerTrackerEventListener(mapperManager::onRealPlayerTrackerUpdate);
         tracker.addVirtualPlayerTrackerEventListener(mapperManager::onVirtualPlayerTrackerUpdate);
 
+        // Init virtual player manager
         virtualPlayerManager.init();
+
+        // Master controller service
         masterServer = new NettySocketServer(FreesiaConfig.masterServiceAddress, c -> new MasterServerMessageHandler());
         masterServer.bind();
 
         LOGGER.info("Initiating client kicker.");
+
+        // Client detection
         kickChecker = new YsmClientKickingDetector();
         kickChecker.bootstrap();
 
-        WorkerCommandCommand.register();
+        LOGGER.info("Registering commands");
+        DispatchWorkerCommandCommand.register();
         ListYsmPlayersCommand.register();
     }
 
@@ -121,12 +135,11 @@ public class Freesia implements PacketListener {
     }
    
     @Subscribe
-    public EventTask onPlayerPostConnected(@NotNull ServerPostConnectEvent event){
+    public EventTask onPlayerPostConnected(@NotNull ServerPostConnectEvent event) { // We are doing this fully async but we don't mind that time-order issue because the tracker update would be finally done at somewhere
         final Player targetPlayer = event.getPlayer();
 
-	return EventTask.async(() -> {
-	     mapperManager.forceUpdateRealPlayerTracker(targetPlayer);
-	});
+        // Force update tracker after backend server is present for player
+        return EventTask.async(() -> mapperManager.forceUpdateRealPlayerTracker(targetPlayer));
     }
 
     @Subscribe
@@ -136,8 +149,10 @@ public class Freesia implements PacketListener {
         return EventTask.async(() -> {
             if (!mapperManager.hasPlayer(targetPlayer)) {
                 this.logger.info("Initiating mapper session for player {}", targetPlayer.getUsername());
+
                 mapperManager.firstCreateMapper(targetPlayer);
                 kickChecker.onPlayerJoin(targetPlayer);
+
                 return;
             }
 
@@ -148,7 +163,7 @@ public class Freesia implements PacketListener {
 
     @Subscribe
     public void onServerPreConnect(@NotNull ServerPreConnectEvent event) {
-        mapperManager.updateRealPlayerEntityId(event.getPlayer(), -1);
+        mapperManager.updateRealPlayerEntityId(event.getPlayer(), -1); // Reset player's entity id to -1 as non initialized to prevent incorrect tracker status update
     }
 
     @Subscribe
@@ -165,11 +180,13 @@ public class Freesia implements PacketListener {
 
     @Override
     public void onPacketSend(@NotNull PacketSendEvent event) {
+        // Hook join packet for fetching player's entity id for the tracker
         if (event.getPacketType() == PacketType.Play.Server.JOIN_GAME) {
             final WrapperPlayServerJoinGame playerSpawnPacket = new WrapperPlayServerJoinGame(event);
             final Player target = event.getPlayer();
 
             logger.info("Entity id update for player {} to {}", target.getUsername(), playerSpawnPacket.getEntityId());
+            // Update id and try notifying update once
             mapperManager.updateRealPlayerEntityId(target, playerSpawnPacket.getEntityId());
         }
     }

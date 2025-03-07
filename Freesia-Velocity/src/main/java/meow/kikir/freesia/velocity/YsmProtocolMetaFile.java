@@ -35,15 +35,4 @@ public class YsmProtocolMetaFile {
         return Integer.parseInt(INTERNAL_PROPERTIES.getProperty("clientbound_" + type + "_pkt_id"));
     }
 
-    public static class ProtocolKeys {
-        public static class Serverbound {
-            public static final String HAND_SHAKE_REQUEST = "handshake_request";
-        }
-
-        public static class Clientbound {
-            public static final String HAND_SHAKE_CONFIRMED = "handshake_confirmed";
-
-            public static final String ENTITY_DATA_UPDATE = "entity_data_update";
-        }
-    }
 }

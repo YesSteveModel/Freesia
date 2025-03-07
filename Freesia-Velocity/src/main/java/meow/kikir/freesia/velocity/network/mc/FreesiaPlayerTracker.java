@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class CyanidinPlayerTracker {
+public class FreesiaPlayerTracker {
     private static final MinecraftChannelIdentifier SYNC_CHANNEL_KEY = MinecraftChannelIdentifier.create("freesia", "tracker_sync");
 
     private final Set<BiConsumer<Player, Player>> realPlayerListeners = ConcurrentHashMap.newKeySet();

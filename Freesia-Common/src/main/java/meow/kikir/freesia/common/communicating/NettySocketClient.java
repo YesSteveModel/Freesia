@@ -78,6 +78,17 @@ public class NettySocketClient {
         this.isConnected = false;
     }
 
+    public void onChannelActive() {
+        this.flushMessageQueueIfNeeded();
+    }
+
+    private void flushMessageQueueIfNeeded() {
+        IMessage<?> toSend;
+        while ((toSend = this.packetFlushQueue.poll()) != null) {
+            this.channel.writeAndFlush(toSend);
+        }
+    }
+
     public void sendToMaster(IMessage<?> message) {
         if (this.channel == null && !this.isConnecting) {
             throw new IllegalStateException("Not connected");
@@ -97,12 +108,7 @@ public class NettySocketClient {
             return;
         }
 
-        if (!this.packetFlushQueue.isEmpty()) {
-            IMessage<?> toSend;
-            while ((toSend = this.packetFlushQueue.poll()) != null) {
-                this.channel.writeAndFlush(toSend);
-            }
-        }
+        this.flushMessageQueueIfNeeded();
 
         this.channel.writeAndFlush(message);
     }

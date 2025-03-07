@@ -6,24 +6,26 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.command.CommandSource;
+import meow.kikir.freesia.velocity.FreesiaConstants;
 import meow.kikir.freesia.velocity.Freesia;
 import meow.kikir.freesia.velocity.network.backend.MasterServerMessageHandler;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class WorkerCommandCommand {
+public class DispatchWorkerCommandCommand {
     public static void register() {
         final CommandMeta meta = Freesia.PROXY_SERVER.getCommandManager()
                 .metaBuilder("dworkerc")
                 .plugin(Freesia.INSTANCE)
                 .build();
+
         Freesia.PROXY_SERVER.getCommandManager().register(meta, create());
     }
 
     public static @NotNull BrigadierCommand create() {
         LiteralCommandNode<CommandSource> registed = BrigadierCommand.literalArgumentBuilder("dworkerc")
-                .requires(source -> source.hasPermission("cyanidin.commands.dworkerc"))
+                .requires(source -> source.hasPermission(FreesiaConstants.PermissionConstants.DISPATCH_WORKER_COMMAND))
                 .then(
                         BrigadierCommand.requiredArgumentBuilder("workerName", StringArgumentType.word()).suggests((ctx, builder) -> {
                                     for (MasterServerMessageHandler connection : Freesia.registedWorkers.values()) {
@@ -47,7 +49,7 @@ public class WorkerCommandCommand {
                                                     }
 
                                                     if (targetWorkerConnection == null) {
-                                                        source.sendMessage(Freesia.languageManager.i18n("cyanidin.worker_command.worker_not_found", List.of(), List.of()));
+                                                        source.sendMessage(Freesia.languageManager.i18n(FreesiaConstants.LanguageConstants.WORKER_NOT_FOUND, List.of(), List.of()));
                                                         return -1;
                                                     }
 
@@ -56,7 +58,7 @@ public class WorkerCommandCommand {
                                                             return;
                                                         }
 
-                                                        source.sendMessage(Freesia.languageManager.i18n("cyanidin.worker_command.command_feedback", List.of("workerName", "feedback"), List.of(feedback)));
+                                                        source.sendMessage(Freesia.languageManager.i18n(FreesiaConstants.LanguageConstants.WORKER_COMMAND_FEEDBACK, List.of("worker_name", "feedback"), List.of(workerName, feedback)));
                                                     });
                                                     return Command.SINGLE_SUCCESS;
                                                 })

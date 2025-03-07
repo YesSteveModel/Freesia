@@ -35,9 +35,9 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     private final Map<Integer, Consumer<byte[]>> playerDataGetCallbacks = Maps.newConcurrentMap();
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) {
+    public void channelActive(@NotNull ChannelHandlerContext ctx) {
+        super.channelActive(ctx);
         this.getClient().sendToMaster(new W2MWorkerInfoMessage(ServerLoader.workerInfoFile.workerUUID(), ServerLoader.workerInfoFile.workerName()));
-
         ServerLoader.workerConnection = this;
     }
 

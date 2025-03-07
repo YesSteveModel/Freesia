@@ -6,6 +6,7 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import meow.kikir.freesia.velocity.FreesiaConstants;
 import meow.kikir.freesia.velocity.Freesia;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
@@ -19,12 +20,13 @@ public class ListYsmPlayersCommand {
                 .metaBuilder("listysmplayers")
                 .plugin(Freesia.INSTANCE)
                 .build();
+
         Freesia.PROXY_SERVER.getCommandManager().register(meta, create());
     }
 
     public static @NotNull BrigadierCommand create() {
         LiteralCommandNode<CommandSource> registed = BrigadierCommand.literalArgumentBuilder("listysmplayers")
-                .requires(source -> source.hasPermission("cyanidin.commands.listysmplayers"))
+                .requires(source -> source.hasPermission(FreesiaConstants.PermissionConstants.LIST_PLAYER_COMMAND))
                 .executes(context -> {
                     final Collection<Player> ysmPlayers = Freesia.PROXY_SERVER
                             .getAllPlayers()
@@ -32,10 +34,10 @@ public class ListYsmPlayersCommand {
                             .filter(player -> Freesia.mapperManager.isPlayerInstalledYsm(player))
                             .toList();
 
-                    Component msg = Freesia.languageManager.i18n("cyanidin.list_player_command_header", List.of(), List.of()).appendNewline();
+                    Component msg = Freesia.languageManager.i18n(FreesiaConstants.LanguageConstants.PLAYER_LIST_HEADER, List.of(), List.of()).appendNewline();
                     for (Player player : ysmPlayers) {
                         msg = msg
-                                .append(Freesia.languageManager.i18n("cyanidin.list_player_command_body", List.of("name"), List.of(player.getUsername())))
+                                .append(Freesia.languageManager.i18n(FreesiaConstants.LanguageConstants.PLAYER_LIST_ENTRY, List.of("name"), List.of(player.getUsername())))
                                 .appendNewline();
                     }
 

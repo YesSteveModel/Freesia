@@ -8,6 +8,7 @@ import meow.kikir.freesia.common.communicating.message.m2w.M2WDispatchCommandMes
 import meow.kikir.freesia.velocity.Freesia;
 import meow.kikir.freesia.velocity.events.PlayerEntityDataLoadEvent;
 import meow.kikir.freesia.velocity.events.PlayerEntityDataStoreEvent;
+import meow.kikir.freesia.velocity.events.WorkerConnectedEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.jetbrains.annotations.NotNull;
@@ -83,10 +84,24 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
 
     @Override
     public CompletableFuture<Void> savePlayerData(UUID playerUUID, byte[] content) {
-        return Freesia.PROXY_SERVER
+        final CompletableFuture<Void> callback = new CompletableFuture<>();
+
+        Freesia.PROXY_SERVER
                 .getEventManager()
                 .fire(new PlayerEntityDataStoreEvent(playerUUID, content))
-                .thenAccept(event -> Freesia.realPlayerDataStorageManager.save(playerUUID, event.getSerializedNbtData()));
+                .thenAccept(event -> {
+                    Freesia.realPlayerDataStorageManager.save(playerUUID, event.getSerializedNbtData())
+                            .whenComplete((res, ex) -> {
+                                if (ex != null) {
+                                    callback.completeExceptionally(ex);
+                                    return;
+                                }
+
+                                callback.complete(res);
+                            });
+                });
+
+        return callback;
     }
 
 
@@ -107,5 +122,7 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
         this.workerUUID = workerUUID;
 
         Freesia.registedWorkers.put(workerUUID, this);
+
+        Freesia.PROXY_SERVER.getEventManager().fire(new WorkerConnectedEvent(workerUUID, workerName));
     }
 }
