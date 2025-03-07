@@ -14,7 +14,6 @@ import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
-import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.Player;
@@ -132,14 +131,6 @@ public class Freesia implements PacketListener {
             mapperManager.onPlayerDisconnect(targetPlayer);
             kickChecker.onPlayerLeft(targetPlayer);
         });
-    }
-   
-    @Subscribe
-    public EventTask onPlayerPostConnected(@NotNull ServerPostConnectEvent event) { // We are doing this fully async but we don't mind that time-order issue because the tracker update would be finally done at somewhere
-        final Player targetPlayer = event.getPlayer();
-
-        // Force update tracker after backend server is present for player
-        return EventTask.async(() -> mapperManager.forceUpdateRealPlayerTracker(targetPlayer));
     }
 
     @Subscribe

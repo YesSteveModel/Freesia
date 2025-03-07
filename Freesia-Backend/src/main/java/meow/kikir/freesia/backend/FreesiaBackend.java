@@ -20,7 +20,6 @@ public final class FreesiaBackend extends JavaPlugin {
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "freesia:virtual_player_management");
 
         Bukkit.getPluginManager().registerEvents(this.trackerProcessor, this);
-        Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, unused -> this.trackerProcessor.tickTracker(), 1, 1);
     }
 
     public VirtualPlayerManager getVirtualPlayerManager() {

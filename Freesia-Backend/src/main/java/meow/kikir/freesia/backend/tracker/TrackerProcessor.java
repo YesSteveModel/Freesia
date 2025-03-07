@@ -1,71 +1,57 @@
 package meow.kikir.freesia.backend.tracker;
 
+import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import io.netty.buffer.Unpooled;
+import io.papermc.paper.event.player.PlayerTrackEntityEvent;
 import meow.kikir.freesia.backend.FreesiaBackend;
 import meow.kikir.freesia.backend.Utils;
 import meow.kikir.freesia.backend.event.CyanidinRealPlayerTrackerUpdateEvent;
 import meow.kikir.freesia.backend.event.CyanidinTrackerScanEvent;
 import meow.kikir.freesia.backend.utils.FriendlyByteBuf;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class TrackerProcessor implements PluginMessageListener, Listener {
     private static final String CHANNEL_NAME = "freesia:tracker_sync";
-    private static final Map<Player, Set<Player>> visiblePlayers = new HashMap<>();
 
-    public void tickTracker() {
-        final Collection<? extends Player> playersCopy = new ArrayList<>(Bukkit.getOnlinePlayers());
-        final List<Player> toCleanUp = new ArrayList<>();
+    // The default tracker event which is provided by Paper
+    @EventHandler
+    public void onPlayerTrackEntity(@NotNull PlayerTrackEntityEvent trackEvent) {
+        final Player watcher = trackEvent.getPlayer();
+        final Entity beingWatched = trackEvent.getEntity();
 
-        for (Player player : playersCopy) {
-            if (!player.isOnline() || !player.isInWorld()) {
-                toCleanUp.add(player);
-                continue;
-            }
-
-            final Set<Player> visibleMap = visiblePlayers.computeIfAbsent(player, (unused) -> ConcurrentHashMap.newKeySet());
-
-            for (Player toScan : playersCopy) {
-                if (player.canSee(toScan)) { // Including ourselves
-                    if (!visibleMap.contains(player)) {
-                        visibleMap.add(toScan);
-
-                        this.playerTrackedPlayer(player, toScan);
-                    }
-                } else {
-                    if (visibleMap.contains(player)) {
-                        visibleMap.remove(toScan); // If out of view distance
-                    }
-                }
-            }
-        }
-
-        for (Player player : visiblePlayers.keySet()) {
-            if (!player.isOnline() || !player.isInWorld()) {
-                toCleanUp.add(player);
-            }
-        }
-
-        for (Player player : toCleanUp) {
-            visiblePlayers.remove(player);
+        if (beingWatched instanceof Player beingWatchedPlayer) {
+            this.playerTrackedPlayer(beingWatchedPlayer, watcher);
         }
     }
 
-    private void playerTrackedPlayer(@NotNull Player watcher, @NotNull Player beSeeing) {
-        if (!new CyanidinRealPlayerTrackerUpdateEvent(watcher, beSeeing).callEvent()) {
+    // We can use this event to track when a player is added to the world
+    // That's because there is no player respawn event on folia but folia's respawn logic will fire it when performing a respawn
+    @EventHandler
+    public void onPlayerAddedToWorld(@NotNull EntityAddToWorldEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            this.playerTrackedPlayer(player, player);
+        }
+    }
+
+
+    private void playerTrackedPlayer(@NotNull Player beSeen, @NotNull Player seeing) {
+        if (!new CyanidinRealPlayerTrackerUpdateEvent(seeing, beSeen).callEvent()) {
             return;
         }
 
-        this.notifyTrackerUpdate(watcher.getUniqueId(), beSeeing.getUniqueId());
+        FreesiaBackend.INSTANCE.getSLF4JLogger().info("Player {} is tracking player {}", seeing.getName(), beSeen.getName());
+        this.notifyTrackerUpdate(seeing.getUniqueId(), beSeen.getUniqueId());
     }
 
-    public boolean notifyTrackerUpdate(UUID watcher, UUID beWatched) {
+    public void notifyTrackerUpdate(UUID watcher, UUID beWatched) {
         final FriendlyByteBuf wrappedUpdatePacket = new FriendlyByteBuf(Unpooled.buffer());
 
         wrappedUpdatePacket.writeVarInt(2);
@@ -75,11 +61,10 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
         final Player payload = Utils.randomPlayerIfNotFound(watcher);
 
         if (payload == null) {
-            return false;
+            return;
         }
 
         payload.sendPluginMessage(FreesiaBackend.INSTANCE, CHANNEL_NAME, wrappedUpdatePacket.getBytes());
-        return true;
     }
 
     @Override
@@ -97,13 +82,10 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
             final Player toScan = Objects.requireNonNull(Bukkit.getPlayer(requestedPlayerUUID));
 
             final Set<UUID> result = new HashSet<>();
-            for (Player other : Bukkit.getOnlinePlayers()) {
-                if (other == toScan) {
-                    continue;
-                }
 
-                if (other.canSee(toScan)) {
-                    result.add(other.getUniqueId());
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (player.canSee(toScan)) {
+                    result.add(player.getUniqueId());
                 }
             }
 
@@ -131,4 +113,5 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
             );
         }
     }
+
 }

@@ -3,6 +3,8 @@ package meow.kikir.freesia.velocity.network.ysm;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.nbt.NBTLimiter;
 import com.github.retrooper.packetevents.protocol.nbt.serializer.DefaultNBTSerializer;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import meow.kikir.freesia.velocity.FreesiaConstants;
@@ -36,19 +38,19 @@ public class YsmMapperPayloadManager {
     public static final MinecraftChannelIdentifier YSM_CHANNEL_KEY_VELOCITY = MinecraftChannelIdentifier.create(YsmProtocolMetaFile.getYsmChannelNamespace(), YsmProtocolMetaFile.getYsmChannelPath());
 
     // Used for virtual players like NPCs
-    private final Map<UUID, YsmPacketProxy> virtualProxies = new HashMap<>();
+    private final Map<UUID, YsmPacketProxy> virtualProxies = Maps.newHashMap();
     private final Function<UUID, YsmPacketProxy> packetProxyCreatorVirtual;
 
     // Player to worker mappers connections
-    private final Map<Player, MapperSessionProcessor> mapperSessions = new ConcurrentHashMap<>();
+    private final Map<Player, MapperSessionProcessor> mapperSessions = Maps.newConcurrentMap();
 
     // Backend connect infos
     private final ReadWriteLock backendIpsAccessLock = new ReentrantReadWriteLock(false);
-    private final Map<InetSocketAddress, Integer> backend2Players = new LinkedHashMap<>();
+    private final Map<InetSocketAddress, Integer> backend2Players = Maps.newLinkedHashMap();
     private final Function<Player, YsmPacketProxy> packetProxyCreator;
 
     // The players who installed ysm(Used for packet sending reduction)
-    private final Set<Player> ysmInstalledPlayers = ConcurrentHashMap.newKeySet();
+    private final Set<Player> ysmInstalledPlayers = Sets.newConcurrentHashSet();
 
     public YsmMapperPayloadManager(Function<Player, YsmPacketProxy> packetProxyCreator, Function<UUID, YsmPacketProxy> packetProxyCreatorVirtual) {
         this.packetProxyCreator = packetProxyCreator;
@@ -324,8 +326,8 @@ public class YsmMapperPayloadManager {
         }
     }
 
-    public void onRealPlayerTrackerUpdate(Player owner, Player watcher) {
-        final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
+    public void onRealPlayerTrackerUpdate(Player beingWatched, Player watcher) {
+        final MapperSessionProcessor mapperSession = this.mapperSessions.get(beingWatched);
 
         // The mapper was created earlier than the player's connection turned in-game state
         // so as the result, we could simply pass it down directly
@@ -337,17 +339,6 @@ public class YsmMapperPayloadManager {
         if (this.isPlayerInstalledYsm(watcher)) {
             mapperSession.getPacketProxy().sendEntityStateTo(watcher);
         }
-    }
-
-    public void forceUpdateRealPlayerTracker(Player owner) {
-        final MapperSessionProcessor mapperSession = this.mapperSessions.get(owner);
-
-        if (mapperSession == null) {
-            // Should not be happened
-            throw new IllegalStateException("???");
-        }
-
-        mapperSession.getPacketProxy().refreshToOthers();
     }
 
     @Nullable

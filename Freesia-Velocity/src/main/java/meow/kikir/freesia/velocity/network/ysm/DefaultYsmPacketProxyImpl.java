@@ -24,7 +24,9 @@ import java.util.UUID;
 public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     private final Player player;
     private final NbtRemapper nbtRemapper = new StandardNbtRemapperImpl();
+
     private volatile NBTCompound lastYsmEntityStatus = null;
+
     private volatile int playerEntityId = -1;
     private volatile int workerPlayerEntityId = -1;
 
@@ -44,6 +46,9 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
         this.playerEntityId = id;
 
         if (oldEntityId == -1 && id != -1) {
+            // Try sync tracker status once
+            // We could hardly say there is no out-of-ordering issue here
+            // So we had better to force fire the update
             this.refreshToOthers();
         }
     }
@@ -157,6 +162,8 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                     return ProxyComputeResult.ofDrop(); // Do not process the entity state if it is not ours
                 }
 
+                // We process this actions async
+                // TODO : Is here any race condition ?
                 Freesia.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
                     this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
 
