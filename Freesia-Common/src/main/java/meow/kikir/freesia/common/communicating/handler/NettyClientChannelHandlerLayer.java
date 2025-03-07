@@ -21,7 +21,7 @@ public abstract class NettyClientChannelHandlerLayer extends SimpleChannelInboun
 
     @Override
     public void channelActive(@NotNull ChannelHandlerContext ctx) {
-        this.getClient().onChannelActive();
+        this.getClient().onChannelActive(ctx.channel());
     }
 
     @Override
