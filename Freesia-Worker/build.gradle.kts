@@ -16,7 +16,12 @@ dependencies {
 
     include(project(":Freesia-Common"))
     implementation(project(":Freesia-Common"))
+    implementation("com.electronwill.night-config:core:${rootProject.extra["night_config_version"]}")
+    include("com.electronwill.night-config:core:${rootProject.extra["night_config_version"]}")
+
+
     implementation("com.electronwill.night-config:toml:${rootProject.extra["night_config_version"]}")
+    include("com.electronwill.night-config:toml:${rootProject.extra["night_config_version"]}")
 
     modImplementation("net.fabricmc:fabric-loader:${rootProject.extra["fabric_loader_version"]}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${rootProject.extra["fabric_version"]}")
