@@ -47,7 +47,6 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
             return;
         }
 
-        FreesiaBackend.INSTANCE.getSLF4JLogger().info("Player {} is tracking player {}", seeing.getName(), beSeen.getName());
         this.notifyTrackerUpdate(seeing.getUniqueId(), beSeen.getUniqueId());
     }
 
