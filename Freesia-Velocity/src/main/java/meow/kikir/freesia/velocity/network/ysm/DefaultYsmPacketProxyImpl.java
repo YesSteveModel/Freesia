@@ -20,12 +20,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     private final Player player;
     private final NbtRemapper nbtRemapper = new StandardNbtRemapperImpl();
 
     private volatile NBTCompound lastYsmEntityStatus = null;
+    private final Lock entityStatusWriteLock = new ReentrantLock(true); // We need to keep its order
 
     private volatile int playerEntityId = -1;
     private volatile int workerPlayerEntityId = -1;
@@ -80,11 +83,13 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public void sendEntityStateTo(@NotNull Player target){
+        this.sendEntityStateToInternal(target, this.lastYsmEntityStatus);
+    }
+
+    private void sendEntityStateToInternal(Player target, NBTCompound entityStatus) {
         final int currentEntityId = this.playerEntityId; // Get current entity id on the server of the player
 
-        final NBTCompound lastEntityStatusTemp = this.lastYsmEntityStatus; // Copy the value instead of the reference
-
-        if (lastEntityStatusTemp == null || currentEntityId == -1) { // If no data got or player is not in the backend server currently
+        if (entityStatus == null || currentEntityId == -1) { // If no data got or player is not in the backend server currently
             return;
         }
 
@@ -102,7 +107,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
             wrappedPacketData.writeByte(4);
             wrappedPacketData.writeVarInt(currentEntityId);
-            wrappedPacketData.writeBytes(this.nbtRemapper.shouldRemap(targetProtocolVer) ? this.nbtRemapper.remapToMasterVer(lastEntityStatusTemp) : this.nbtRemapper.remapToWorkerVer(lastEntityStatusTemp)); // Remap nbt if needed
+            wrappedPacketData.writeBytes(this.nbtRemapper.shouldRemap(targetProtocolVer) ? this.nbtRemapper.remapToMasterVer(entityStatus) : this.nbtRemapper.remapToWorkerVer(entityStatus)); // Remap nbt if needed
 
             this.sendPluginMessageTo(target, YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData);
         } catch (Exception e) {
@@ -112,12 +117,24 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public void setEntityDataRaw(NBTCompound data) {
-        this.lastYsmEntityStatus = data;
+        this.entityStatusWriteLock.lock();
+        try {
+            this.lastYsmEntityStatus = data;
+        }finally {
+            this.entityStatusWriteLock.unlock();
+        }
     }
 
     @Override
     public void refreshToOthers() {
-        this.sendEntityStateTo(this.player); // Sync to self
+        final NBTCompound entityStatusCopy = this.lastYsmEntityStatus; // Copy value
+
+        // If the player does not have any data
+        if (entityStatusCopy == null) {
+            return;
+        }
+
+        this.sendEntityStateToInternal(this.player, entityStatusCopy); // Sync to self
 
         Freesia.tracker.getCanSee(this.player.getUniqueId()).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
             // Exception handling
@@ -137,7 +154,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                             continue;
                         }
 
-                        this.sendEntityStateTo(target); // Sync to target
+                        this.sendEntityStateToInternal(target, entityStatusCopy); // Sync to target
                     }
                 }
             }
@@ -165,7 +182,12 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                 // We process this actions async
                 // TODO : Is here any race condition ?
                 Freesia.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
-                    this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
+                    this.entityStatusWriteLock.lock();
+                    try {
+                        this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
+                    }finally {
+                        this.entityStatusWriteLock.unlock();
+                    }
 
                     this.refreshToOthers();
                 });
