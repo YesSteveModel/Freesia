@@ -1,10 +1,12 @@
 package meow.kikir.freesia.velocity.network.ysm;
 
+import ca.spottedleaf.concurrentutil.collection.MultiThreadedQueue;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import meow.kikir.freesia.velocity.Freesia;
+import meow.kikir.freesia.velocity.utils.PendingPacket;
 import net.kyori.adventure.key.Key;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.*;
@@ -22,6 +24,7 @@ public class MapperSessionProcessor implements SessionListener {
     private final Player bindPlayer;
     private final YsmPacketProxy packetProxy;
     private final YsmMapperPayloadManager mapperPayloadManager;
+    private final MultiThreadedQueue<PendingPacket> pendingYsmPacketsInbound = new MultiThreadedQueue<>();
     private volatile Session session;
     private volatile boolean kickMasterWhenDisconnect = true;
 
@@ -66,10 +69,21 @@ public class MapperSessionProcessor implements SessionListener {
         return this.bindPlayer;
     }
 
+    public void onBackendReady() {
+        // Process incoming packets that we had not ready to process before
+        PendingPacket pendingYsmPacket;
+        while ((pendingYsmPacket = this.pendingYsmPacketsInbound.pollOrBlockAdds()) != null) { // Destroy(block add operations) the queue
+            this.processInComingYsmPacket(pendingYsmPacket.channel(), pendingYsmPacket.data());
+        }
+    }
+
     @Override
     public void packetReceived(Session session, Packet packet) {
         if (packet instanceof ClientboundLoginPacket loginPacket) {
+            // Notify entity update to notify the tracker update of the player
             Freesia.mapperManager.updateWorkerPlayerEntityId(this.bindPlayer, loginPacket.getEntityId());
+            // Worker connection callbacks, but we are not using it currently
+            // Considering to remove it in the future
             Freesia.mapperManager.onProxyLoggedin(this.bindPlayer, this, ((TcpClientSession) session));
         }
 
@@ -77,27 +91,38 @@ public class MapperSessionProcessor implements SessionListener {
             final Key channelKey = payloadPacket.getChannel();
             final byte[] packetData = payloadPacket.getData();
 
+            // If the packet is of ysm
             if (channelKey.toString().equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE.toString())) {
-                final ProxyComputeResult result = this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData));
-
-                switch (result.result()) {
-                    case MODIFY -> {
-                        final ByteBuf finalData = result.data();
-
-                        finalData.resetReaderIndex();
-
-                        this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), finalData);
-                    }
-
-                    case PASS ->
-                            this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
+                // Check if we are not ready for the backend side yet(We will block the add operations once the backend is ready for the player)
+                final PendingPacket pendingPacket = new PendingPacket(channelKey, packetData);
+                if (!this.pendingYsmPacketsInbound.offer(pendingPacket)) {
+                    // Add is blocked, we'll process it directly
+                    this.processInComingYsmPacket(channelKey, packetData);
                 }
+                // Otherwise, we push it into the callback queue
             }
         }
 
         // Reply the fabric mod loader ping checks
         if (packet instanceof ClientboundPingPacket pingPacket) {
             session.send(new ServerboundPongPacket(pingPacket.getId()));
+        }
+    }
+
+    private void processInComingYsmPacket(Key channelKey, byte[] packetData) {
+        final ProxyComputeResult result = this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData));
+
+        switch (result.result()) {
+            case MODIFY -> {
+                final ByteBuf finalData = result.data();
+
+                finalData.resetReaderIndex();
+
+                this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), finalData);
+            }
+
+            case PASS ->
+                    this.packetProxy.sendPluginMessageToOwner(MinecraftChannelIdentifier.create(channelKey.namespace(), channelKey.value()), packetData);
         }
     }
 
