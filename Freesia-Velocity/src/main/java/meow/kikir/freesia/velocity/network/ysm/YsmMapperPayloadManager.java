@@ -284,6 +284,17 @@ public class YsmMapperPayloadManager {
         mapperSession.processPlayerPluginMessage(packetData);
     }
 
+    public void onBackendReady(Player player) {
+        final MapperSessionProcessor mapperSession = this.mapperSessions.get(player);
+
+        if (mapperSession == null) {
+            // Shouldn't be happened
+            throw new IllegalStateException("???");
+        }
+
+        mapperSession.onBackendReady();
+    }
+
     public void createMapperSession(@NotNull Player player, @NotNull InetSocketAddress backend) {
         final TcpClientSession mapperSession = new TcpClientSession(
                 backend.getHostName(),

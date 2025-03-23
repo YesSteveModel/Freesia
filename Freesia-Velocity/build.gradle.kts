@@ -6,6 +6,7 @@ dependencies {
     implementation("com.electronwill.night-config:toml:3.6.6")
     implementation("org.geysermc.mcprotocollib:protocol:1.21-SNAPSHOT")
     implementation(project(":Freesia-Common"))
+    implementation("ca.spottedleaf:concurrentutil:0.0.3")
     annotationProcessor("com.velocitypowered:velocity-api:3.3.0-SNAPSHOT")
 }
 

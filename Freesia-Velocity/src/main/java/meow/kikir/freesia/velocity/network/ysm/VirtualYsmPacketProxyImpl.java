@@ -48,6 +48,13 @@ public class VirtualYsmPacketProxyImpl implements YsmPacketProxy {
 
     @Override
     public void refreshToOthers() {
+        final NBTCompound entityStatus = this.lastYsmEntityStatus; // Copy the value
+
+        // If the entity dose not have any data
+        if (entityStatus == null) {
+            return;
+        }
+
         Freesia.tracker.getCanSee(this.virtualPlayerUUID).whenComplete((beingWatched, exception) -> { // Async tracker check request to backend server
             if (beingWatched != null) { // Actually there is impossible to be null
                 for (UUID targetUUID : beingWatched) {
@@ -60,7 +67,7 @@ public class VirtualYsmPacketProxyImpl implements YsmPacketProxy {
                             continue;
                         }
 
-                        this.sendEntityStateTo(target); // Sync to target
+                        this.sendEntityStateToInternal(target, entityStatus); // Sync to target
                     }
                 }
             }
@@ -101,11 +108,13 @@ public class VirtualYsmPacketProxyImpl implements YsmPacketProxy {
 
     @Override
     public void sendEntityStateTo(@NotNull Player target) {
+        this.sendEntityStateToInternal(target, this.lastYsmEntityStatus);
+    }
+
+    private void sendEntityStateToInternal(Player target, NBTCompound entityStatus) {
         final int currentEntityId = this.playerEntityId; // Get current entity id on the server of the player
 
-        final NBTCompound lastEntityStatusTemp = this.lastYsmEntityStatus; // Copy the value instead of the reference
-
-        if (lastEntityStatusTemp == null || currentEntityId == -1) { // If no data got or player is not in the backend server currently
+        if (entityStatus == null || currentEntityId == -1) { // If no data got or player is not in the backend server currently
             return;
         }
 
@@ -123,7 +132,7 @@ public class VirtualYsmPacketProxyImpl implements YsmPacketProxy {
 
             wrappedPacketData.writeByte(4);
             wrappedPacketData.writeVarInt(currentEntityId);
-            wrappedPacketData.writeBytes(this.nbtRemapper.shouldRemap(targetProtocolVer) ? this.nbtRemapper.remapToMasterVer(lastEntityStatusTemp) : this.nbtRemapper.remapToWorkerVer(lastEntityStatusTemp)); // Remap nbt if needed
+            wrappedPacketData.writeBytes(this.nbtRemapper.shouldRemap(targetProtocolVer) ? this.nbtRemapper.remapToMasterVer(entityStatus) : this.nbtRemapper.remapToWorkerVer(entityStatus)); // Remap nbt if needed
 
             this.sendPluginMessageTo(target, YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData);
         } catch (Exception e) {
