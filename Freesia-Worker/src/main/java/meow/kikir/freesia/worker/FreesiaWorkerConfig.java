@@ -11,7 +11,7 @@ import java.net.InetSocketAddress;
 public class FreesiaWorkerConfig {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final File CONFIG_FILE_DIR = new File("config");
-    private static final File CONFIG_FILE = new File(CONFIG_FILE_DIR, "cyanidin_config.toml");
+    private static final File CONFIG_FILE = new File(CONFIG_FILE_DIR, "freesia_config.toml");
     public static InetSocketAddress masterServiceAddress = new InetSocketAddress("127.0.0.1", 19200);
     public static int reconnectInterval = 1;
     public static int playerDataCacheInvalidateIntervalSeconds = 30;
