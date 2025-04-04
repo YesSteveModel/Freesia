@@ -20,15 +20,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.StampedLock;
 
 public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     private final Player player;
     private final NbtRemapper nbtRemapper = new StandardNbtRemapperImpl();
 
     private volatile NBTCompound lastYsmEntityStatus = null;
-    private final Lock entityStatusWriteLock = new ReentrantLock(true); // We need to keep its order
+    private final StampedLock entityStatusWriteLock = new StampedLock(); // Use optimistic locks
 
     private volatile int playerEntityId = -1;
     private volatile int workerPlayerEntityId = -1;
@@ -117,17 +116,31 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public void setEntityDataRaw(NBTCompound data) {
-        this.entityStatusWriteLock.lock();
+        final long stamp = this.entityStatusWriteLock.writeLock();
         try {
             this.lastYsmEntityStatus = data;
         }finally {
-            this.entityStatusWriteLock.unlock();
+            this.entityStatusWriteLock.unlockWrite(stamp);
         }
     }
 
     @Override
     public void refreshToOthers() {
-        final NBTCompound entityStatusCopy = this.lastYsmEntityStatus; // Copy value
+        NBTCompound entityStatusCopy; // Copy value
+
+        // Try optimistic read first
+        long stamp = this.entityStatusWriteLock.tryOptimisticRead();
+        if (this.entityStatusWriteLock.validate(stamp)) {
+            entityStatusCopy = this.lastYsmEntityStatus;
+        }else {
+            // Fallback to read lock
+            try {
+                stamp = this.entityStatusWriteLock.readLock();
+                entityStatusCopy = this.lastYsmEntityStatus;
+            }finally {
+                this.entityStatusWriteLock.unlockRead(stamp);
+            }
+        }
 
         // If the player does not have any data
         if (entityStatusCopy == null) {
@@ -179,18 +192,17 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                     return ProxyComputeResult.ofDrop(); // Do not process the entity state if it is not ours
                 }
 
-                // We process this actions async
-                // TODO : Is here any race condition ?
-                Freesia.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> {
-                    this.entityStatusWriteLock.lock();
+                Freesia.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> { // Use NbtRemapper for multi version clients
+                    // Acquire write lock first
+                    final long stamp = this.entityStatusWriteLock.writeLock();
                     try {
-                        this.lastYsmEntityStatus = result.getEntityState(); // Read using the protocol version matched for the worker
+                        this.lastYsmEntityStatus = result.getEntityState(); // Update value to the result
                     }finally {
-                        this.entityStatusWriteLock.unlock();
+                        this.entityStatusWriteLock.unlockWrite(stamp);
                     }
 
                     this.refreshToOthers();
-                });
+                }).join(); // Force blocking as we do not wanna break the sequence of the data
             } catch (Exception e) {
                 Freesia.LOGGER.error("Error while in processing tracker!", e);
                 return ProxyComputeResult.ofDrop();

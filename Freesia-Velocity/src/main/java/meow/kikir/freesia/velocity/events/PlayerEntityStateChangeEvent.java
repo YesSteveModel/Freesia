@@ -1,6 +1,7 @@
 package meow.kikir.freesia.velocity.events;
 
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
+import com.google.common.annotations.Beta;
 import com.velocitypowered.api.proxy.Player;
 
 /**
@@ -8,6 +9,7 @@ import com.velocitypowered.api.proxy.Player;
  * 获取到的Nbt是要发送给玩家的
  * 注意:修改过后的nbt并不会被持久化即只会在当前进程发生作用而在重启后失效
  */
+@Beta
 public class PlayerEntityStateChangeEvent {
     private final Player actualPlayer;
     private final int entityId;
