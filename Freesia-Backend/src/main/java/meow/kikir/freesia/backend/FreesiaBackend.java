@@ -14,10 +14,15 @@ public final class FreesiaBackend extends JavaPlugin {
     @Override
     public void onEnable() {
         INSTANCE = this;
+
+        // TODO- De-hard-coding?
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "freesia:tracker_sync", this.trackerProcessor);
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "freesia:tracker_sync");
+
+        // TODO- De-hard-coding?
         Bukkit.getMessenger().registerIncomingPluginChannel(this, "freesia:virtual_player_management", this.virtualPlayerManager);
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, "freesia:virtual_player_management");
+
 
         Bukkit.getPluginManager().registerEvents(this.trackerProcessor, this);
     }
