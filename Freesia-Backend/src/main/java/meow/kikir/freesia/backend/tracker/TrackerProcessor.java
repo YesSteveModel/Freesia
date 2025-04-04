@@ -41,12 +41,13 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
         }
     }
 
-
     private void playerTrackedPlayer(@NotNull Player beSeen, @NotNull Player seeing) {
+        // Fire tracker update events
         if (!new CyanidinRealPlayerTrackerUpdateEvent(seeing, beSeen).callEvent()) {
             return;
         }
 
+        // The true tracker update caller
         this.notifyTrackerUpdate(seeing.getUniqueId(), beSeen.getUniqueId());
     }
 
@@ -57,6 +58,7 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
         wrappedUpdatePacket.writeUUID(beWatched);
         wrappedUpdatePacket.writeUUID(watcher);
 
+        // Find a payload
         final Player payload = Utils.randomPlayerIfNotFound(watcher);
 
         if (payload == null) {
@@ -90,6 +92,7 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
 
             final CyanidinTrackerScanEvent trackerScanEvent = new CyanidinTrackerScanEvent(result, toScan);
 
+            // We need to schedule back to pass the dumb async catchers as it was firing from both netty threads and main threads
             sender.getScheduler().execute(
                     FreesiaBackend.INSTANCE,
                     () -> {

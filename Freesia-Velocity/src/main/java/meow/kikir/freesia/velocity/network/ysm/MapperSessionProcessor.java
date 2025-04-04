@@ -154,14 +154,19 @@ public class MapperSessionProcessor implements SessionListener {
     @Override
     public void disconnected(DisconnectedEvent event) {
         Freesia.LOGGER.info("Mapper session has disconnected for reason(non-deserialized): {}", event.getReason()); // Log disconnected
+
+        // Log exceptions
         if (event.getCause() != null) {
             Freesia.LOGGER.info("Mapper session has disconnected for throwable: {}", event.getCause().getLocalizedMessage()); // Log errors
         }
+
+        // Remove callback
         this.mapperPayloadManager.onWorkerSessionDisconnect(this, this.kickMasterWhenDisconnect, event.getReason()); // Fire events
         this.session = null; //Set session to null to finalize the mapper connection
     }
 
     public void waitForDisconnected() {
+        // We will set the session to null after finishing all disconnect logics
         while (this.session != null) {
             Thread.onSpinWait(); // Spin wait instead of block waiting
         }

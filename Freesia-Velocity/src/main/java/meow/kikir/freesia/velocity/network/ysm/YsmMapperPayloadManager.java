@@ -265,12 +265,15 @@ public class YsmMapperPayloadManager {
     }
 
     protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster, Component reason) {
+        // Kick the master it binds
         if (kickMaster)
             mapperSession.getBindPlayer().disconnect(Freesia.languageManager.i18n(FreesiaConstants.LanguageConstants.WORKER_TERMINATED_CONNECTION, List.of("reason"), List.of(reason)));
+        // Remove from list
         this.mapperSessions.remove(mapperSession.getBindPlayer());
     }
 
     public void onPluginMessageIn(@NotNull Player player, @NotNull MinecraftChannelIdentifier channel, byte[] packetData) {
+        // Check if it is the message of ysm
         if (!channel.equals(YSM_CHANNEL_KEY_VELOCITY)) {
             return;
         }
@@ -278,6 +281,7 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(player);
 
         if (mapperSession == null) {
+            // Actually it shouldn't be and never be happened
             throw new IllegalStateException("Mapper session not found or ready for player " + player.getUsername());
         }
 
@@ -296,6 +300,7 @@ public class YsmMapperPayloadManager {
     }
 
     public void createMapperSession(@NotNull Player player, @NotNull InetSocketAddress backend) {
+        // Instance new session
         final TcpClientSession mapperSession = new TcpClientSession(
                 backend.getHostName(),
                 backend.getPort(),
@@ -307,10 +312,12 @@ public class YsmMapperPayloadManager {
                 )
         );
 
+        // Our packet processor for packet forwarding
         final MapperSessionProcessor packetProcessor = new MapperSessionProcessor(player, this.packetProxyCreator.apply(player), this);
 
         mapperSession.addListener(packetProcessor);
 
+        // Default as Minecraft client
         mapperSession.setFlag(BuiltinFlags.READ_TIMEOUT,30_000);
         mapperSession.setFlag(BuiltinFlags.WRITE_TIMEOUT,30_000);
 
@@ -320,6 +327,7 @@ public class YsmMapperPayloadManager {
         mapperSession.connect(true,false);
     }
 
+    @Deprecated
     public void onProxyLoggedin(Player player, MapperSessionProcessor packetProcessor, TcpClientSession session){
         // TODO : Are we still using this callback ?
     }
@@ -347,7 +355,7 @@ public class YsmMapperPayloadManager {
             throw new IllegalStateException("???");
         }
 
-        if (this.isPlayerInstalledYsm(watcher)) {
+        if (this.isPlayerInstalledYsm(watcher)) { // Skip players who don't install ysm
             mapperSession.getPacketProxy().sendEntityStateTo(watcher);
         }
     }
