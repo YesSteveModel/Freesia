@@ -12,9 +12,7 @@ Cyanidin的延续版（正在施工中）
 这个项目曾叫做Cyanidin，但原所有者MrHua269放弃了它，据他本人描述，他并不想在ysm这个混乱的社区里继续做第三方开发了，这个项目只是在给他徒增压力，他不想再继续维护了，我有天在minebbs看到了他的接坑帖子，便找他把项目要了过来，并改名为Freesia香雪兰，且现在也成为了YSM的官方项目之一。
 
 # 文档
-
-由于这玩意一开始并没有多少服务器用，所以MrHua269也没写文档，可能我后续会补充上。<del>(头大)</del>,
-后面可能会放在[FreesiaGuide](https://github.com/KikirMeow/FreesiaGuide)里
+请参见 [YSM 文档](https://ysm.cfpa.team/wiki/freesia-plugin/)的此处。
 
 # 构建
 
