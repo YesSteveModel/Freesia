@@ -139,16 +139,21 @@ public class Freesia implements PacketListener {
         final Player targetPlayer = event.getPlayer();
 
         return EventTask.async(() -> {
+            // On first connect
             if (!mapperManager.hasPlayer(targetPlayer)) {
                 this.logger.info("Initiating mapper session for player {}", targetPlayer.getUsername());
 
+                // Create mapper session
                 mapperManager.firstCreateMapper(targetPlayer);
-                kickChecker.onPlayerJoin(targetPlayer);
 
+                // Add to client kicker
+                kickChecker.onPlayerJoin(targetPlayer);
                 return;
             }
 
-            logger.info("Player {} has changed backend server.Reconnecting mapper session", targetPlayer.getUsername());
+            // Player might switch its current server
+            logger.info("Player {} has changed backend server. Reconnecting mapper session", targetPlayer.getUsername());
+            // So, reconnect mapper session
             mapperManager.reconnectWorker(targetPlayer);
         });
     }
@@ -166,6 +171,7 @@ public class Freesia implements PacketListener {
         if ((identifier instanceof MinecraftChannelIdentifier mineId) && (event.getSource() instanceof Player player)) {
             event.setResult(PluginMessageEvent.ForwardResult.handled());
 
+            // TODO Need a packet rate limiter here?
             mapperManager.onPluginMessageIn(player, mineId, data);
         }
     }

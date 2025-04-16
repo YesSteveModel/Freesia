@@ -19,7 +19,7 @@ import java.util.UUID;
 public class VirtualYsmPacketProxyImpl implements YsmPacketProxy {
     private final UUID virtualPlayerUUID;
     private final NbtRemapper nbtRemapper = new StandardNbtRemapperImpl();
-    private volatile NBTCompound lastYsmEntityStatus = null;
+    private volatile NBTCompound lastYsmEntityStatus = null; // TODO Need an access lock like DefaultYsmPacketProxyImpl?
     private volatile int playerEntityId = -1;
 
     public VirtualYsmPacketProxyImpl(UUID virtualPlayerUUID) {
