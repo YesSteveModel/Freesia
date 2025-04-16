@@ -352,7 +352,10 @@ public class YsmMapperPayloadManager {
         // so as the result, we could simply pass it down directly
         if (mapperSession == null) {
             // Should not be happened
-            throw new IllegalStateException("???");
+            // We use random player as the payload of custom payload of freesia tracker, so there is a possibility
+            // that race condition would happen between the disconnect logic and tracker update logic
+            //throw new IllegalStateException("???");
+            return;
         }
 
         if (this.isPlayerInstalledYsm(watcher)) { // Skip players who don't install ysm
