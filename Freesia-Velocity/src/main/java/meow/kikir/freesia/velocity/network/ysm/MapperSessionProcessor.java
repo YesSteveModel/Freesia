@@ -18,6 +18,8 @@ import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.Serverbound
 import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundPongPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
 
 public class MapperSessionProcessor implements SessionListener {
@@ -25,6 +27,7 @@ public class MapperSessionProcessor implements SessionListener {
     private final YsmPacketProxy packetProxy;
     private final YsmMapperPayloadManager mapperPayloadManager;
     private final MultiThreadedQueue<PendingPacket> pendingYsmPacketsInbound = new MultiThreadedQueue<>();
+    private final MultiThreadedQueue<UUID> pendingTrackerUpdatesTo = new MultiThreadedQueue<>();
     private volatile Session session;
     private volatile boolean kickMasterWhenDisconnect = true;
 
@@ -32,6 +35,25 @@ public class MapperSessionProcessor implements SessionListener {
         this.bindPlayer = bindPlayer;
         this.packetProxy = packetProxy;
         this.mapperPayloadManager = mapperPayloadManager;
+    }
+
+    public boolean queueTrackerUpdate(UUID target) {
+        return this.pendingTrackerUpdatesTo.offer(target);
+    }
+
+    public void retireTrackerCallbacks(){
+        UUID toSend;
+        while ((toSend = this.pendingTrackerUpdatesTo.pollOrBlockAdds()) != null) {
+            final Optional<Player> player = Freesia.PROXY_SERVER.getPlayer(toSend);
+
+            if (player.isEmpty()) {
+                continue;
+            }
+
+            final Player targetPlayer = player.get();
+
+            this.packetProxy.sendEntityStateTo(targetPlayer);
+        }
     }
 
     public YsmPacketProxy getPacketProxy() {

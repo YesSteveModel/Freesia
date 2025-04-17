@@ -9,6 +9,10 @@ import org.jetbrains.annotations.NotNull;
 
 
 public interface YsmPacketProxy {
+    default void setParentHandler(MapperSessionProcessor processor){
+        // No-op by default
+    }
+
     ProxyComputeResult processS2C(Key channelKey, ByteBuf copiedPacketData);
 
     ProxyComputeResult processC2S(Key channelKey, ByteBuf copiedPacketData);

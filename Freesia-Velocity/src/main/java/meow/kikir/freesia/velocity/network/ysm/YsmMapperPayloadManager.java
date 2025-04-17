@@ -27,7 +27,6 @@ import java.io.DataOutputStream;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
@@ -229,11 +228,15 @@ public class YsmMapperPayloadManager {
             throw new IllegalStateException("Player is not connected to mapper!");
         }
 
-        currentMapper.setKickMasterWhenDisconnect(false);
-        currentMapper.getSession().disconnect("RECONNECT");
-        currentMapper.waitForDisconnected();
+        this.disconnectWorker(currentMapper);
 
         this.createMapperSession(master, target);
+    }
+
+    private void disconnectWorker(MapperSessionProcessor connection) {
+        connection.setKickMasterWhenDisconnect(false);
+        connection.getSession().disconnect("RECONNECT");
+        connection.waitForDisconnected();
     }
 
     public void reconnectWorker(@NotNull Player master) {
@@ -244,7 +247,7 @@ public class YsmMapperPayloadManager {
         return this.mapperSessions.containsKey(player);
     }
 
-    public void firstCreateMapper(Player player) {
+    public void autoCreateMapper(Player player) {
         this.createMapperSession(player, Objects.requireNonNull(this.selectLessPlayer()));
     }
 
@@ -299,6 +302,34 @@ public class YsmMapperPayloadManager {
         mapperSession.onBackendReady();
     }
 
+    public boolean disconnectAlreadyConnected(Player player) {
+        final MapperSessionProcessor current = this.mapperSessions.get(player);
+
+        // Not exists or created
+        if (current == null) {
+            return false;
+        }
+
+        // Will do remove in the callback
+        this.disconnectWorker(current);
+        return true;
+    }
+
+    public void initMapperPacketProcessor(@NotNull Player player) {
+        final MapperSessionProcessor possiblyExisting = this.mapperSessions.get(player);
+
+        if (possiblyExisting != null) {
+            throw new IllegalStateException("Mapper session already exists for player " + player.getUsername());
+        }
+
+        final YsmPacketProxy packetProxy = this.packetProxyCreator.apply(player);
+        final MapperSessionProcessor processor = new MapperSessionProcessor(player, packetProxy, this);
+
+        packetProxy.setParentHandler(processor);
+
+        this.mapperSessions.put(player, processor);
+    }
+
     public void createMapperSession(@NotNull Player player, @NotNull InetSocketAddress backend) {
         // Instance new session
         final TcpClientSession mapperSession = new TcpClientSession(
@@ -313,15 +344,18 @@ public class YsmMapperPayloadManager {
         );
 
         // Our packet processor for packet forwarding
-        final MapperSessionProcessor packetProcessor = new MapperSessionProcessor(player, this.packetProxyCreator.apply(player), this);
+        final MapperSessionProcessor packetProcessor = this.mapperSessions.get(player);
+
+        if (packetProcessor == null) {
+            // Should be created in ServerPreConnectEvent
+            throw new IllegalStateException("Mapper session not found or ready for player " + player.getUsername());
+        }
 
         mapperSession.addListener(packetProcessor);
 
         // Default as Minecraft client
         mapperSession.setFlag(BuiltinFlags.READ_TIMEOUT,30_000);
         mapperSession.setFlag(BuiltinFlags.WRITE_TIMEOUT,30_000);
-
-        this.mapperSessions.put(player, packetProcessor); // Add to the mappers
 
         // Do connect
         mapperSession.connect(true,false);
@@ -358,8 +392,12 @@ public class YsmMapperPayloadManager {
             return;
         }
 
-        if (this.isPlayerInstalledYsm(watcher)) { // Skip players who don't install ysm
-            mapperSession.getPacketProxy().sendEntityStateTo(watcher);
+        if (this.isPlayerInstalledYsm(watcher) && ) { // Skip players who don't install ysm
+
+            // Check if ready
+            if (!mapperSession.queueTrackerUpdate(watcher.getUniqueId())) {
+                mapperSession.getPacketProxy().sendEntityStateTo(watcher);
+            }
         }
     }
 
