@@ -139,28 +139,32 @@ public class Freesia implements PacketListener {
         final Player targetPlayer = event.getPlayer();
 
         return EventTask.async(() -> {
-            // On first connect
-            if (!mapperManager.hasPlayer(targetPlayer)) {
-                this.logger.info("Initiating mapper session for player {}", targetPlayer.getUsername());
+            this.logger.info("Initiating mapper session for player {}", targetPlayer.getUsername());
 
-                // Create mapper session
-                mapperManager.firstCreateMapper(targetPlayer);
+            // Create mapper session
+            mapperManager.autoCreateMapper(targetPlayer);
 
-                // Add to client kicker
-                kickChecker.onPlayerJoin(targetPlayer);
-                return;
-            }
-
-            // Player might switch its current server
-            logger.info("Player {} has changed backend server. Reconnecting mapper session", targetPlayer.getUsername());
-            // So, reconnect mapper session
-            mapperManager.reconnectWorker(targetPlayer);
+            // Add to client kicker
+            kickChecker.onPlayerJoin(targetPlayer);
         });
     }
 
     @Subscribe
-    public void onServerPreConnect(@NotNull ServerPreConnectEvent event) {
-        mapperManager.updateRealPlayerEntityId(event.getPlayer(), -1); // Reset player's entity id to -1 as non initialized to prevent incorrect tracker status update
+    public EventTask onServerPreConnect(@NotNull ServerPreConnectEvent event) {
+        //mapperManager.updateRealPlayerEntityId(event.getPlayer(), -1); // Reset player's entity id to -1 as non initialized to prevent incorrect tracker status update
+        final Player player = event.getPlayer();
+        // Create mapper processor here
+        return EventTask.async(() -> {
+            final boolean potentialDisconnected = mapperManager.disconnectAlreadyConnected(player);
+
+            if (potentialDisconnected) {
+                // Player switched server, do log
+                logger.info("Player {} has changed backend server. Reconnecting mapper session", player.getUsername());
+            }
+
+            // Re init after removed or init on first connected
+            mapperManager.initMapperPacketProcessor(event.getPlayer());
+        });
     }
 
     @Subscribe

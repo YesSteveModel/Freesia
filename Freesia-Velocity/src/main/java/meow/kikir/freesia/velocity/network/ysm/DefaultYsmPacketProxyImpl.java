@@ -1,8 +1,10 @@
 package meow.kikir.freesia.velocity.network.ysm;
 
+import ca.spottedleaf.concurrentutil.util.ConcurrentUtil;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import com.google.errorprone.annotations.Var;
 import com.velocitypowered.api.event.ResultedEvent;
 import com.velocitypowered.api.proxy.Player;
 import meow.kikir.freesia.velocity.FreesiaConstants;
@@ -18,6 +20,7 @@ import io.netty.buffer.Unpooled;
 import net.kyori.adventure.key.Key;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.invoke.VarHandle;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.locks.StampedLock;
@@ -27,27 +30,39 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     private final NbtRemapper nbtRemapper = new StandardNbtRemapperImpl();
 
     private volatile NBTCompound lastYsmEntityStatus = null;
+    private volatile boolean proxyReady = false;
+
     private final StampedLock entityStatusWriteLock = new StampedLock(); // Use optimistic locks
 
     private volatile int playerEntityId = -1;
     private volatile int workerPlayerEntityId = -1;
+
+    private MapperSessionProcessor parentHandler;
+
+    private static final VarHandle WORKER_PLAYER_ENTITY_ID_VARHANDLE = ConcurrentUtil.getVarHandle(DefaultYsmPacketProxyImpl.class, "workerPlayerEntityId", int.class);
+    private static final VarHandle PLAYER_ENTITY_ID_VARHANDLE = ConcurrentUtil.getVarHandle(DefaultYsmPacketProxyImpl.class, "playerEntityId", int.class);
+    private static final VarHandle PROXY_READY_VARHANDLE = ConcurrentUtil.getVarHandle(DefaultYsmPacketProxyImpl.class, "proxyReady", boolean.class);
+    private static final VarHandle LAST_YSM_ENTITY_STATUS_VARHANDLE = ConcurrentUtil.getVarHandle(DefaultYsmPacketProxyImpl.class, "lastYsmEntityStatus", NBTCompound.class);
 
     public DefaultYsmPacketProxyImpl(@NotNull Player player) {
         this.player = player;
     }
 
     @Override
+    public void setParentHandler(MapperSessionProcessor handler) {
+        this.parentHandler = handler;
+    }
+
+    @Override
     public void setPlayerWorkerEntityId(int id) {
-        this.workerPlayerEntityId = id;
+        WORKER_PLAYER_ENTITY_ID_VARHANDLE.setVolatile(this, id);
     }
 
     @Override
     public void setPlayerEntityId(int id) {
-        final int oldEntityId = this.playerEntityId;
+        final boolean updated = PLAYER_ENTITY_ID_VARHANDLE.compareAndSet(this, -1, id);
 
-        this.playerEntityId = id;
-
-        if (oldEntityId == -1 && id != -1) {
+        if (updated && id != -1) {
             // Try sync tracker status once
             // We could hardly say there is no out-of-ordering issue here
             // So we had better to force fire the update
@@ -57,12 +72,12 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public int getPlayerEntityId() {
-        return this.playerEntityId;
+        return (int) PLAYER_ENTITY_ID_VARHANDLE.getVolatile(this);
     }
 
     @Override
     public int getPlayerWorkerEntityId() {
-        return this.workerPlayerEntityId;
+        return (int) WORKER_PLAYER_ENTITY_ID_VARHANDLE.getVolatile(this);
     }
 
     @Override
@@ -71,7 +86,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
     }
 
     private boolean isEntityStateOfSelf(int entityId){
-        final int currentWorkerEntityId = this.workerPlayerEntityId;
+        final int currentWorkerEntityId = (int) WORKER_PLAYER_ENTITY_ID_VARHANDLE.getVolatile(this);
 
         if (currentWorkerEntityId == -1) {
             return false;
@@ -82,11 +97,11 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public void sendEntityStateTo(@NotNull Player target){
-        this.sendEntityStateToInternal(target, this.lastYsmEntityStatus);
+        this.sendEntityStateToInternal(target, (NBTCompound) LAST_YSM_ENTITY_STATUS_VARHANDLE.getVolatile(this));
     }
 
     private void sendEntityStateToInternal(Player target, NBTCompound entityStatus) {
-        final int currentEntityId = this.playerEntityId; // Get current entity id on the server of the player
+        final int currentEntityId = (int) PLAYER_ENTITY_ID_VARHANDLE.getVolatile(this); // Get current entity id on the server of the player
 
         if (entityStatus == null || currentEntityId == -1) { // If no data got or player is not in the backend server currently
             return;
@@ -116,35 +131,21 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public void setEntityDataRaw(NBTCompound data) {
-        final long stamp = this.entityStatusWriteLock.writeLock();
-        try {
-            this.lastYsmEntityStatus = data;
-        }finally {
-            this.entityStatusWriteLock.unlockWrite(stamp);
-        }
+        LAST_YSM_ENTITY_STATUS_VARHANDLE.setVolatile(this, data);
     }
 
     @Override
     public void refreshToOthers() {
-        NBTCompound entityStatusCopy; // Copy value
-
-        // Try optimistic read first
-        long stamp = this.entityStatusWriteLock.tryOptimisticRead();
-        if (this.entityStatusWriteLock.validate(stamp)) {
-            entityStatusCopy = this.lastYsmEntityStatus;
-        }else {
-            // Fallback to read lock
-            try {
-                stamp = this.entityStatusWriteLock.readLock();
-                entityStatusCopy = this.lastYsmEntityStatus;
-            }finally {
-                this.entityStatusWriteLock.unlockRead(stamp);
-            }
-        }
+        final NBTCompound entityStatusCopy = (NBTCompound) LAST_YSM_ENTITY_STATUS_VARHANDLE.getVolatile(this); // Copy value
 
         // If the player does not have any data
-        if (entityStatusCopy == null) {
+        if (entityStatusCopy == null || (int)PLAYER_ENTITY_ID_VARHANDLE.getVolatile(this) == -1) {
             return;
+        }
+
+        // Prevent race condition
+        if (!PROXY_READY_VARHANDLE.compareAndSet(this, false, true)){
+            this.parentHandler.retireTrackerCallbacks(); // Retire the tracker callbacks
         }
 
         this.sendEntityStateToInternal(this.player, entityStatusCopy); // Sync to self
@@ -176,7 +177,7 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
 
     @Override
     public NBTCompound getCurrentEntityState() {
-        return this.lastYsmEntityStatus;
+        return (NBTCompound) LAST_YSM_ENTITY_STATUS_VARHANDLE.getVolatile(this);
     }
 
     @Override
@@ -193,13 +194,13 @@ public class DefaultYsmPacketProxyImpl implements YsmPacketProxy{
                 }
 
                 Freesia.PROXY_SERVER.getEventManager().fire(new PlayerEntityStateChangeEvent(this.player,workerEntityId, this.nbtRemapper.readBound(mcBuffer))).thenAccept(result -> { // Use NbtRemapper for multi version clients
-                    // Acquire write lock first
-                    final long stamp = this.entityStatusWriteLock.writeLock();
-                    try {
-                        this.lastYsmEntityStatus = result.getEntityState(); // Update value to the result
-                    }finally {
-                        this.entityStatusWriteLock.unlockWrite(stamp);
+                    final NBTCompound to = result.getEntityState();
+
+                    NBTCompound curr = (NBTCompound) LAST_YSM_ENTITY_STATUS_VARHANDLE.getVolatile(this);
+                    while (!LAST_YSM_ENTITY_STATUS_VARHANDLE.compareAndSet(this, curr, to)){
+                        curr = (NBTCompound) LAST_YSM_ENTITY_STATUS_VARHANDLE.getVolatile(this);
                     }
+
 
                     this.refreshToOthers();
                 }).join(); // Force blocking as we do not wanna break the sequence of the data
