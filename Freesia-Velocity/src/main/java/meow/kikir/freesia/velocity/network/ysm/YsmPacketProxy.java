@@ -38,6 +38,12 @@ public interface YsmPacketProxy {
     int getPlayerWorkerEntityId();
 
     default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, byte[] data){
+        final Player owner = this.getOwner();
+
+        if (owner == null) {
+            throw new UnsupportedOperationException();
+        }
+
         this.sendPluginMessageTo(this.getOwner(), channel, data);
     }
 
