@@ -16,12 +16,12 @@ public final class FreesiaBackend extends JavaPlugin {
         INSTANCE = this;
 
         // TODO- De-hard-coding?
-        Bukkit.getMessenger().registerIncomingPluginChannel(this, "freesia:tracker_sync", this.trackerProcessor);
-        Bukkit.getMessenger().registerOutgoingPluginChannel(this, "freesia:tracker_sync");
+        Bukkit.getMessenger().registerIncomingPluginChannel(this, TrackerProcessor.CHANNEL_NAME, this.trackerProcessor);
+        Bukkit.getMessenger().registerOutgoingPluginChannel(this, TrackerProcessor.CHANNEL_NAME);
 
         // TODO- De-hard-coding?
-        Bukkit.getMessenger().registerIncomingPluginChannel(this, "freesia:virtual_player_management", this.virtualPlayerManager);
-        Bukkit.getMessenger().registerOutgoingPluginChannel(this, "freesia:virtual_player_management");
+        Bukkit.getMessenger().registerIncomingPluginChannel(this, VirtualPlayerManager.CHANNEL_NAME, this.virtualPlayerManager);
+        Bukkit.getMessenger().registerOutgoingPluginChannel(this, VirtualPlayerManager.CHANNEL_NAME);
 
 
         Bukkit.getPluginManager().registerEvents(this.trackerProcessor, this);

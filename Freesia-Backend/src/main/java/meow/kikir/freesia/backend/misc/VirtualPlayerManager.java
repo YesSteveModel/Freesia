@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class VirtualPlayerManager implements PluginMessageListener, Listener {
-    private static final String CHANNEL_NAME = "freesia:virtual_player_management";
+    public static final String CHANNEL_NAME = "freesia:virtual_player_management";
 
     private final AtomicInteger eventIdGenerator = new AtomicInteger(0);
     private final Map<Integer, Consumer<Boolean>> pendingCallbacks = new ConcurrentHashMap<>();
