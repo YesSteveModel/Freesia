@@ -3,11 +3,12 @@ dependencies {
     compileOnly("com.github.retrooper:packetevents-velocity:2.5.0")
     compileOnly("com.velocitypowered:velocity-api:3.3.0-SNAPSHOT")
     compileOnly("net.kyori:adventure-api:4.17.0")
+
+    implementation(project(":Freesia-Common"))
     implementation("com.electronwill.night-config:toml:3.6.6")
     implementation("org.geysermc.mcprotocollib:protocol:1.21-SNAPSHOT")
-    implementation(project(":Freesia-Common"))
     implementation("ca.spottedleaf:concurrentutil:0.0.3")
-    annotationProcessor("com.velocitypowered:velocity-api:3.3.0-SNAPSHOT")
+    annotationProcessor("com.velocitypowered:velocity-api:3.4gio.0-SNAPSHOT")
 }
 
 val targetJavaVersion = 21
