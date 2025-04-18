@@ -93,8 +93,6 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy{
         }
     }
 
-
-
     protected void releaseReadReference() {
         int failureCount = 0;
         for (;;) {
