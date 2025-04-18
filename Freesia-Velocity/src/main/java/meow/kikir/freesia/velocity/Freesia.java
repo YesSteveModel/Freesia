@@ -34,7 +34,6 @@ import meow.kikir.freesia.velocity.network.ysm.YsmMapperPayloadManager;
 import meow.kikir.freesia.velocity.storage.DefaultRealPlayerDataStorageManagerImpl;
 import meow.kikir.freesia.velocity.storage.DefaultVirtualPlayerDataStorageManagerImpl;
 import meow.kikir.freesia.velocity.storage.IDataStorageManager;
-import moew.kikir.freesia.velocity.BuildConstants;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
