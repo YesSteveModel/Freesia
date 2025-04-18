@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 public class TrackerProcessor implements PluginMessageListener, Listener {
-    private static final String CHANNEL_NAME = "freesia:tracker_sync";
+    public static final String CHANNEL_NAME = "freesia:tracker_sync";
 
     // The default tracker event which is provided by Paper
     @EventHandler
