@@ -11,7 +11,6 @@ import net.kyori.adventure.key.Key;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.*;
 import org.geysermc.mcprotocollib.network.packet.Packet;
-import org.geysermc.mcprotocollib.network.tcp.TcpClientSession;
 import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundCustomPayloadPacket;
 import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundPingPacket;
 import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
@@ -20,7 +19,6 @@ import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.Clientbound
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.locks.LockSupport;
 
 public class MapperSessionProcessor implements SessionListener {
     private final Player bindPlayer;
@@ -37,11 +35,11 @@ public class MapperSessionProcessor implements SessionListener {
         this.mapperPayloadManager = mapperPayloadManager;
     }
 
-    public boolean queueTrackerUpdate(UUID target) {
+    protected boolean queueTrackerUpdate(UUID target) {
         return this.pendingTrackerUpdatesTo.offer(target);
     }
 
-    public void retireTrackerCallbacks(){
+    protected void retireTrackerCallbacks(){
         UUID toSend;
         while ((toSend = this.pendingTrackerUpdatesTo.pollOrBlockAdds()) != null) {
             final Optional<Player> player = Freesia.PROXY_SERVER.getPlayer(toSend);
@@ -56,19 +54,19 @@ public class MapperSessionProcessor implements SessionListener {
         }
     }
 
-    public YsmPacketProxy getPacketProxy() {
+    protected YsmPacketProxy getPacketProxy() {
         return this.packetProxy;
     }
 
-    public Session getSession() {
+    protected Session getSession() {
         return this.session;
     }
 
-    public void setKickMasterWhenDisconnect(boolean kickMasterWhenDisconnect) {
+    protected void setKickMasterWhenDisconnect(boolean kickMasterWhenDisconnect) {
         this.kickMasterWhenDisconnect = kickMasterWhenDisconnect;
     }
 
-    public void processPlayerPluginMessage(byte[] packetData) {
+    protected void processPlayerPluginMessage(byte[] packetData) {
         final ProxyComputeResult result = this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData));
 
         switch (result.result()) {
@@ -91,7 +89,7 @@ public class MapperSessionProcessor implements SessionListener {
         return this.bindPlayer;
     }
 
-    public void onBackendReady() {
+    protected void onBackendReady() {
         // Process incoming packets that we had not ready to process before
         PendingPacket pendingYsmPacket;
         while ((pendingYsmPacket = this.pendingYsmPacketsInbound.pollOrBlockAdds()) != null) { // Destroy(block add operations) the queue
@@ -104,9 +102,6 @@ public class MapperSessionProcessor implements SessionListener {
         if (packet instanceof ClientboundLoginPacket loginPacket) {
             // Notify entity update to notify the tracker update of the player
             Freesia.mapperManager.updateWorkerPlayerEntityId(this.bindPlayer, loginPacket.getEntityId());
-            // Worker connection callbacks, but we are not using it currently
-            // Considering to remove it in the future
-            Freesia.mapperManager.onProxyLoggedin(this.bindPlayer, this, ((TcpClientSession) session));
         }
 
         if (packet instanceof ClientboundCustomPayloadPacket payloadPacket) {
@@ -187,7 +182,7 @@ public class MapperSessionProcessor implements SessionListener {
         this.session = null; //Set session to null to finalize the mapper connection
     }
 
-    public void waitForDisconnected() {
+    protected void waitForDisconnected() {
         // We will set the session to null after finishing all disconnect logics
         while (this.session != null) {
             Thread.onSpinWait(); // Spin wait instead of block waiting

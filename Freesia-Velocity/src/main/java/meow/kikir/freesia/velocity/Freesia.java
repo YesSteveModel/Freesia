@@ -12,7 +12,6 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
-import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Dependency;
@@ -29,12 +28,13 @@ import meow.kikir.freesia.velocity.i18n.I18NManager;
 import meow.kikir.freesia.velocity.network.backend.MasterServerMessageHandler;
 import meow.kikir.freesia.velocity.network.mc.FreesiaPlayerTracker;
 import meow.kikir.freesia.velocity.network.misc.VirtualPlayerManager;
-import meow.kikir.freesia.velocity.network.ysm.DefaultYsmPacketProxyImpl;
+import meow.kikir.freesia.velocity.network.ysm.RealPlayerYsmPacketProxyImpl;
 import meow.kikir.freesia.velocity.network.ysm.VirtualYsmPacketProxyImpl;
 import meow.kikir.freesia.velocity.network.ysm.YsmMapperPayloadManager;
 import meow.kikir.freesia.velocity.storage.DefaultRealPlayerDataStorageManagerImpl;
 import meow.kikir.freesia.velocity.storage.DefaultVirtualPlayerDataStorageManagerImpl;
 import meow.kikir.freesia.velocity.storage.IDataStorageManager;
+import moew.kikir.freesia.velocity.BuildConstants;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -44,7 +44,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
-@Plugin(id = "freesia", name = "Freesia", version = "2.3.2-universal", authors = {"Earthme", "HappyRespawnanchor", "xiaozhangup"}, dependencies = @Dependency(id = "packetevents"))
+@Plugin(id = "freesia", name = "Freesia", version = BuildConstants.VERSION, authors = {"Earthme", "HappyRespawnanchor", "xiaozhangup"}, dependencies = @Dependency(id = "packetevents"))
 public class Freesia implements PacketListener {
     public static final FreesiaPlayerTracker tracker = new FreesiaPlayerTracker();
     public static final IDataStorageManager realPlayerDataStorageManager = new DefaultRealPlayerDataStorageManagerImpl();
@@ -71,7 +71,7 @@ public class Freesia implements PacketListener {
         PROXY_SERVER.sendMessage(Component.text("  / /_   / ___// _ \\ / _ \\ / ___// // __ `/"));
         PROXY_SERVER.sendMessage(Component.text(" / __/  / /   /  __//  __/(__  )/ // /_/ / "));
         PROXY_SERVER.sendMessage(Component.text("/_/    /_/    \\___/ \\___//____//_/ \\__,_/  "));
-        PROXY_SERVER.sendMessage(Component.text("\n     Powered by YesSteveModel and all contributors, Version: 2.3.2-universal"));
+        PROXY_SERVER.sendMessage(Component.text("\n     Powered by YesSteveModel and all contributors, Version: " + BuildConstants.VERSION));
         PROXY_SERVER.sendMessage(Component.text("----------------------------------------------------------------"));
     }
 
@@ -96,7 +96,7 @@ public class Freesia implements PacketListener {
 
         LOGGER.info("Registering events and packet listeners.");
         // Mapper (Core function)
-        mapperManager = new YsmMapperPayloadManager(DefaultYsmPacketProxyImpl::new, VirtualYsmPacketProxyImpl::new);
+        mapperManager = new YsmMapperPayloadManager(RealPlayerYsmPacketProxyImpl::new, VirtualYsmPacketProxyImpl::new);
         // Register mc packet listener
         PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.HIGHEST);
         // Attach to ysm channel
@@ -153,6 +153,7 @@ public class Freesia implements PacketListener {
     public EventTask onServerPreConnect(@NotNull ServerPreConnectEvent event) {
         //mapperManager.updateRealPlayerEntityId(event.getPlayer(), -1); // Reset player's entity id to -1 as non initialized to prevent incorrect tracker status update
         final Player player = event.getPlayer();
+
         // Create mapper processor here
         return EventTask.async(() -> {
             final boolean potentialDisconnected = mapperManager.disconnectAlreadyConnected(player);
@@ -188,17 +189,12 @@ public class Freesia implements PacketListener {
             final Player target = event.getPlayer();
 
             logger.info("Entity id update for player {} to {}", target.getUsername(), playerSpawnPacket.getEntityId());
+
             // Update id and try notifying update once
             mapperManager.updateRealPlayerEntityId(target, playerSpawnPacket.getEntityId());
+
+            // Finalize callbacks
+            PROXY_SERVER.getScheduler().buildTask(this, () -> mapperManager.onBackendReady(target)).schedule();
         }
-    }
-
-    // We need to push off the packet process of worker because the player's login packet might still not reached to the client when we create the mapper session
-    @Subscribe
-    public void onServerPostConnect(@NotNull ServerPostConnectEvent postConnectEvent) {
-        final Player target = postConnectEvent.getPlayer();
-
-        // Retire callbacks of worker ysm packet processing
-        mapperManager.onBackendReady(target);
     }
 }

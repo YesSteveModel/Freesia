@@ -1,4 +1,4 @@
-package moew.kikir.freesia.velocity;
+package meow.kikir.freesia.velocity;
 
 // The constants are replaced before compilation
 public class BuildConstants {

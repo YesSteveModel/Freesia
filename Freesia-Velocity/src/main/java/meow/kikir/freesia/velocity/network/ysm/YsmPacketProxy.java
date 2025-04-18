@@ -6,6 +6,7 @@ import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.key.Key;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 
 public interface YsmPacketProxy {
@@ -17,13 +18,14 @@ public interface YsmPacketProxy {
 
     ProxyComputeResult processC2S(Key channelKey, ByteBuf copiedPacketData);
 
+    @Nullable
     Player getOwner();
 
     void sendEntityStateTo(@NotNull Player target);
 
     void setEntityDataRaw(NBTCompound data);
 
-    void refreshToOthers();
+    void notifyFullTrackerUpdates();
 
     NBTCompound getCurrentEntityState();
 
