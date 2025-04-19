@@ -9,6 +9,7 @@ import io.netty.buffer.Unpooled;
 import meow.kikir.freesia.velocity.Freesia;
 import meow.kikir.freesia.velocity.utils.PendingPacket;
 import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.*;
 import org.geysermc.mcprotocollib.network.packet.Packet;
@@ -17,6 +18,7 @@ import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.Clientbound
 import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
 import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundPongPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.invoke.VarHandle;
 import java.util.Optional;
@@ -196,16 +198,33 @@ public class MapperSessionProcessor implements SessionListener {
 
     @Override
     public void disconnected(DisconnectedEvent event) {
-        Freesia.LOGGER.info("Mapper session has disconnected for reason(non-deserialized): {}", event.getReason()); // Log disconnected
+        this.detachFromManager(true, event);
+    }
 
-        // Log exceptions
-        if (event.getCause() != null) {
-            Freesia.LOGGER.info("Mapper session has disconnected for throwable: {}", event.getCause().getLocalizedMessage()); // Log errors
+    // Sometimes the callback would not be called when we destroy an non-connected mapper,
+    // so we separated the disconnect logics into here and manual call this in that cases
+    protected void detachFromManager(boolean updateSession, @Nullable DisconnectedEvent disconnectedEvent) {
+        Component reason = null;
+
+        // Log disconnects if we disconnected it non-manually
+        if (disconnectedEvent != null) {
+            reason = disconnectedEvent.getReason();
+
+            Freesia.LOGGER.info("Mapper session has disconnected for reason(non-deserialized): {}", reason); // Log disconnected
+
+            final Throwable thr = disconnectedEvent.getCause();
+
+            if (thr != null) {
+                Freesia.LOGGER.error("Mapper session has disconnected for throwable", thr); // Log errors
+            }
         }
 
         // Remove callback
-        this.mapperPayloadManager.onWorkerSessionDisconnect(this, (boolean) KICK_MASTER_HANDLE.getVolatile(this), event.getReason()); // Fire events
-        SESSION_HANDLE.setVolatile(this, null); //Set session to null to finalize the mapper connection
+        this.mapperPayloadManager.onWorkerSessionDisconnect(this, (boolean) KICK_MASTER_HANDLE.getVolatile(this), reason); // Fire events
+
+        if (updateSession) {
+            SESSION_HANDLE.setVolatile(this, null); //Set session to null to finalize the mapper connection
+        }
     }
 
     protected void setSession(Session session) {
@@ -225,6 +244,11 @@ public class MapperSessionProcessor implements SessionListener {
         // Destroy the session
         if (sessionObject != null) {
             sessionObject.disconnect("DESTROYED");
+        }else {
+            // Disconnecting a non initialized session
+            // Manual call remove callbacks
+            // Remember: HERE SHOULDN'T BE ANY RACE CONDITION
+            this.detachFromManager(false, null);
         }
 
         // Wait for fully disconnected

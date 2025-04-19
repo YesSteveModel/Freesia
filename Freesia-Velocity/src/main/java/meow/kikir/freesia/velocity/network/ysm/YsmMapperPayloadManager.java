@@ -244,10 +244,15 @@ public class YsmMapperPayloadManager {
         }
     }
 
-    protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster, Component reason) {
+    protected void onWorkerSessionDisconnect(@NotNull MapperSessionProcessor mapperSession, boolean kickMaster, @Nullable Component reason) {
         // Kick the master it binds
         if (kickMaster)
-            mapperSession.getBindPlayer().disconnect(Freesia.languageManager.i18n(FreesiaConstants.LanguageConstants.WORKER_TERMINATED_CONNECTION, List.of("reason"), List.of(reason)));
+            mapperSession.getBindPlayer().disconnect(Freesia.languageManager.i18n(
+                    FreesiaConstants.LanguageConstants.WORKER_TERMINATED_CONNECTION,
+                    List.of("reason"),
+                    List.of(reason == null ? Component.text("DISCONNECTED MANUAL") : reason)
+            ));
+
         // Remove from list
         this.mapperSessions.remove(mapperSession.getBindPlayer());
     }
