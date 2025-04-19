@@ -63,10 +63,13 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy{
         this.playerUUID = player.getUniqueId();
     }
 
-    // Read and write locks for entity data, we just use them for very very short term operations so there is no need to
+    // Read and write locks for entity data, we just use them for very, very short term operations so there is no need to
     // worry the thread contention issue on performance
     protected void releaseWriteReference() {
-        ENTITY_DATA_REF_COUNT_HANDLE.setVolatile(this, 0); // There is no any thread contention because the write locks are currently in our hands
+        // There is no any thread contention because the write locks are currently in our hands
+        if (!ENTITY_DATA_REF_COUNT_HANDLE.compareAndSet(this, -1, 0)) {
+            throw new IllegalStateException("Releasing when not write-locked");
+        }
     }
 
     protected void acquireWriteReference() {
@@ -78,12 +81,18 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy{
 
             final int curr = (int) ENTITY_DATA_REF_COUNT_HANDLE.getVolatile(this);
 
+            // Reading operations are not finished
+            if (curr > 0) {
+                failureCount++;
+                continue;
+            }
+
             // Should not be happened because we are just calling entity data update in a single thread
             if (curr == -1) {
                 throw new IllegalStateException("Write lock is already held by another thread!");
             }
 
-            // Reading operations are not finished or another thread is acquiring write or read reference
+            // Another thread is acquiring write or read reference
             if (!ENTITY_DATA_REF_COUNT_HANDLE.compareAndSet(this, curr, -1)) {
                 failureCount++;
                 continue;
