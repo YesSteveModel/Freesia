@@ -65,6 +65,17 @@ public class MapperSessionProcessor implements SessionListener {
         }
     }
 
+    public boolean sendPacket(Packet packet) {
+        final Session sessionObject = (Session) SESSION_HANDLE.getVolatile(this);
+
+        if (sessionObject == null) {
+            return false;
+        }
+
+        sessionObject.send(packet);
+        return true;
+    }
+
     protected YsmPacketProxy getPacketProxy() {
         return this.packetProxy;
     }
