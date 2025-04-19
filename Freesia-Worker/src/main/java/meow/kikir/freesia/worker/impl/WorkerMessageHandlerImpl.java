@@ -28,11 +28,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 
 public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
     private final AtomicInteger traceIdGenerator = new AtomicInteger(0);
     private final Map<Integer, Consumer<byte[]>> playerDataGetCallbacks = Maps.newConcurrentMap();
+
+    private volatile boolean playerDataFetchCallbackRetired = false;
+    private final StampedLock playerDataFetchCallbackLock = new StampedLock();
 
     @Override
     public void channelActive(@NotNull ChannelHandlerContext ctx) {
@@ -45,32 +49,63 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
 
     @Override
     public void channelInactive(@NotNull ChannelHandlerContext ctx) {
+        this.retirePlayerFetchCallbacks();
         super.channelInactive(ctx);
         ServerLoader.SERVER_INST.execute(ServerLoader::connectToBackend);
     }
 
-    public void getPlayerData(UUID playerUUID, Consumer<CompoundTag> onGot) {
-        final int generatedTraceId = this.traceIdGenerator.getAndIncrement();
-        final Consumer<byte[]> wrappedDecoder = content -> {
-            CompoundTag decoded = null;
+    private void retirePlayerFetchCallbacks() {
+        final long stamp = this.playerDataFetchCallbackLock.writeLock();
+        try {
+            this.playerDataFetchCallbackRetired = true;
 
-            if (content == null) {
+            for (Map.Entry<Integer, Consumer<byte[]>> entry : this.playerDataGetCallbacks.entrySet()) {
+                try {
+                    entry.getValue().accept(null);
+                } catch (Exception e) {
+                    EntryPoint.LOGGER_INST.error("Failed to fire player data callback!", e);
+                }
+            }
+
+            this.playerDataGetCallbacks.clear();
+        }finally {
+            this.playerDataFetchCallbackLock.unlockWrite(stamp);
+        }
+    }
+
+    public void getPlayerData(UUID playerUUID, Consumer<CompoundTag> onGot) {
+        final long stamp = this.playerDataFetchCallbackLock.readLock();
+        try {
+            if (this.playerDataFetchCallbackRetired) {
                 onGot.accept(null);
                 return;
             }
 
-            try {
-                decoded = (CompoundTag) NbtIo.readAnyTag(new DataInputStream(new ByteArrayInputStream(content)), NbtAccounter.unlimitedHeap());
-            } catch (Exception e) {
-                EntryPoint.LOGGER_INST.error("Failed to decode nbt!", e);
-            }
+            final int generatedTraceId = this.traceIdGenerator.getAndIncrement();
 
-            onGot.accept(decoded);
-        };
+            final Consumer<byte[]> wrappedDecoder = content -> {
+                CompoundTag decoded = null;
 
-        this.playerDataGetCallbacks.put(generatedTraceId, wrappedDecoder);
+                if (content == null) {
+                    onGot.accept(null);
+                    return;
+                }
 
-        ServerLoader.clientInstance.sendToMaster(new W2MPlayerDataGetRequestMessage(playerUUID, generatedTraceId));
+                try {
+                    decoded = (CompoundTag) NbtIo.readAnyTag(new DataInputStream(new ByteArrayInputStream(content)), NbtAccounter.unlimitedHeap());
+                } catch (Exception e) {
+                    EntryPoint.LOGGER_INST.error("Failed to decode nbt!", e);
+                }
+
+                onGot.accept(decoded);
+            };
+
+            this.playerDataGetCallbacks.put(generatedTraceId, wrappedDecoder);
+
+            ServerLoader.clientInstance.sendToMaster(new W2MPlayerDataGetRequestMessage(playerUUID, generatedTraceId));
+        }finally {
+            this.playerDataFetchCallbackLock.unlockRead(stamp);
+        }
     }
 
     @Override
@@ -100,6 +135,7 @@ public class WorkerMessageHandlerImpl extends NettyClientChannelHandlerLayer {
 
         Runnable scheduledCommand = () -> {
             CommandDispatcher<CommandSourceStack> commandDispatcher = ServerLoader.SERVER_INST.getCommands().getDispatcher();
+
             final ParseResults<CommandSourceStack> parsed = commandDispatcher.parse(command, ServerLoader.SERVER_INST.createCommandSourceStack().withSource(new CommandSource() {
                 @Override
                 public void sendSystemMessage(Component component) {

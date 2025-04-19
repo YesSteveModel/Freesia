@@ -17,28 +17,53 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 
 public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
     private final Map<Integer, Consumer<String>> pendingCommandDispatches = Maps.newConcurrentMap();
     private final AtomicInteger traceIdGenerator = new AtomicInteger(0);
+
     private volatile UUID workerUUID;
     private volatile String workerName;
 
-    public void dispatchCommandToWorker(String command, Consumer<Component> onDispatched) {
-        final int traceId = this.traceIdGenerator.getAndIncrement();
-        final Consumer<String> wrappedDecoder = json -> {
-            try {
-                final Component decoded = LegacyComponentSerializer.builder().build().deserialize(json);
-                onDispatched.accept(decoded);
-            } catch (Exception e) {
-                EntryPoint.LOGGER_INST.error("Failed to decode command result from worker", e);
-            }
-        };
+    private volatile boolean commandDispatcherRetired = false;
+    private final StampedLock commandDispatchCallbackLock = new StampedLock();
 
-        this.pendingCommandDispatches.put(traceId, wrappedDecoder);
-        this.sendMessage(new M2WDispatchCommandMessage(traceId, command));
+    public void dispatchCommandToWorker(String command, Consumer<Component> onDispatched) {
+        final long stamp = this.commandDispatchCallbackLock.readLock();
+        try {
+            // We were retired during connection
+            if (this.commandDispatcherRetired) {
+                onDispatched.accept(null);
+                return;
+            }
+
+            final int traceId = this.traceIdGenerator.getAndIncrement();
+
+            final Consumer<String> wrappedDecoder = json -> {
+                try {
+                    // We were retired during disconnection
+                    if (json == null) {
+                        onDispatched.accept(null);
+                        return;
+                    }
+
+                    final Component decoded = LegacyComponentSerializer.builder().build().deserialize(json);
+                    onDispatched.accept(decoded);
+                } catch (Exception e) {
+                    EntryPoint.LOGGER_INST.error("Failed to decode command result from worker", e);
+                    onDispatched.accept(null);
+                }
+            };
+
+            this.pendingCommandDispatches.put(traceId, wrappedDecoder);
+            this.sendMessage(new M2WDispatchCommandMessage(traceId, command));
+        }finally {
+            this.commandDispatchCallbackLock.unlockRead(stamp);
+        }
     }
 
     @Nullable
@@ -54,11 +79,27 @@ public class MasterServerMessageHandler extends NettyServerChannelHandlerLayer {
 
     @Override
     public void channelInactive(@NotNull ChannelHandlerContext ctx) {
+        this.retireAllCommandDispatchCallbacks();
+
         if (this.workerUUID == null) {
             return;
         }
 
         Freesia.registedWorkers.remove(this.workerUUID);
+    }
+
+    private void retireAllCommandDispatchCallbacks() {
+        final long stamp = this.commandDispatchCallbackLock.writeLock();
+        try {
+            this.commandDispatcherRetired = true;
+            for (Map.Entry<Integer, Consumer<String>> entry : this.pendingCommandDispatches.entrySet()) {
+                entry.getValue().accept(null);
+            }
+
+            this.pendingCommandDispatches.clear();
+        }finally {
+            this.commandDispatchCallbackLock.unlockWrite(stamp);
+        }
     }
 
     @Override
