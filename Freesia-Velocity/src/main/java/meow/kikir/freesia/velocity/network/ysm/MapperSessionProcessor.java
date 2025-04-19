@@ -77,6 +77,14 @@ public class MapperSessionProcessor implements SessionListener {
         final ProxyComputeResult result = this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData));
         final Session sessionObject = (Session) SESSION_HANDLE.getVolatile(this);
 
+        // This case should never happen because player's ysm packet won't come in
+        // until we forward the handshake packet from the worker side
+        // And when the handshake packet is reached, the session was already set before
+        // see YsmMapperPayloadManager#createMapperSession
+        if (sessionObject == null) {
+            throw new IllegalStateException("Processing plugin message on non-connected mapper");
+        }
+
         switch (result.result()) {
             case MODIFY -> {
                 final ByteBuf finalData = result.data();
