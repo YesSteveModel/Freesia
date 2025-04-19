@@ -217,10 +217,9 @@ public class YsmMapperPayloadManager {
         return callback;
     }
 
-    private void disconnectMapper(@NotNull MapperSessionProcessor connection) {
+    private void disconnectMapperWithoutKickingMaster(@NotNull MapperSessionProcessor connection) {
         connection.setKickMasterWhenDisconnect(false);
-        connection.getSession().disconnect("RECONNECT");
-        connection.waitForDisconnected();
+        connection.destroyAndAwaitDisconnected();
     }
 
     public void autoCreateMapper(Player player) {
@@ -241,9 +240,7 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapperSession = this.mapperSessions.remove(player);
 
         if (mapperSession != null) {
-            mapperSession.setKickMasterWhenDisconnect(false); // Player already offline, so we don't disconnect again
-            mapperSession.getSession().disconnect("PLAYER DISCONNECTED");
-            mapperSession.waitForDisconnected();
+            this.disconnectMapperWithoutKickingMaster(mapperSession);
         }
     }
 
@@ -291,7 +288,7 @@ public class YsmMapperPayloadManager {
         }
 
         // Will do remove in the callback
-        this.disconnectMapper(current);
+        this.disconnectMapperWithoutKickingMaster(current);
         return true;
     }
 
@@ -331,6 +328,7 @@ public class YsmMapperPayloadManager {
             throw new IllegalStateException("Mapper session not found or ready for player " + player.getUsername());
         }
 
+        packetProcessor.setSession(mapperSession);
         mapperSession.addListener(packetProcessor);
 
         // Default as Minecraft client

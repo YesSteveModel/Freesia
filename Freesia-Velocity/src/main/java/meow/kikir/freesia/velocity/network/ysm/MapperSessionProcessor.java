@@ -1,6 +1,7 @@
 package meow.kikir.freesia.velocity.network.ysm;
 
 import ca.spottedleaf.concurrentutil.collection.MultiThreadedQueue;
+import ca.spottedleaf.concurrentutil.util.ConcurrentUtil;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import io.netty.buffer.ByteBuf;
@@ -17,6 +18,7 @@ import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.Serverbound
 import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundPongPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 
+import java.lang.invoke.VarHandle;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,10 +26,19 @@ public class MapperSessionProcessor implements SessionListener {
     private final Player bindPlayer;
     private final YsmPacketProxy packetProxy;
     private final YsmMapperPayloadManager mapperPayloadManager;
+
+    // Callbacks for packet processing and tracker updates
     private final MultiThreadedQueue<PendingPacket> pendingYsmPacketsInbound = new MultiThreadedQueue<>();
     private final MultiThreadedQueue<UUID> pendingTrackerUpdatesTo = new MultiThreadedQueue<>();
+
+    // Controlled by the VarHandles following
     private volatile Session session;
-    private volatile boolean kickMasterWhenDisconnect = true;
+    private boolean kickMasterWhenDisconnect = true;
+    private boolean destroyed = false;
+
+    private static final VarHandle KICK_MASTER_HANDLE = ConcurrentUtil.getVarHandle(MapperSessionProcessor.class, "kickMasterWhenDisconnect", boolean.class);
+    private static final VarHandle SESSION_HANDLE = ConcurrentUtil.getVarHandle(MapperSessionProcessor.class, "session", Session.class);
+    private static final VarHandle DESTROYED_HANDLE = ConcurrentUtil.getVarHandle(MapperSessionProcessor.class, "destroyed", boolean.class);
 
     public MapperSessionProcessor(Player bindPlayer, YsmPacketProxy packetProxy, YsmMapperPayloadManager mapperPayloadManager) {
         this.bindPlayer = bindPlayer;
@@ -58,16 +69,13 @@ public class MapperSessionProcessor implements SessionListener {
         return this.packetProxy;
     }
 
-    protected Session getSession() {
-        return this.session;
-    }
-
     protected void setKickMasterWhenDisconnect(boolean kickMasterWhenDisconnect) {
-        this.kickMasterWhenDisconnect = kickMasterWhenDisconnect;
+        KICK_MASTER_HANDLE.setVolatile(this, kickMasterWhenDisconnect);
     }
 
     protected void processPlayerPluginMessage(byte[] packetData) {
         final ProxyComputeResult result = this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData));
+        final Session sessionObject = (Session) SESSION_HANDLE.getVolatile(this);
 
         switch (result.result()) {
             case MODIFY -> {
@@ -77,11 +85,11 @@ public class MapperSessionProcessor implements SessionListener {
                 byte[] data = new byte[finalData.readableBytes()];
                 finalData.readBytes(data);
 
-                this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, data));
+                sessionObject.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, data));
             }
 
             case PASS ->
-                    this.session.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, packetData));
+                    sessionObject.send(new ServerboundCustomPayloadPacket(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, packetData));
         }
     }
 
@@ -160,7 +168,6 @@ public class MapperSessionProcessor implements SessionListener {
 
     @Override
     public void connected(ConnectedEvent event) {
-        this.session = event.getSession();
     }
 
     @Override
@@ -178,13 +185,36 @@ public class MapperSessionProcessor implements SessionListener {
         }
 
         // Remove callback
-        this.mapperPayloadManager.onWorkerSessionDisconnect(this, this.kickMasterWhenDisconnect, event.getReason()); // Fire events
-        this.session = null; //Set session to null to finalize the mapper connection
+        this.mapperPayloadManager.onWorkerSessionDisconnect(this, (boolean) KICK_MASTER_HANDLE.getVolatile(this), event.getReason()); // Fire events
+        SESSION_HANDLE.setVolatile(this, null); //Set session to null to finalize the mapper connection
+    }
+
+    protected void setSession(Session session) {
+        SESSION_HANDLE.setVolatile(this, session);
+    }
+
+    public void destroyAndAwaitDisconnected() {
+        // Prevent multiple disconnect calls
+        if (!DESTROYED_HANDLE.compareAndSet(this, false, true)) {
+            // Wait for fully disconnected
+            this.waitForDisconnected();
+            return;
+        }
+
+        final Session sessionObject = (Session) SESSION_HANDLE.getVolatile(this);
+
+        // Destroy the session
+        if (sessionObject != null) {
+            sessionObject.disconnect("DESTROYED");
+        }
+
+        // Wait for fully disconnected
+        this.waitForDisconnected();
     }
 
     protected void waitForDisconnected() {
         // We will set the session to null after finishing all disconnect logics
-        while (this.session != null) {
+        while (SESSION_HANDLE.getVolatile(this) != null) {
             Thread.onSpinWait(); // Spin wait instead of block waiting
         }
     }
