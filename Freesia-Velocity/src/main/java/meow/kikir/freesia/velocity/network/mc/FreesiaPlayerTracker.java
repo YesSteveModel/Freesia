@@ -114,17 +114,25 @@ public class FreesiaPlayerTracker {
 
         final Optional<Player> targetPlayerNullable = Freesia.PROXY_SERVER.getPlayer(target);
 
+        final boolean[] cancelCallbackAdd = {false};
         if (targetPlayerNullable.isPresent()) {
             final Player targetPlayer = targetPlayerNullable.get();
 
             targetPlayer.getCurrentServer().ifPresentOrElse(
                     server -> server.getServer().sendPluginMessage(SYNC_CHANNEL_KEY, callbackRequest.getBytes()),
                     () -> {
+                        cancelCallbackAdd[0] = true;
                         callback.complete(null); // Maybe at the early stage
                     } // Throw exception when we didn't find that server
             );
         } else {
+            cancelCallbackAdd[0] = true;
             callback.complete(null);
+        }
+
+        // If we didn't find the server, we need to remove the callback
+        if (cancelCallbackAdd[0]) {
+            this.pendingCanSeeTasks.remove(callbackId);
         }
 
         return callback;
