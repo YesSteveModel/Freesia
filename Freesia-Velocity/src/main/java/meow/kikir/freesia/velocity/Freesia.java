@@ -38,7 +38,7 @@ import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
-import javax.inject.Inject;
+import com.google.inject.Inject;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
