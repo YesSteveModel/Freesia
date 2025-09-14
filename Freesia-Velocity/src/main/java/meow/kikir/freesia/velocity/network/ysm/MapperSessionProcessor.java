@@ -87,7 +87,6 @@ public class MapperSessionProcessor implements SessionListener {
     }
 
     protected void processPlayerPluginMessage(byte[] packetData) {
-        final ProxyComputeResult result = this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData));
         final Session sessionObject = (Session) SESSION_HANDLE.getVolatile(this);
 
         // This case should never happen because player's ysm packet won't come in
@@ -97,6 +96,8 @@ public class MapperSessionProcessor implements SessionListener {
         if (sessionObject == null) {
             throw new IllegalStateException("Processing plugin message on non-connected mapper");
         }
+
+        final ProxyComputeResult result = this.packetProxy.processC2S(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE, Unpooled.copiedBuffer(packetData));
 
         switch (result.result()) {
             case MODIFY -> {

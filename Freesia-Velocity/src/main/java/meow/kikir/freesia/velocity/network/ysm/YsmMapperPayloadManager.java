@@ -42,11 +42,12 @@ public class YsmMapperPayloadManager {
 
     // Player to worker mappers connections
     private final Map<Player, MapperSessionProcessor> mapperSessions = Maps.newConcurrentMap();
+    // Real player proxy factory
+    private final Function<Player, YsmPacketProxy> packetProxyCreator;
 
     // Backend connect infos
     private final ReadWriteLock backendIpsAccessLock = new ReentrantReadWriteLock(false);
     private final Map<InetSocketAddress, Integer> backend2Players = Maps.newLinkedHashMap();
-    private final Function<Player, YsmPacketProxy> packetProxyCreator;
 
     // The players who installed ysm(Used for packet sending reduction)
     private final Set<UUID> ysmInstalledPlayers = Sets.newConcurrentHashSet();
@@ -65,7 +66,7 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapper = this.mapperSessions.get(target);
 
         if (mapper == null) {
-            return;
+            throw new IllegalStateException("Mapper not created yet!");
         }
 
         mapper.getPacketProxy().setPlayerWorkerEntityId(entityId);
@@ -75,7 +76,7 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapper = this.mapperSessions.get(target);
 
         if (mapper == null) {
-            return;
+            throw new IllegalStateException("Mapper not created yet!");
         }
 
         mapper.getPacketProxy().setPlayerEntityId(entityId);
@@ -151,6 +152,8 @@ public class YsmMapperPayloadManager {
                 }
 
                 if (data == null) {
+                    createdVirtualProxy.setPlayerEntityId(playerEntityId);
+                    createdVirtualProxy.setPlayerWorkerEntityId(0);
                     callback.complete(true);
                     return;
                 }
@@ -160,7 +163,8 @@ public class YsmMapperPayloadManager {
                     final NBTCompound read = (NBTCompound) serializer.deserializeTag(NBTLimiter.forBuffer(data, Integer.MAX_VALUE), new DataInputStream(new ByteArrayInputStream(data)), true);
 
                     createdVirtualProxy.setEntityDataRaw(read);
-                    createdVirtualProxy.setPlayerEntityId(playerEntityId); // Will fired tracker update when entity id changed
+                    createdVirtualProxy.setPlayerEntityId(playerEntityId);
+                    createdVirtualProxy.setPlayerWorkerEntityId(0);
                 } catch (Exception ex1) {
                     callback.completeExceptionally(ex1);
                     return;
@@ -222,6 +226,29 @@ public class YsmMapperPayloadManager {
         connection.destroyAndAwaitDisconnected();
     }
 
+    public Map<Integer, RealPlayerYsmPacketProxyImpl> collectRealProxy2WorkerEntityId() {
+        final Map<Integer, RealPlayerYsmPacketProxyImpl> result = Maps.newLinkedHashMap();
+
+        // Here we act likes a COWList
+        final Collection<MapperSessionProcessor> copied = new ArrayList<>(this.mapperSessions.values());
+
+        for (MapperSessionProcessor session : copied) {
+            final YsmPacketProxy packetProxy = session.getPacketProxy();
+
+            // If it's real player
+            if (packetProxy instanceof RealPlayerYsmPacketProxyImpl realPlayerProxy) {
+                final int playerEntityId = realPlayerProxy.getPlayerEntityId();
+                final int workerEntityId = realPlayerProxy.getPlayerWorkerEntityId();
+
+                if (playerEntityId != -1 && workerEntityId != -1) { // check if it's ready
+                    result.put(workerEntityId, realPlayerProxy);
+                }
+            }
+        }
+
+        return result;
+    }
+
     public void autoCreateMapper(Player player) {
         this.createMapperSession(player, Objects.requireNonNull(this.selectLessPlayer()));
     }
@@ -277,8 +304,8 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapperSession = this.mapperSessions.get(player);
 
         if (mapperSession == null) {
-            // Shouldn't be happened
-            throw new IllegalStateException("???");
+            //race condition: already disconnected
+            return;
         }
 
         mapperSession.onBackendReady();

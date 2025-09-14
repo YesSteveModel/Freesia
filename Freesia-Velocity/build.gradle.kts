@@ -1,6 +1,6 @@
 dependencies {
     compileOnly("io.netty:netty-all:4.1.118.Final")
-    compileOnly("com.github.retrooper:packetevents-velocity:2.5.0")
+    compileOnly("com.github.retrooper:packetevents-velocity:2.8.0")
     compileOnly("com.velocitypowered:velocity-api:3.3.0-SNAPSHOT")
     compileOnly("net.kyori:adventure-api:4.17.0")
 

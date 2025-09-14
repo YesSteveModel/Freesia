@@ -7,6 +7,8 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.velocitypowered.api.proxy.Player;
 import io.netty.buffer.Unpooled;
 import meow.kikir.freesia.velocity.Freesia;
+import meow.kikir.freesia.velocity.FreesiaConstants;
+import meow.kikir.freesia.velocity.YsmProtocolMetaFile;
 import meow.kikir.freesia.velocity.network.mc.NbtRemapper;
 import meow.kikir.freesia.velocity.network.mc.impl.StandardNbtRemapperImpl;
 import meow.kikir.freesia.velocity.utils.FriendlyByteBuf;
@@ -81,15 +83,10 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy{
 
             final int curr = (int) ENTITY_DATA_REF_COUNT_HANDLE.getVolatile(this);
 
-            // Reading operations are not finished
-            if (curr > 0) {
+            // Reading or another writing operations are not finished
+            if (curr > 0 || curr == -1) {
                 failureCount++;
                 continue;
-            }
-
-            // Should not be happened because we are just calling entity data update in a single thread
-            if (curr == -1) {
-                throw new IllegalStateException("Write lock is already held by another thread!");
             }
 
             // Another thread is acquiring write or read reference
@@ -248,6 +245,36 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy{
     }
 
     public abstract CompletableFuture<Set<UUID>> fetchTrackerList(UUID observer);
+
+    @Override
+    public void executeMolang(String expression) {
+        final int playerEntityId = (int) PLAYER_ENTITY_ID_HANDLE.getVolatile(this);
+
+        if (playerEntityId == -1 || this.player == null) {
+            return;
+        }
+
+        final FriendlyByteBuf wrappedPacketData = new FriendlyByteBuf(Unpooled.buffer());
+        wrappedPacketData.writeByte(YsmProtocolMetaFile.getS2CPacketId(FreesiaConstants.YsmProtocolMetaConstants.Clientbound.MOLANG_EXECUTE));
+        wrappedPacketData.writeVarIntArray(new int[]{playerEntityId}); // Write the entity id
+        wrappedPacketData.writeUtf(expression); // Write the expression
+
+        this.sendPluginMessageToOwner(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData);
+    }
+
+    @Override
+    public void executeMolang(int[] entityIds, String expression) {
+        if (this.player == null) {
+            return;
+        }
+
+        final FriendlyByteBuf wrappedPacketData = new FriendlyByteBuf(Unpooled.buffer());
+        wrappedPacketData.writeByte(YsmProtocolMetaFile.getS2CPacketId(FreesiaConstants.YsmProtocolMetaConstants.Clientbound.MOLANG_EXECUTE));
+        wrappedPacketData.writeVarIntArray(entityIds); // Write the entity id
+        wrappedPacketData.writeUtf(expression); // Write the expression
+
+        this.sendPluginMessageToOwner(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData);
+    }
 
     protected void sendEntityStateToRaw(@NotNull UUID receiverUUID, int entityId, NBTCompound data) {
         try {

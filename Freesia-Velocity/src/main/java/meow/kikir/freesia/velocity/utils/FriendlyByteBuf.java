@@ -30,6 +30,35 @@ public class FriendlyByteBuf extends ByteBuf {
         this.source = parent;
     }
 
+    public int[] readVarIntArray() {
+        return this.readVarIntArray(this.readableBytes());
+    }
+
+    public int[] readVarIntArray(int maxLength) {
+        int varInt = this.readVarInt();
+        if (varInt > maxLength) {
+            throw new DecoderException("VarIntArray with size " + varInt + " is bigger than allowed " + maxLength);
+        } else {
+            int[] ints = new int[varInt];
+
+            for (int i = 0; i < ints.length; i++) {
+                ints[i] = this.readVarInt();
+            }
+
+            return ints;
+        }
+    }
+
+    public FriendlyByteBuf writeVarIntArray(int[] array) {
+        this.writeVarInt(array.length);
+
+        for (int i : array) {
+            this.writeVarInt(i);
+        }
+
+        return this;
+    }
+
     public static int getVarIntSize(int value) {
         for (int j = 1; j < 5; ++j) {
             if ((value & -1 << j * 7) == 0) {

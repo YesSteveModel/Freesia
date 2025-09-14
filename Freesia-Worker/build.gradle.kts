@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":Freesia-Common"))
     implementation("com.electronwill.night-config:core:${rootProject.extra["night_config_version"]}")
     include("com.electronwill.night-config:core:${rootProject.extra["night_config_version"]}")
+    include("ca.spottedleaf:concurrentutil:0.0.3")
 
 
     implementation("com.electronwill.night-config:toml:${rootProject.extra["night_config_version"]}")

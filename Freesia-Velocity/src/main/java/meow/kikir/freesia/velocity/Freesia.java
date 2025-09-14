@@ -7,6 +7,7 @@ import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.google.common.collect.Maps;
+import com.google.inject.Inject;
 import com.velocitypowered.api.event.EventTask;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
@@ -38,7 +39,6 @@ import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
@@ -140,9 +140,6 @@ public class Freesia implements PacketListener {
         return EventTask.async(() -> {
             this.logger.info("Initiating mapper session for player {}", targetPlayer.getUsername());
 
-            // Create mapper session
-            mapperManager.autoCreateMapper(targetPlayer);
-
             // Add to client kicker
             kickChecker.onPlayerJoin(targetPlayer);
         });
@@ -163,7 +160,10 @@ public class Freesia implements PacketListener {
             }
 
             // Re init after removed or init on first connected
-            mapperManager.initMapperPacketProcessor(event.getPlayer());
+            mapperManager.initMapperPacketProcessor(player);
+
+            // Create or re-create mapper session
+            mapperManager.autoCreateMapper(player);
         });
     }
 
