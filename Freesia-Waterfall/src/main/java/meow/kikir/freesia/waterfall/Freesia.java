@@ -171,8 +171,8 @@ public class Freesia extends Plugin implements PacketListener, Listener {
         final byte[] data = event.getData();
 
         if (identifier.equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY)
-                && (event.getReceiver() instanceof ProxiedPlayer)) {
-            ProxiedPlayer player = (ProxiedPlayer) event.getReceiver();
+                && (event.getSender() instanceof ProxiedPlayer)) {
+            ProxiedPlayer player = (ProxiedPlayer) event.getSender();
             event.setCancelled(true);
 
             // TODO Need a packet rate limiter here?
