@@ -102,7 +102,15 @@ public class Freesia extends Plugin implements PacketListener, Listener {
 
         // Master controller service
         masterServer = new NettySocketServer(FreesiaConfig.masterServiceAddress, c -> new MasterServerMessageHandler());
-        masterServer.bind();
+        PROXY_SERVER.getScheduler().runAsync(this, () -> {
+            try {
+                LOGGER.info("Binding master service to " + FreesiaConfig.masterServiceAddress);
+                masterServer.bind();
+                LOGGER.info("Successfully bound master service.");
+            } catch (Exception e) {
+                LOGGER.log(java.util.logging.Level.SEVERE, "Failed to bind master service!", e);
+            }
+        });
 
         LOGGER.info("Initiating client kicker.");
 
