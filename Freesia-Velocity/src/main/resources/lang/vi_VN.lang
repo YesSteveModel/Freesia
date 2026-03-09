@@ -1,0 +1,7 @@
+freesia.backend.disconnected=<#cdd6f4>[</#cdd6f4><#89dceb>Freesia</#89dceb><#cdd6f4>]</#cdd6f4><#f38ba8>Backend Ysm đã ngắt kết nối, lý do: <reason>
+freesia.backend.not_connected=<#cdd6f4>[</#cdd6f4><#89dceb>Freesia</#89dceb><#cdd6f4>]</#cdd6f4><#f38ba8>Không có kết nối hợp lệ tới backend Ysm! Nếu bạn vẫn gặp sự cố này, vui lòng báo cáo cho quản trị viên
+freesia.worker_command.worker_not_found=<#cdd6f4>[</#cdd6f4><#89dceb>Freesia</#89dceb><#cdd6f4>]</#cdd6f4><#f38ba8>Không tìm thấy worker được chỉ định
+freesia.worker_command.command_feedback=<#cdd6f4>[</#cdd6f4><#89dceb>Freesia</#89dceb><#cdd6f4>][</#cdd6f4><worker_name><#cdd6f4>]</#cdd6f4><feedback>
+freesia.mod_handshake_time_outed=<#cdd6f4>[</#cdd6f4><#89dceb>Freesia</#89dceb><#cdd6f4>]</#cdd6f4><#f38ba8>Bắt tay kết nối đã hết thời gian chờ, vui lòng đảm bảo bạn đã cài đúng phiên bản Ysm
+freesia.list_player_command_header=<#cdd6f4>[</#cdd6f4><#89dceb>Freesia</#89dceb><#cdd6f4>]</#cdd6f4>Danh sách người chơi Ysm:
+freesia.list_player_command_body=<#cdd6f4><name>

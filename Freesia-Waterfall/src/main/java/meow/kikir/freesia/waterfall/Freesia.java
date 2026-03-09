@@ -138,8 +138,6 @@ public class Freesia extends Plugin implements PacketListener, Listener {
         final ProxiedPlayer targetPlayer = event.getPlayer();
 
         getProxy().getScheduler().runAsync(this, () -> {
-            this.getLogger().info("Initiating mapper session for player " + targetPlayer.getName());
-
             // Add to client kicker
             kickChecker.onPlayerJoin(targetPlayer);
         });
@@ -149,20 +147,20 @@ public class Freesia extends Plugin implements PacketListener, Listener {
     public void onServerConnected(ServerConnectedEvent event) {
         final ProxiedPlayer player = event.getPlayer();
 
-        // Create mapper processor here
+        final boolean potentialDisconnected = mapperManager.disconnectAlreadyConnected(player);
+
+        if (potentialDisconnected) {
+            // Player switched server, do log
+            getLogger().info("Player " + player.getName() + " has changed backend server. Reconnecting mapper session");
+        } else {
+            getLogger().info("Initiating mapper session for player " + player.getName());
+        }
+
+        // Re init after removed or init on first connected
+        mapperManager.initMapperPacketProcessor(player);
+
+        // Create or re-create mapper session
         getProxy().getScheduler().runAsync(this, () -> {
-            final boolean potentialDisconnected = mapperManager.disconnectAlreadyConnected(player);
-
-            if (potentialDisconnected) {
-                // Player switched server, do log
-                getLogger().info(
-                        "Player " + player.getName() + " has changed backend server. Reconnecting mapper session");
-            }
-
-            // Re init after removed or init on first connected
-            mapperManager.initMapperPacketProcessor(player);
-
-            // Create or re-create mapper session
             mapperManager.autoCreateMapper(player);
         });
     }

@@ -68,7 +68,9 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapper = this.mapperSessions.get(target);
 
         if (mapper == null) {
-            throw new IllegalStateException("Mapper not created yet!");
+            Freesia.LOGGER
+                    .warning("Mapper not created yet for " + target.getName() + "! Skipping worker entity id update.");
+            return;
         }
 
         mapper.getPacketProxy().setPlayerWorkerEntityId(entityId);
@@ -78,7 +80,9 @@ public class YsmMapperPayloadManager {
         final MapperSessionProcessor mapper = this.mapperSessions.get(target);
 
         if (mapper == null) {
-            throw new IllegalStateException("Mapper not created yet!");
+            Freesia.LOGGER.warning(
+                    "Mapper not created yet for " + target.getName() + "! Skipping real player entity id update.");
+            return;
         }
 
         mapper.getPacketProxy().setPlayerEntityId(entityId);
