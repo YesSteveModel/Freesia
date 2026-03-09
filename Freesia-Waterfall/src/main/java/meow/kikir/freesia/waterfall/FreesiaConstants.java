@@ -27,23 +27,23 @@ public class FreesiaConstants {
     public static final class PermissionConstants {
         // permission nodes
         public static final String LIST_PLAYER_COMMAND = "freesia.commands.listysmplayers",
-                                   DISPATCH_WORKER_COMMAND = "freesia.commands.dworkerc";
+                DISPATCH_WORKER_COMMAND = "freesia.commands.dworkerc";
     }
 
     public static final class LanguageConstants {
         // dworkerc command
         public static final String WORKER_NOT_FOUND = "freesia.worker_command.worker_not_found",
-                                   WORKER_COMMAND_FEEDBACK = "freesia.worker_command.command_feedback",
+                WORKER_COMMAND_FEEDBACK = "freesia.worker_command.command_feedback",
 
-        // listysmplayers command
-                                  PLAYER_LIST_HEADER = "freesia.list_player_command_header",
-                                  PLAYER_LIST_ENTRY = "freesia.list_player_command_body",
+                // listysmplayers command
+                PLAYER_LIST_HEADER = "freesia.list_player_command_header",
+                PLAYER_LIST_ENTRY = "freesia.list_player_command_body",
 
-        // handshake detection
-                                  HANDSHAKE_TIMED_OUT = "freesia.mod_handshake_time_outed",
-        // generic functions
-                                  WORKER_TERMINATED_CONNECTION = "freesia.backend.disconnected",
-                                  WORKER_NOT_CONNECTED = "freesia.backend.not_connected";
+                // handshake detection
+                HANDSHAKE_TIMED_OUT = "freesia.mod_handshake_time_outed",
+                // generic functions
+                WORKER_TERMINATED_CONNECTION = "freesia.backend.disconnected",
+                WORKER_NOT_CONNECTED = "freesia.backend.not_connected";
 
     }
 
@@ -59,6 +59,7 @@ public class FreesiaConstants {
         public static final class Serverbound {
             public static final String HAND_SHAKE_REQUEST = "handshake_request";
             public static final String MOLANG_EXECUTE_REQ = "molang_execute_req";
+            public static final String ANIMATION_REQ = "animation_req";
         }
 
         // S -> C
@@ -68,6 +69,8 @@ public class FreesiaConstants {
             public static final String ENTITY_DATA_UPDATE = "entity_data_update";
 
             public static final String MOLANG_EXECUTE = "molang_execute";
+
+            public static final String ANIMATION = "animation";
         }
     }
 }
