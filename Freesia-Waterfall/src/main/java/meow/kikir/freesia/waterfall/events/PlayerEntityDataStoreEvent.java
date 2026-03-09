@@ -5,7 +5,7 @@ import java.util.UUID;
 import net.md_5.bungee.api.plugin.Event;
 
 /**
- * Triggered when player data is saved
+ * 玩家数据保存时触发该事件
  */
 public class PlayerEntityDataStoreEvent extends Event {
     private final UUID player;
@@ -17,27 +17,27 @@ public class PlayerEntityDataStoreEvent extends Event {
     }
 
     /**
-     * Gets the NBT data that will be saved
+     * 获取将要被保存的NBT数据
      * 
-     * @return Encoded NBT (unnamed)
+     * @return 已编码的NBT(unnamed)
      */
     public byte[] getSerializedNbtData() {
         return this.serializedNbtData;
     }
 
     /**
-     * Sets the final data to enter the data storage
+     * 设置最终进入datastorage的数据
      * 
-     * @param serializedNbtData Encoded NBT (unnamed)
+     * @param serializedNbtData 已编码的NBT(unnamed)
      */
     public void setSerializedNbtData(byte[] serializedNbtData) {
         this.serializedNbtData = serializedNbtData;
     }
 
     /**
-     * Gets the UUID of the player holding this data
+     * 获取持有该数据的玩家的UUID
      * 
-     * @return The player's UUID
+     * @return 玩家UUID
      */
     public UUID getPlayer() {
         return this.player;

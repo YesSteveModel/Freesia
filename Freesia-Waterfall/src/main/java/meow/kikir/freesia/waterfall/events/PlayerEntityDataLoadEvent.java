@@ -5,7 +5,7 @@ import java.util.UUID;
 import net.md_5.bungee.api.plugin.Event;
 
 /**
- * Triggered when player data is loaded
+ * 加载玩家数据时会触发该事件
  */
 public class PlayerEntityDataLoadEvent extends Event {
     private final UUID player;
@@ -17,31 +17,29 @@ public class PlayerEntityDataLoadEvent extends Event {
     }
 
     /**
-     * Gets the UUID of the loaded player
-     * Note: When this event is triggered, the server may still be processing
-     * conditions, so the Player object on the proxy cannot be retrieved using this
-     * UUID yet
+     * 获取被加载玩家的UUID
+     * 注意: 在此事件触发时，服务端可能仍在处理ServerConnectedEvent,所以此时无法通过该UUID获取到velocity上的Player对象
      * 
      * @see net.md_5.bungee.api.event.ServerConnectedEvent
-     * @return The loaded player's UUID
+     * @return 被加载玩家的UUID
      */
     public UUID getPlayer() {
         return this.player;
     }
 
     /**
-     * Gets the unencoded NBT data (unnamed)
+     * 获取未解码的NBT数据(unnamed)
      * 
-     * @return Encoded NBT (unnamed)
+     * @return
      */
     public byte[] getSerializedNbtData() {
         return this.serializedNbtData;
     }
 
     /**
-     * Sets the final NBT data
+     * 设置最终的NBT数据
      * 
-     * @param serializedNbtData Encoded UUID data (unnamed)
+     * @param serializedNbtData 已经编码的UUID数据(unnamed)
      */
     public void setSerializedNbtData(byte[] serializedNbtData) {
         this.serializedNbtData = serializedNbtData;

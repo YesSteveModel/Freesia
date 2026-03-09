@@ -5,7 +5,7 @@ import java.util.UUID;
 import net.md_5.bungee.api.plugin.Event;
 
 /**
- * Triggered when a worker successfully connects to the master
+ * 当worker成功连接到master会触发该事件
  */
 public class WorkerConnectedEvent extends Event {
     private final UUID workerUUID;
@@ -17,18 +17,18 @@ public class WorkerConnectedEvent extends Event {
     }
 
     /**
-     * Gets the name of the worker
+     * 获取worker的名字
      * 
-     * @return The worker's name
+     * @return worker的名字
      */
     public String getWorkerName() {
         return this.workerName;
     }
 
     /**
-     * Gets the UUID of the worker
+     * 获取worker的UUID
      * 
-     * @return The worker's UUID
+     * @return worker的UUID
      */
     public UUID getWorkerUUID() {
         return this.workerUUID;

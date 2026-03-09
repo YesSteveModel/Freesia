@@ -5,8 +5,8 @@ import net.md_5.bungee.api.plugin.Event;
 import net.md_5.bungee.api.plugin.Cancellable;
 
 /**
- * YSM player handshake event
- * Note: Blocking event
+ * Ysm玩家的握手事件
+ * 注意: 阻塞事件
  */
 public class PlayerYsmHandshakeEvent extends Event implements Cancellable {
     private final ProxiedPlayer player;
@@ -18,9 +18,9 @@ public class PlayerYsmHandshakeEvent extends Event implements Cancellable {
     }
 
     /**
-     * Gets the current player
-     * 
-     * @return The player
+     * 获取当前的玩家
+     *
+     * @return 玩家
      */
     public ProxiedPlayer getPlayer() {
         return this.player;

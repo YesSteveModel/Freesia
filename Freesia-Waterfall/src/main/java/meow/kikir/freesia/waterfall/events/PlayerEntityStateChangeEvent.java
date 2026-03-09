@@ -6,10 +6,9 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Event;
 
 /**
- * Triggered when a player changes their model or a worker updates the player
- * The retrieved NBT is intended to be sent to the player
- * Note: Modified NBT will not be persisted, meaning it only affects the current
- * process and is lost after a restart
+ * 当玩家更改模型时或worker设置玩家时该事件会被触发
+ * 获取到的Nbt是要发送给玩家的
+ * 注意:修改过后的nbt并不会被持久化即只会在当前进程发生作用而在重启后失效
  */
 @Beta
 public class PlayerEntityStateChangeEvent extends Event {
@@ -24,27 +23,27 @@ public class PlayerEntityStateChangeEvent extends Event {
     }
 
     /**
-     * Gets the player holding this data
+     * 获取持有这个数据的玩家
      *
-     * @return The player
+     * @return 玩家
      */
     public ProxiedPlayer getPlayer() {
         return this.actualPlayer;
     }
 
     /**
-     * Gets the entity ID of this player on the worker side
+     * 获取这个玩家在worker侧的实体id
      *
-     * @return The entity ID
+     * @return 实体id
      */
     public int getEntityId() {
         return this.entityId;
     }
 
     /**
-     * Gets the player's YSM entity data
+     * 获取玩家的ysm实体数据
      *
-     * @return The NBT format of the entity data
+     * @return 实体数据的nbt形式
      */
     public NBTCompound getEntityState() {
         return this.entityState;
