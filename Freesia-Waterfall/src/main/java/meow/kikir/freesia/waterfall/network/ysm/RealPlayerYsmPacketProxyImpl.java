@@ -4,6 +4,7 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 import io.netty.buffer.Unpooled;
 import meow.kikir.freesia.waterfall.FreesiaConstants;
 import meow.kikir.freesia.waterfall.Freesia;
+import meow.kikir.freesia.waterfall.FreesiaConfig;
 import meow.kikir.freesia.waterfall.YsmProtocolMetaFile;
 import meow.kikir.freesia.waterfall.events.PlayerYsmHandshakeEvent;
 import meow.kikir.freesia.waterfall.events.PlayerEntityStateChangeEvent;
@@ -120,18 +121,20 @@ public class RealPlayerYsmPacketProxyImpl extends YsmPacketProxyLayer {
             final int workerEntityId = mcBuffer.readVarInt();
             final byte layer = mcBuffer.readByte();
 
-            byte action = 0;
+            int action = 0;
             String animationName;
 
             if (this.ysmVersion.startsWith("2.6")) {
-                action = mcBuffer.readByte();
+                action = mcBuffer.readVarInt();
                 animationName = mcBuffer.readUtf();
             } else {
                 animationName = mcBuffer.readUtf();
             }
 
-            Freesia.LOGGER.info("[DEBUG] [Ver=" + this.ysmVersion + "] S2C ANIMATION: workerID=" + workerEntityId
-                    + ", layer=" + layer + ", action=" + action + ", name=" + animationName);
+            if (FreesiaConfig.debug) {
+                Freesia.LOGGER.info("[DEBUG] [Ver=" + this.ysmVersion + "] S2C ANIMATION: workerID=" + workerEntityId
+                        + ", layer=" + layer + ", action=" + action + ", name=" + animationName);
+            }
 
             final Map<Integer, RealPlayerYsmPacketProxyImpl> collectedPaddingWorkerEntityId = Freesia.mapperManager
                     .collectRealProxy2WorkerEntityId();
@@ -146,7 +149,7 @@ public class RealPlayerYsmPacketProxyImpl extends YsmPacketProxyLayer {
                 newPacketByteBuf.writeByte(layer);
 
                 if (this.ysmVersion.startsWith("2.6")) {
-                    newPacketByteBuf.writeByte(action);
+                    newPacketByteBuf.writeVarInt(action);
                 }
                 newPacketByteBuf.writeUtf(animationName);
                 return ProxyComputeResult.ofModify(newPacketByteBuf);
@@ -195,21 +198,25 @@ public class RealPlayerYsmPacketProxyImpl extends YsmPacketProxyLayer {
         if (packetId == YsmProtocolMetaFile
                 .getC2SPacketId(FreesiaConstants.YsmProtocolMetaConstants.Serverbound.ANIMATION_REQ)) {
 
-            final byte action = mcBuffer.readByte();
+            final int action;
             String animationName = "";
             byte layer = 0;
             int entityId;
 
             if (this.ysmVersion.startsWith("2.6")) {
+                action = mcBuffer.readVarInt();
                 animationName = mcBuffer.readUtf();
                 entityId = mcBuffer.readVarInt();
             } else {
+                action = mcBuffer.readByte();
                 layer = mcBuffer.readByte();
                 entityId = mcBuffer.readVarInt();
             }
 
-            Freesia.LOGGER.info("[DEBUG] [Ver=" + this.ysmVersion + "] C2S ANIMATION_REQ: action=" + action
-                    + ", layer=" + layer + ", name=" + animationName + ", targetID=" + entityId);
+            if (FreesiaConfig.debug) {
+                Freesia.LOGGER.info("[DEBUG] [Ver=" + this.ysmVersion + "] C2S ANIMATION_REQ: action=" + action
+                        + ", layer=" + layer + ", name=" + animationName + ", targetID=" + entityId);
+            }
 
             final int mappedEntityId;
             if (entityId == -1) {
@@ -232,25 +239,27 @@ public class RealPlayerYsmPacketProxyImpl extends YsmPacketProxyLayer {
                 final FriendlyByteBuf newPacketByteBuf = new FriendlyByteBuf(Unpooled.buffer());
                 newPacketByteBuf.writeByte(YsmProtocolMetaFile
                         .getC2SPacketId(FreesiaConstants.YsmProtocolMetaConstants.Serverbound.ANIMATION_REQ));
-                newPacketByteBuf.writeByte(action);
 
                 if (this.ysmVersion.startsWith("2.6")) {
+                    newPacketByteBuf.writeVarInt(action);
                     newPacketByteBuf.writeUtf(animationName);
                 } else {
+                    newPacketByteBuf.writeByte((byte) action);
                     newPacketByteBuf.writeByte(layer);
                 }
 
                 newPacketByteBuf.writeVarInt(mappedEntityId);
 
-                final ByteBuf finalData = newPacketByteBuf.copy();
-                final StringBuilder hexLog = new StringBuilder();
-                while (finalData.isReadable()) {
-                    hexLog.append(String.format("%02X ", finalData.readByte()));
+                if (FreesiaConfig.debug) {
+                    final ByteBuf dumpBuf = newPacketByteBuf.copy();
+                    final StringBuilder hexLog = new StringBuilder();
+                    while (dumpBuf.isReadable()) {
+                        hexLog.append(String.format("%02X ", dumpBuf.readByte()));
+                    }
+                    Freesia.LOGGER.info("[DEBUG] Relaying ANIMATION_REQ to Worker: action=" + action
+                            + ", name=" + animationName + ", targetWorkerID=" + mappedEntityId + " | HEX: "
+                            + hexLog.toString());
                 }
-
-                Freesia.LOGGER.info("[DEBUG] Relaying ANIMATION_REQ to Worker: action=" + action
-                        + ", name=" + animationName + ", targetWorkerID=" + mappedEntityId + " | HEX: "
-                        + hexLog.toString());
 
                 return ProxyComputeResult.ofModify(newPacketByteBuf);
             } else {

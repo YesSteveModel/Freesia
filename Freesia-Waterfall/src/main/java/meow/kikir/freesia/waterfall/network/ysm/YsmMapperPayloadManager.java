@@ -324,13 +324,14 @@ public class YsmMapperPayloadManager {
     }
 
     public void onPluginMessageIn(@NotNull ProxiedPlayer player, @NotNull String channel, byte[] packetData) {
-        // Log the first few bytes for debugging
-        final StringBuilder debugHex = new StringBuilder();
-        for (int i = 0; i < Math.min(packetData.length, 16); i++) {
-            debugHex.append(String.format("%02X ", packetData[i]));
+        if (FreesiaConfig.debug) {
+            final StringBuilder debugHex = new StringBuilder();
+            for (int i = 0; i < Math.min(packetData.length, 16); i++) {
+                debugHex.append(String.format("%02X ", packetData[i]));
+            }
+            Freesia.LOGGER.info("[DEBUG] YSM Packet from " + player.getName() + " on " + channel + " (len="
+                    + packetData.length + "): " + debugHex.toString());
         }
-        Freesia.LOGGER.info("[DEBUG] YSM Packet from " + player.getName() + " on " + channel + " (len="
-                + packetData.length + "): " + debugHex.toString());
 
         // Check if it is the message of ysm
         if (!channel.equals(YSM_CHANNEL_KEY_VELOCITY)) {

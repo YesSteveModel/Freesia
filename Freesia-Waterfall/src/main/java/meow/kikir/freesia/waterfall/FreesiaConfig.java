@@ -8,9 +8,10 @@ import java.net.InetSocketAddress;
 public class FreesiaConfig {
     public static InetSocketAddress workerMSessionAddress = new InetSocketAddress("127.0.0.1", 19199);
     public static InetSocketAddress masterServiceAddress = new InetSocketAddress("127.0.0.1", 19200);
-    public static String languageName = "zh_CN";
+    public static String languageName = "en_US";
     public static boolean kickIfYsmNotInstalled = false;
     public static int ysmDetectionTimeout = 3000;
+    public static boolean debug = false;
 
     private static CommentedFileConfig CONFIG_INSTANCE;
 
@@ -25,6 +26,7 @@ public class FreesiaConfig {
 
         kickIfYsmNotInstalled = get("functions.kick_if_ysm_not_installed", kickIfYsmNotInstalled);
         ysmDetectionTimeout = get("functions.ysm_detection_timeout_for_kicking", ysmDetectionTimeout);
+        debug = get("functions.debug", debug);
     }
 
     private static <T> T get(String key, T def) {
