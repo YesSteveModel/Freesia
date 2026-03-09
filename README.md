@@ -1,20 +1,20 @@
-# 香雪兰 Freesia
-
+# Freesia II
 [![Issues](https://img.shields.io/github/issues/KikirMeow/Freesia?style=flat-square)](https://github.com/KikirMeow/Freesia/issues)
 ![Commit Activity](https://img.shields.io/github/commit-activity/w/KikirMeow/Freesia?style=flat-square)
 ![GitHub Repo stars](https://img.shields.io/github/stars/KikirMeow/Freesia?style=flat-square)
 ![GitHub License](https://img.shields.io/github/license/KikirMeow/Freesia)
 
-Cyanidin的延续版（正在施工中）
+A continuation of Cyanidin (work in progress)
 
-# 简介
+# Introduction
 
-这个项目曾叫做Cyanidin，但由于原作者弃坑，便找他把项目要了过来，并改名为Freesia香雪兰，且现在也成为了YSM的官方项目之一。
+This project was formerly known as **Cyanidin**. After the original author abandoned it, the project was handed over and renamed **Freesia** by *KikirMeow*. 
+After a long period without regular updates and with many bugs, the project is now being continued by *NguyenDevs* under the name **Freesia II**.
+# Documentation
 
-# 文档
-请参见 [YSM 文档](https://ysm.cfpa.team/wiki/freesia-plugin/)的此处。
+Please refer to the [YSM Documentation](https://ysm.cfpa.team/wiki/freesia-plugin/) for details.
 
-# 构建
+# Building
 
 ```shell
 chmod +777 ./gradlew
@@ -25,16 +25,16 @@ chmod +777 ./gradlew
 gradlew.bat build
 ```
 
-构建产物分别在每个模块的`build/libs`目录下。
+Build artifacts are located in the `build/libs` directory of each module.
 
-# 原理
+# How It Works
 
-总体上来说，香雪兰其实更像是一个MultiPaper和Geyser的混合体，项目的工作原理也参考了multipaper的跨服数据交换机制，对于部分数据包，由于需要判断玩家是否能看见玩家，是否看得见其他玩家，并且worker和子服的实体id不一样就修改了一下。
+In broad terms, Freesia is somewhat of a hybrid between MultiPaper and Geyser. Its working principles are based on MultiPaper's cross-server data exchange mechanism. For certain packets, since it needs to determine whether players can see each other and whether entity IDs differ between the worker and sub-servers, some modifications were made accordingly.
 
-# 性能
+# Performance
 
-我没测试过香雪兰的性能，不过根据MrHua269的说法，带130人应该没什么问题，但是很多情况下ysm自己的缓存同步会出现内存泄漏等各种奇奇怪怪的问题导致模型同步炸掉。
+Freesia's performance has not been formally benchmarked. However, according to MrHua269, it should be able to handle around 130 players without issue. That said, in many cases YSM's own cache synchronization can cause memory leaks and other unusual problems that break model sync.
 
-# 路线图
+# Roadmap
 
-目前还没有明确的路线图，毕竟我还没完全理解这玩意的代码，还需要一段时间熟悉。不过目前未来大概的方向是尝试做多worker的支持以及完成未完成的npc插件拓展。（可能会单开几个新项目）
+There is no concrete roadmap yet, as the codebase still requires more time to fully understand. The general direction for the future is to attempt multi-worker support and complete the unfinished NPC plugin extension. (This may spawn a few separate new projects.)
