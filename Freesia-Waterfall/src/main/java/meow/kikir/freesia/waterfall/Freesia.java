@@ -171,8 +171,10 @@ public class Freesia extends Plugin implements PacketListener, Listener {
         final byte[] data = event.getData();
 
         if (identifier.startsWith("yes_steve_model")) {
-            Freesia.LOGGER.info("[DEBUG] Received YSM packet on channel: " + identifier + " from "
-                    + ((ProxiedPlayer) event.getSender()).getName());
+            if (FreesiaConfig.debug) {
+                Freesia.LOGGER.info("[DEBUG] Received YSM packet on channel: " + identifier + " from "
+                        + ((ProxiedPlayer) event.getSender()).getName());
+            }
             if (identifier.equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY)
                     && (event.getSender() instanceof ProxiedPlayer)) {
                 ProxiedPlayer player = (ProxiedPlayer) event.getSender();
