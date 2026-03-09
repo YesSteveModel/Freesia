@@ -66,7 +66,9 @@ public abstract class ConnectionMixin {
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;)V", at = @At(value = "HEAD"), cancellable = true)
     public void sendPacketPInject(Packet<?> packet, CallbackInfo ci) {
         if (!this.checkPacket(packet)) {
-            ci.cancel(); //Drop useless packets to reduce I/O load
+            meow.kikir.freesia.common.EntryPoint.LOGGER_INST
+                    .info("[DEBUG] Dropping packet from Worker: " + packet.getClass().getName());
+            ci.cancel(); // Drop useless packets to reduce I/O load
         }
     }
 
@@ -76,17 +78,18 @@ public abstract class ConnectionMixin {
             if (packetSendListener != null) {
                 packetSendListener.onSuccess();
             }
-            ci.cancel(); //Drop useless packets to reduce I/O load
+            ci.cancel(); // Drop useless packets to reduce I/O load
         }
     }
 
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketSendListener;Z)V", at = @At(value = "HEAD"), cancellable = true)
-    public void sendPacketPCBInject(Packet<?> packet, PacketSendListener packetSendListener, boolean bl, CallbackInfo ci) {
+    public void sendPacketPCBInject(Packet<?> packet, PacketSendListener packetSendListener, boolean bl,
+            CallbackInfo ci) {
         if (!this.checkPacket(packet)) {
             if (packetSendListener != null) {
                 packetSendListener.onSuccess();
             }
-            ci.cancel(); //Drop useless packets to reduce I/O load
+            ci.cancel(); // Drop useless packets to reduce I/O load
         }
     }
 

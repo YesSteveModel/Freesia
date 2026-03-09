@@ -145,6 +145,12 @@ public class MapperSessionProcessor implements SessionListener {
             final Key channelKey = payloadPacket.getChannel();
             final byte[] packetData = payloadPacket.getData();
 
+            // Log all custom payload packets for debugging YSM 2.6.2
+            if (channelKey.toString().contains("yes_steve_model")) {
+                Freesia.LOGGER.info("[DEBUG] Received packet from Worker on channel: " + channelKey.toString() + " for "
+                        + this.bindPlayer.getName() + " (len=" + packetData.length + ")");
+            }
+
             // If the packet is of ysm
             if (channelKey.toString().equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_ADVENTURE.toString())) {
                 // Check if we are not ready for the backend side yet(We will block the add
@@ -165,6 +171,13 @@ public class MapperSessionProcessor implements SessionListener {
     }
 
     private void processInComingYsmPacket(Key channelKey, byte[] packetData) {
+        // Log full hex dump for debugging protocol changes
+        final StringBuilder dump = new StringBuilder();
+        for (byte b : packetData) {
+            dump.append(String.format("%02X ", b));
+        }
+        Freesia.LOGGER.info("[DEBUG] S2C Packet Data (" + packetData.length + " bytes): " + dump.toString());
+
         final ProxyComputeResult result = this.packetProxy.processS2C(channelKey, Unpooled.wrappedBuffer(packetData));
 
         switch (result.result()) {

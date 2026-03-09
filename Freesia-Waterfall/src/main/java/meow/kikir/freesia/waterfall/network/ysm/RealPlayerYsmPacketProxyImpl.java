@@ -1,6 +1,5 @@
 package meow.kikir.freesia.waterfall.network.ysm;
 
-import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import io.netty.buffer.Unpooled;
 import meow.kikir.freesia.waterfall.FreesiaConstants;
@@ -11,10 +10,6 @@ import meow.kikir.freesia.waterfall.events.PlayerEntityStateChangeEvent;
 import meow.kikir.freesia.waterfall.utils.FriendlyByteBuf;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.key.Key;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -46,10 +41,23 @@ public class RealPlayerYsmPacketProxyImpl extends YsmPacketProxyLayer {
             }
 
             try {
+                YsmState state;
+                if (this.ysmVersion.startsWith("2.6")) {
+                    // YSM 2.6.x uses binary format: Strings (ModelPath, ModelName, AnimationName) +
+                    // raw bytes
+                    // We just capture the whole thing as binary for now
+                    byte[] binaryData = new byte[mcBuffer.readableBytes()];
+                    mcBuffer.readBytes(binaryData);
+                    state = YsmState.ofBinary(binaryData);
+                } else {
+                    // Legacy NBT format
+                    state = YsmState.ofNbt(this.nbtRemapper.readBound(mcBuffer));
+                }
+
                 PlayerEntityStateChangeEvent result = Freesia.PROXY_SERVER.getPluginManager()
-                        .callEvent(new PlayerEntityStateChangeEvent(this.player, workerEntityId,
-                                this.nbtRemapper.readBound(mcBuffer)));
-                final NBTCompound to = result.getEntityState();
+                        .callEvent(new PlayerEntityStateChangeEvent(this.player, workerEntityId, state));
+
+                final YsmState to = result.getEntityState();
 
                 this.acquireWriteReference(); // Acquire write reference
 
@@ -68,7 +76,10 @@ public class RealPlayerYsmPacketProxyImpl extends YsmPacketProxyLayer {
         if (packetId == YsmProtocolMetaFile
                 .getS2CPacketId(FreesiaConstants.YsmProtocolMetaConstants.Clientbound.HAND_SHAKE_CONFIRMED)) {
             final String backendVersion = mcBuffer.readUtf();
-            final boolean canSwitchModel = mcBuffer.readBoolean();
+            boolean canSwitchModel = true;
+            if (mcBuffer.isReadable()) {
+                canSwitchModel = mcBuffer.readBoolean();
+            }
 
             Freesia.LOGGER.info("Replying ysm client with server version " + backendVersion + ".Can switch model? : "
                     + canSwitchModel);
@@ -122,6 +133,7 @@ public class RealPlayerYsmPacketProxyImpl extends YsmPacketProxyLayer {
             }
 
             final String clientYsmVersion = mcBuffer.readUtf();
+            this.ysmVersion = clientYsmVersion; // Store the version
             Freesia.LOGGER.info("Player " + this.player.getName() + " is connected to the backend with ysm version "
                     + clientYsmVersion);
             Freesia.mapperManager.onClientYsmHandshakePacketReply(this.player);
@@ -130,7 +142,6 @@ public class RealPlayerYsmPacketProxyImpl extends YsmPacketProxyLayer {
         if (packetId == YsmProtocolMetaFile
                 .getC2SPacketId(FreesiaConstants.YsmProtocolMetaConstants.Serverbound.MOLANG_EXECUTE_REQ)) {
             final String molangExpression = mcBuffer.readUtf();
-            final int entityId = mcBuffer.readVarInt();
             final int currWorkerEntityId = this.getPlayerWorkerEntityId();
 
             if (currWorkerEntityId != -1) {

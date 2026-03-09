@@ -99,15 +99,17 @@ public class YsmMapperPayloadManager {
             return CompletableFuture.completedFuture(false);
         }
 
-        virtualProxy.setEntityDataRaw(nbt);
+        virtualProxy.setEntityDataRaw(YsmState.ofNbt(nbt));
         virtualProxy.notifyFullTrackerUpdates();
 
-        final NBTCompound entityData = virtualProxy.getCurrentEntityState();
+        final YsmState entityState = virtualProxy.getCurrentEntityState();
 
         // Probably be reset
-        if (entityData == null) {
+        if (entityState == null || entityState.isBinary()) {
             return CompletableFuture.completedFuture(true);
         }
+
+        final NBTCompound entityData = entityState.getNbt();
 
         // Async io
         final CompletableFuture<Boolean> callback = new CompletableFuture<>();
@@ -172,7 +174,7 @@ public class YsmMapperPayloadManager {
                             NBTLimiter.forBuffer(data, Integer.MAX_VALUE),
                             new DataInputStream(new ByteArrayInputStream(data)), true);
 
-                    createdVirtualProxy.setEntityDataRaw(read);
+                    createdVirtualProxy.setEntityDataRaw(YsmState.ofNbt(read));
                     createdVirtualProxy.setPlayerEntityId(playerEntityId);
                     createdVirtualProxy.setPlayerWorkerEntityId(0);
                 } catch (Exception ex1) {
@@ -198,11 +200,13 @@ public class YsmMapperPayloadManager {
             }
         }
 
-        final NBTCompound entityData = removedProxy.getCurrentEntityState();
+        final YsmState entityState = removedProxy.getCurrentEntityState();
 
-        if (entityData == null) {
+        if (entityState == null || entityState.isBinary()) {
             return CompletableFuture.completedFuture(true);
         }
+
+        final NBTCompound entityData = entityState.getNbt();
 
         final CompletableFuture<Boolean> callback = new CompletableFuture<>();
 
@@ -320,6 +324,14 @@ public class YsmMapperPayloadManager {
     }
 
     public void onPluginMessageIn(@NotNull ProxiedPlayer player, @NotNull String channel, byte[] packetData) {
+        // Log the first few bytes for debugging
+        final StringBuilder debugHex = new StringBuilder();
+        for (int i = 0; i < Math.min(packetData.length, 16); i++) {
+            debugHex.append(String.format("%02X ", packetData[i]));
+        }
+        Freesia.LOGGER.info("[DEBUG] YSM Packet from " + player.getName() + " on " + channel + " (len="
+                + packetData.length + "): " + debugHex.toString());
+
         // Check if it is the message of ysm
         if (!channel.equals(YSM_CHANNEL_KEY_VELOCITY)) {
             return;
@@ -329,7 +341,8 @@ public class YsmMapperPayloadManager {
 
         if (mapperSession == null) {
             // Actually it shouldn't be and never be happened
-            throw new IllegalStateException("Mapper session not found or ready for player " + player.getName());
+            Freesia.LOGGER.warning("Mapper session not found or ready for player " + player.getName());
+            return;
         }
 
         mapperSession.processPlayerPluginMessage(packetData);

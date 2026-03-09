@@ -1,6 +1,5 @@
 package meow.kikir.freesia.waterfall.network.ysm;
 
-import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.key.Key;
@@ -21,11 +20,11 @@ public interface YsmPacketProxy {
 
     void sendEntityStateTo(@NotNull ProxiedPlayer target);
 
-    void setEntityDataRaw(NBTCompound data);
+    void setEntityDataRaw(YsmState data);
 
     void notifyFullTrackerUpdates();
 
-    NBTCompound getCurrentEntityState();
+    YsmState getCurrentEntityState();
 
     void setPlayerWorkerEntityId(int id);
 

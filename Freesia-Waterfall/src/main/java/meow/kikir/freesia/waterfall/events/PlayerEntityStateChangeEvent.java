@@ -1,9 +1,10 @@
 package meow.kikir.freesia.waterfall.events;
 
-import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.google.common.annotations.Beta;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Event;
+
+import meow.kikir.freesia.waterfall.network.ysm.YsmState;
 
 /**
  * 当玩家更改模型时或worker设置玩家时该事件会被触发
@@ -14,9 +15,9 @@ import net.md_5.bungee.api.plugin.Event;
 public class PlayerEntityStateChangeEvent extends Event {
     private final ProxiedPlayer actualPlayer;
     private final int entityId;
-    private final NBTCompound entityState;
+    private final YsmState entityState;
 
-    public PlayerEntityStateChangeEvent(ProxiedPlayer actualPlayer, int entityId, NBTCompound entityState) {
+    public PlayerEntityStateChangeEvent(ProxiedPlayer actualPlayer, int entityId, YsmState entityState) {
         this.actualPlayer = actualPlayer;
         this.entityId = entityId;
         this.entityState = entityState;
@@ -43,9 +44,9 @@ public class PlayerEntityStateChangeEvent extends Event {
     /**
      * 获取玩家的ysm实体数据
      *
-     * @return 实体数据的nbt形式
+     * @return 实体数据的包装形式
      */
-    public NBTCompound getEntityState() {
+    public YsmState getEntityState() {
         return this.entityState;
     }
 }

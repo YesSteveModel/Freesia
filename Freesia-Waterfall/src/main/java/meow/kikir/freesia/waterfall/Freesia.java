@@ -170,13 +170,17 @@ public class Freesia extends Plugin implements PacketListener, Listener {
         final String identifier = event.getTag();
         final byte[] data = event.getData();
 
-        if (identifier.equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY)
-                && (event.getSender() instanceof ProxiedPlayer)) {
-            ProxiedPlayer player = (ProxiedPlayer) event.getSender();
-            event.setCancelled(true);
+        if (identifier.startsWith("yes_steve_model")) {
+            Freesia.LOGGER.info("[DEBUG] Received YSM packet on channel: " + identifier + " from "
+                    + ((ProxiedPlayer) event.getSender()).getName());
+            if (identifier.equals(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY)
+                    && (event.getSender() instanceof ProxiedPlayer)) {
+                ProxiedPlayer player = (ProxiedPlayer) event.getSender();
+                event.setCancelled(true);
 
-            // TODO Need a packet rate limiter here?
-            mapperManager.onPluginMessageIn(player, identifier, data);
+                // TODO Need a packet rate limiter here?
+                mapperManager.onPluginMessageIn(player, identifier, data);
+            }
         }
     }
 

@@ -2,7 +2,6 @@ package meow.kikir.freesia.waterfall.network.ysm;
 
 import ca.spottedleaf.concurrentutil.util.ConcurrentUtil;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import io.netty.buffer.Unpooled;
@@ -16,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.invoke.VarHandle;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -43,12 +41,14 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy {
 
     protected volatile MapperSessionProcessor handler;
 
+    protected String ysmVersion = "2.4.1"; // Default to legacy version
+
     private int playerEntityId = -1;
     private int workerEntityId = -1;
 
     private int entityDataReferenceCount = 0; // Used for read-writing lock but writing is always happening on a single
                                               // thread
-    private NBTCompound lastYsmEntityData = null;
+    private YsmState lastYsmEntityData = null;
 
     private boolean proxyReady = false;
 
@@ -63,7 +63,7 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy {
             "workerEntityId", int.class);
 
     protected static final VarHandle LAST_YSM_ENTITY_DATA_HANDLE = ConcurrentUtil
-            .getVarHandle(YsmPacketProxyLayer.class, "lastYsmEntityData", NBTCompound.class);
+            .getVarHandle(YsmPacketProxyLayer.class, "lastYsmEntityData", YsmState.class);
 
     protected YsmPacketProxyLayer(UUID playerUUID) {
         this.player = Freesia.PROXY_SERVER.getPlayer(playerUUID); // Get if it is a real player
@@ -191,7 +191,7 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy {
         this.acquireReadReference(); // Acquire read reference
 
         final int currEntityId = (int) PLAYER_ENTITY_ID_HANDLE.getVolatile(this);
-        final NBTCompound currEntityData = (NBTCompound) LAST_YSM_ENTITY_DATA_HANDLE.getVolatile(this);
+        final YsmState currEntityData = (YsmState) LAST_YSM_ENTITY_DATA_HANDLE.getVolatile(this);
 
         this.releaseReadReference(); // Release when we copied the value
 
@@ -204,7 +204,7 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy {
     }
 
     @Override
-    public void setEntityDataRaw(NBTCompound data) {
+    public void setEntityDataRaw(YsmState data) {
         LAST_YSM_ENTITY_DATA_HANDLE.setVolatile(this, data);
     }
 
@@ -212,7 +212,7 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy {
     public void notifyFullTrackerUpdates() {
         this.acquireReadReference(); // Acquire read reference
 
-        final NBTCompound currEntityData = (NBTCompound) LAST_YSM_ENTITY_DATA_HANDLE.getVolatile(this);
+        final YsmState currEntityData = (YsmState) LAST_YSM_ENTITY_DATA_HANDLE.getVolatile(this);
         final int currEntityId = (int) PLAYER_ENTITY_ID_HANDLE.getVolatile(this);
 
         this.releaseReadReference(); // Release when we copied the value
@@ -291,7 +291,7 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy {
         this.sendPluginMessageToOwner(YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData);
     }
 
-    protected void sendEntityStateToRaw(@NotNull UUID receiverUUID, int entityId, NBTCompound data) {
+    protected void sendEntityStateToRaw(@NotNull UUID receiverUUID, int entityId, YsmState data) {
         try {
             final ProxiedPlayer queryResult = Freesia.PROXY_SERVER.getPlayer(receiverUUID);
 
@@ -321,9 +321,14 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy {
 
             wrappedPacketData.writeByte(4);
             wrappedPacketData.writeVarInt(entityId);
-            wrappedPacketData.writeBytes(
-                    this.nbtRemapper.shouldRemap(targetProtocolVer) ? this.nbtRemapper.remapToMasterVer(data)
-                            : this.nbtRemapper.remapToWorkerVer(data)); // Remap nbt if needed
+            if (data.isBinary()) {
+                wrappedPacketData.writeBytes(data.getBinary());
+            } else {
+                wrappedPacketData.writeBytes(
+                        this.nbtRemapper.shouldRemap(targetProtocolVer)
+                                ? this.nbtRemapper.remapToMasterVer(data.getNbt())
+                                : this.nbtRemapper.remapToWorkerVer(data.getNbt()));
+            }
 
             this.sendPluginMessageTo(receiver, YsmMapperPayloadManager.YSM_CHANNEL_KEY_VELOCITY, wrappedPacketData);
         } catch (Exception e) {
@@ -332,8 +337,8 @@ public abstract class YsmPacketProxyLayer implements YsmPacketProxy {
     }
 
     @Override
-    public NBTCompound getCurrentEntityState() {
-        return (NBTCompound) LAST_YSM_ENTITY_DATA_HANDLE.getVolatile(this);
+    public YsmState getCurrentEntityState() {
+        return (YsmState) LAST_YSM_ENTITY_DATA_HANDLE.getVolatile(this);
     }
 
     @Override
