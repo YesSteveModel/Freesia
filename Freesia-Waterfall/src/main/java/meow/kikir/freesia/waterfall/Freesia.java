@@ -53,15 +53,24 @@ public class Freesia extends Plugin implements PacketListener, Listener {
     public static NettySocketServer masterServer;
 
     private static void printLogo() {
-        PROXY_SERVER.getLogger().info("----------------------------------------------------------------");
-        PROXY_SERVER.getLogger().info("    ______                         _       ");
-        PROXY_SERVER.getLogger().info("   / ____/_____ ___   ___   _____ (_)____ _");
-        PROXY_SERVER.getLogger().info("  / /_   / ___// _ \\ / _ \\ / ___// // __ `/");
-        PROXY_SERVER.getLogger().info(" / __/  / /   /  __//  __/(__  )/ // /_/ / ");
-        PROXY_SERVER.getLogger().info("/_/    /_/    \\___/ \\___//____//_/ \\__,_/  ");
-        PROXY_SERVER.getLogger()
-                .info("\n     Powered by YesSteveModel and all contributors, Version: " + BuildConstants.VERSION);
-        PROXY_SERVER.getLogger().info("----------------------------------------------------------------");
+        String RESET  = "\u001B[0m";
+        String PINK   = "\u001B[38;5;213m";
+        String PURPLE = "\u001B[38;5;99m";
+        String GOLD   = "\u001B[38;5;220m";
+        String AQUA   = "\u001B[38;5;117m";
+
+        PROXY_SERVER.getLogger().info("");
+        PROXY_SERVER.getLogger().info(PINK  + "   ███████╗██████╗ ███████╗███████╗███████╗██╗ █████╗    ██╗██╗" + RESET);
+        PROXY_SERVER.getLogger().info(PINK  + "   ██╔════╝██╔══██╗██╔════╝██╔════╝██╔════╝██║██╔══██╗   ██║██║" + RESET);
+        PROXY_SERVER.getLogger().info(PINK  + "   █████╗  ██████╔╝█████╗  █████╗  ███████╗██║███████║   ██║██║" + RESET);
+        PROXY_SERVER.getLogger().info(PINK  + "   ██╔══╝  ██╔══██╗██╔══╝  ██╔══╝  ╚════██║██║██╔══██║   ██║██║" + RESET);
+        PROXY_SERVER.getLogger().info(PURPLE +"   ██║     ██║  ██║███████╗███████╗███████║██║██║  ██║   ██║██║" + RESET);
+        PROXY_SERVER.getLogger().info(PURPLE +"   ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝╚═╝  ╚═╝   ╚═╝╚═╝" + RESET);
+        PROXY_SERVER.getLogger().info("");
+        PROXY_SERVER.getLogger().info(PURPLE + "              Powered by YesSteveModel & All Contributors");
+        PROXY_SERVER.getLogger().info(GOLD   + "              Version: " + BuildConstants.VERSION);
+        PROXY_SERVER.getLogger().info(AQUA   + "              Development by NguyenDevs");
+        PROXY_SERVER.getLogger().info("");
     }
 
     @Override
@@ -70,7 +79,7 @@ public class Freesia extends Plugin implements PacketListener, Listener {
         LOGGER = this.getLogger();
         PROXY_SERVER = this.getProxy();
 
-        EntryPoint.initLogger(org.slf4j.LoggerFactory.getLogger(Freesia.class)); // Common module
+        EntryPoint.initLogger(org.slf4j.LoggerFactory.getLogger(Freesia.class));
 
         printLogo();
 
