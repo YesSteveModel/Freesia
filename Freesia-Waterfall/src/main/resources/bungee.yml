@@ -1,0 +1,6 @@
+name: Freesia
+version: 1.0.0
+main: meow.kikir.freesia.waterfall.Freesia
+author: Earthme, HappyRespawnanchor, xiaozhangup, port-to-waterfall
+description: YSM performance optimization proxy model for BungeeCord/Waterfall.
+depends: [packetevents]

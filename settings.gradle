@@ -15,6 +15,7 @@ plugins {
 rootProject.name = 'Freesia'
 
 include("Freesia-Velocity")
+include("Freesia-Waterfall")
 include("Freesia-Backend")
 include("Freesia-Common")
 include("Freesia-Worker")
