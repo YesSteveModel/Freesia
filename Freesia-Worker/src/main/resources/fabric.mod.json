@@ -9,7 +9,7 @@
   "environment": "server",
   "entrypoints": {
     "server": [
-      "meow.kikir.freesia.worker.ServerLoader"
+      "com.nguyendevs.freesia.worker.ServerLoader"
     ]
   },
   "mixins": [
@@ -22,3 +22,4 @@
     "minecraft": "${minecraft_version}"
   }
 }
+

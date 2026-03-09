@@ -1,6 +1,6 @@
 name: Freesia-Backend
-version: '${version}'
-main: meow.kikir.freesia.backend.FreesiaBackend
+version: 'v1.0.0_YSM_2.6.2'
+main: com.nguyendevs.freesia.backend.FreesiaBackend
 api-version: '1.16'
 
 folia-supported: true
