@@ -263,8 +263,10 @@ public class RealPlayerYsmPacketProxyImpl extends YsmPacketProxyLayer {
 
                 return ProxyComputeResult.ofModify(newPacketByteBuf);
             } else {
-                Freesia.LOGGER.warning(
-                        "[DEBUG] Dropping ANIMATION_REQ: could not map realID=" + entityId + " to any worker ID.");
+                if (FreesiaConfig.debug) {
+                    Freesia.LOGGER.warning(
+                            "[DEBUG] Dropping ANIMATION_REQ: could not map realID=" + entityId + " to any worker ID.");
+                }
             }
         }
 
