@@ -29,7 +29,13 @@ public class DispatchWorkerCommandCommand {
                 .then(
                         BrigadierCommand.requiredArgumentBuilder("workerName", StringArgumentType.word()).suggests((ctx, builder) -> {
                                     for (MasterServerMessageHandler connection : Freesia.registedWorkers.values()) {
-                                        builder.suggest(connection.getWorkerName());
+                                        final String workerName = connection.getWorkerName();
+
+                                        if (workerName == null) {
+                                            continue;
+                                        }
+
+                                        builder.suggest(workerName);
                                     }
                                     return builder.buildFuture();
                                 })
@@ -42,7 +48,12 @@ public class DispatchWorkerCommandCommand {
 
                                                     MasterServerMessageHandler targetWorkerConnection = null;
                                                     for (MasterServerMessageHandler connection : Freesia.registedWorkers.values()) {
-                                                        if (workerName.equals(connection.getWorkerName())) {
+                                                        final String name = connection.getWorkerName();
+                                                        if (name == null) {
+                                                            continue;
+                                                        }
+
+                                                        if (workerName.equals(name)) {
                                                             targetWorkerConnection = connection;
                                                             break;
                                                         }

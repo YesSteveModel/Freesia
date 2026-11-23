@@ -1,13 +1,13 @@
 package meow.kikir.freesia.common.communicating.message.w2m;
 
 import io.netty.buffer.ByteBuf;
-import meow.kikir.freesia.common.communicating.handler.NettyServerChannelHandlerLayer;
+import meow.kikir.freesia.common.communicating.handler.ServerChannelHandlerBase;
 import meow.kikir.freesia.common.communicating.message.IMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-public class W2MUpdatePlayerDataRequestMessage implements IMessage<NettyServerChannelHandlerLayer> {
+public class W2MUpdatePlayerDataRequestMessage implements IMessage<ServerChannelHandlerBase> {
     private byte[] content;
     private UUID playerUUID;
 
@@ -37,7 +37,7 @@ public class W2MUpdatePlayerDataRequestMessage implements IMessage<NettyServerCh
     }
 
     @Override
-    public void process(@NotNull NettyServerChannelHandlerLayer handler) {
+    public void process(@NotNull ServerChannelHandlerBase handler) {
         handler.savePlayerData(this.playerUUID, this.content);
     }
 }

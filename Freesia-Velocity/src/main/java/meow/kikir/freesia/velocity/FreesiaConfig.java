@@ -1,12 +1,18 @@
 package meow.kikir.freesia.velocity;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
+import io.netty.channel.unix.DomainSocketAddress;
+import meow.kikir.freesia.common.utils.DomainUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.UnixDomainSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FreesiaConfig {
-    public static InetSocketAddress workerMSessionAddress = new InetSocketAddress("127.0.0.1", 19199);
+    public static List<SocketAddress> workerMessionAddresses = new ArrayList<>();
     public static InetSocketAddress masterServiceAddress = new InetSocketAddress("127.0.0.1", 19200);
     public static String languageName = "zh_CN";
     public static boolean kickIfYsmNotInstalled = false;
@@ -15,10 +21,33 @@ public class FreesiaConfig {
     private static CommentedFileConfig CONFIG_INSTANCE;
 
     private static void loadOrDefaultValues() {
-        workerMSessionAddress = new InetSocketAddress(
-                get("worker.worker_msession_ip", workerMSessionAddress.getHostName()),
-                get("worker.worker_msession_port", workerMSessionAddress.getPort())
-        );
+        final List<SocketAddress> resloved = new ArrayList<>();
+        for (String singleEntry : get("workers", List.of("127.0.0.1:19199"))) {
+            final String[] split = singleEntry.split(":");
+
+            if (split.length < 2) {
+                final boolean isUnixDomain = DomainUtils.isUnixDomainSocketAddress(singleEntry);
+                if (isUnixDomain) {
+                    DomainUtils.throwIfUDSIsUnavailable();
+
+                    resloved.add(new DomainSocketAddress(singleEntry));
+                    continue;
+                }
+
+                Freesia.LOGGER.warn("Ignoring invalid worker msession address entry: {}", singleEntry);
+                continue;
+            }
+
+            try {
+                int parsedPort = Integer.parseInt(split[1]);
+                resloved.add(new InetSocketAddress(split[0], parsedPort));
+            }catch (Exception e) {
+                Freesia.LOGGER.warn("Ignoring invalid worker msession address entry: {}", singleEntry, e);
+            }
+        }
+
+        workerMessionAddresses = resloved;
+
         masterServiceAddress = new InetSocketAddress(
                 get("worker.worker_master_ip", masterServiceAddress.getHostName()),
                 get("worker.worker_master_port", masterServiceAddress.getPort())

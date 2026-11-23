@@ -1,14 +1,14 @@
 package meow.kikir.freesia.common.communicating.message.m2w;
 
 import io.netty.buffer.ByteBuf;
-import meow.kikir.freesia.common.communicating.handler.NettyClientChannelHandlerLayer;
+import meow.kikir.freesia.common.communicating.handler.ClientChannelHandlerBase;
 import meow.kikir.freesia.common.communicating.message.IMessage;
 import meow.kikir.freesia.common.communicating.message.w2m.W2MCommandResultMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
 
-public class M2WDispatchCommandMessage implements IMessage<NettyClientChannelHandlerLayer> {
+public class M2WDispatchCommandMessage implements IMessage<ClientChannelHandlerBase> {
     private int traceId;
     private String command;
 
@@ -33,7 +33,13 @@ public class M2WDispatchCommandMessage implements IMessage<NettyClientChannelHan
     }
 
     @Override
-    public void process(NettyClientChannelHandlerLayer handler) {
-        handler.dispatchCommand(this.command).whenComplete((result, command) -> handler.getClient().sendToMaster(new W2MCommandResultMessage(this.traceId, result)));
+    public void process(ClientChannelHandlerBase handler) {
+        handler.dispatchCommand(this.command).whenComplete((result, ex) -> {
+            if (ex != null) {
+                handler.sendToMaster(new W2MCommandResultMessage(this.traceId, ex.getMessage()));
+            }
+
+            handler.sendToMaster(new W2MCommandResultMessage(this.traceId, result));
+        });
     }
 }

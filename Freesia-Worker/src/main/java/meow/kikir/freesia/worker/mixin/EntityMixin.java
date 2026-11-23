@@ -12,15 +12,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.concurrent.CompletableFuture;
-
 @Mixin(Entity.class)
 public abstract class EntityMixin {
     @Inject(method = "saveWithoutId", at = @At(value = "RETURN"))
     public void onEntityDataSave(@NotNull CompoundTag entityDataNbt, CallbackInfoReturnable<CompoundTag> cir) {
         final Entity thisEntity = (Entity) (Object) this;
 
-        if (entityDataNbt.contains("cyanidin_null_entity")) { //Do not store the data of NULL player because we just use its data for a standard
+        // Do not store the data of NULL player because we just use its data for a standard payload
+        if (entityDataNbt.contains("cyanidin_null_entity")) {
             return;
         }
 
@@ -39,11 +38,14 @@ public abstract class EntityMixin {
 
         //On master wants to sync its data to this worker
         if (entityDataNbt.contains("cyanidin_do_not_pull_from_master")) {
-            entityDataNbt.remove("cyanidin_do_not_pull_from_master"); //As we just want to sync it once instead of loading it
+            // As we just want to sync it once instead of loading it
+            entityDataNbt.remove("cyanidin_do_not_pull_from_master");
+
             if (thisEntity instanceof Player player) {
                 ServerLoader.playerDataCache.asMap().replace(player.getUUID(), entityDataNbt.getCompound("ysm"));
                 EntryPoint.LOGGER_INST.info("Synced entity ysm data from master controller service point for player {}", player.getScoreboardName());
             }
+
             return;
         }
 
@@ -55,17 +57,9 @@ public abstract class EntityMixin {
             if (hit != null) {
                 ysmData = hit;
             } else {
-                //If not in cache
-                CompletableFuture<CompoundTag> callback = new CompletableFuture<>();
-                ServerLoader.workerConnection.getPlayerData(player.getUUID(), callback::complete);
-                CompoundTag got = callback.join(); //Must be blocking
-
-                if (got != null) {
-                    ServerLoader.playerDataCache.put(player.getUUID(), got);
-                    ysmData = got;
-                } else {
-                    EntryPoint.LOGGER_INST.info("Generating default ysm data for entity id {} uuid: {}", thisEntity.getId(), thisEntity.getUUID());
-                }
+                // the player data is not fetched during the login process
+                // see @ServerLoginPacketListenerImplMixin
+                EntryPoint.LOGGER_INST.info("Generating default ysm data for entity id {} uuid: {}", thisEntity.getId(), thisEntity.getUUID());
             }
         }
 

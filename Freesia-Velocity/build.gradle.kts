@@ -1,10 +1,12 @@
 dependencies {
     compileOnly("io.netty:netty-all:4.1.118.Final")
-    compileOnly("com.github.retrooper:packetevents-velocity:2.8.0")
-    compileOnly("com.velocitypowered:velocity-api:3.3.0-SNAPSHOT")
+    compileOnly("io.github.4drian3d:vpacketevents-api:1.1.0")
+    compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
+    compileOnly("com.velocitypowered:velocity-proxy:3.4.0-SNAPSHOT")
     compileOnly("net.kyori:adventure-api:4.17.0")
 
     implementation(project(":Freesia-Common"))
+    implementation("com.github.retrooper:packetevents-api:2.12.1")
     implementation("com.electronwill.night-config:toml:3.6.6")
     implementation("org.geysermc.mcprotocollib:protocol:1.21-SNAPSHOT")
     implementation("ca.spottedleaf:concurrentutil:0.0.3")

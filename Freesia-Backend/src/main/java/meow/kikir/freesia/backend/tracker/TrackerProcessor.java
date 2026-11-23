@@ -3,32 +3,30 @@ package meow.kikir.freesia.backend.tracker;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import io.netty.buffer.Unpooled;
 import io.papermc.paper.event.player.PlayerTrackEntityEvent;
+import io.papermc.paper.event.player.PlayerUntrackEntityEvent;
 import meow.kikir.freesia.backend.FreesiaBackend;
 import meow.kikir.freesia.backend.Utils;
 import meow.kikir.freesia.backend.event.CyanidinRealPlayerTrackerUpdateEvent;
-import meow.kikir.freesia.backend.event.CyanidinTrackerScanEvent;
 import meow.kikir.freesia.backend.utils.FriendlyByteBuf;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-public class TrackerProcessor implements PluginMessageListener, Listener {
+public class TrackerProcessor implements Listener {
     public static final String CHANNEL_NAME = "freesia:tracker_sync";
 
     // The default tracker event which is provided by Paper
     @EventHandler
     public void onPlayerTrackEntity(@NotNull PlayerTrackEntityEvent trackEvent) {
-        final Player watcher = trackEvent.getPlayer();
-        final Entity beingWatched = trackEvent.getEntity();
+        final Player tracker = trackEvent.getPlayer();
+        final Entity tracked = trackEvent.getEntity();
 
-        if (beingWatched instanceof Player beingWatchedPlayer) {
-            this.playerTrackedPlayer(beingWatchedPlayer, watcher);
+        if (tracked instanceof Player beingWatchedPlayer) {
+            this.playerTrackedPlayer(beingWatchedPlayer, tracker);
         }
     }
 
@@ -41,6 +39,16 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
         }
     }
 
+    @EventHandler
+    public void onPlayerUntrackEntity(@NotNull PlayerUntrackEntityEvent untrackEvent) {
+        final Player watcher = untrackEvent.getPlayer();
+        final Entity untracked = untrackEvent.getEntity();
+
+        if (untracked instanceof Player trackedPlayer) {
+            this.firePlayerUntracked(trackedPlayer.getUniqueId(), watcher.getUniqueId());
+        }
+    }
+
     private void playerTrackedPlayer(@NotNull Player beSeen, @NotNull Player seeing) {
         // Fire tracker update events
         if (!new CyanidinRealPlayerTrackerUpdateEvent(seeing, beSeen).callEvent()) {
@@ -48,72 +56,46 @@ public class TrackerProcessor implements PluginMessageListener, Listener {
         }
 
         // The true tracker update caller
-        this.notifyTrackerUpdate(seeing.getUniqueId(), beSeen.getUniqueId());
+        this.firePlayerTracked(seeing.getUniqueId(), beSeen.getUniqueId());
     }
 
-    public void notifyTrackerUpdate(UUID watcher, UUID beWatched) {
+    public void firePlayerTracked(UUID tracker, UUID tracked) {
         final FriendlyByteBuf wrappedUpdatePacket = new FriendlyByteBuf(Unpooled.buffer());
 
-        wrappedUpdatePacket.writeVarInt(2);
-        wrappedUpdatePacket.writeUUID(beWatched);
-        wrappedUpdatePacket.writeUUID(watcher);
+        wrappedUpdatePacket.writeVarInt(0);
+        wrappedUpdatePacket.writeUUID(tracker);
+        wrappedUpdatePacket.writeUUID(tracked);
 
         // Find a payload
-        final Player payload = Utils.randomPlayerIfNotFound(watcher);
+        final Player payload = Utils.randomPlayerIfNotFound(tracker);
 
         if (payload == null) {
             return;
         }
 
-        payload.sendPluginMessage(FreesiaBackend.INSTANCE, CHANNEL_NAME, wrappedUpdatePacket.getBytes());
+        final byte[] encoded = new byte[wrappedUpdatePacket.readableBytes()];
+        wrappedUpdatePacket.readBytes(encoded);
+
+        payload.sendPluginMessage(FreesiaBackend.INSTANCE, CHANNEL_NAME, encoded);
     }
 
-    @Override
-    public void onPluginMessageReceived(@NotNull String channel, @NotNull Player sender, byte @NotNull [] data) {
-        if (!channel.equals(CHANNEL_NAME)) {
+    public void firePlayerUntracked(UUID tracker, UUID tracked) {
+        final FriendlyByteBuf wrappedUpdatePacket = new FriendlyByteBuf(Unpooled.buffer());
+
+        wrappedUpdatePacket.writeVarInt(1);
+        wrappedUpdatePacket.writeUUID(tracker);
+        wrappedUpdatePacket.writeUUID(tracked);
+
+        // Find a payload
+        final Player payload = Utils.randomPlayerIfNotFound(tracker);
+
+        if (payload == null) {
             return;
         }
 
-        final FriendlyByteBuf packetData = new FriendlyByteBuf(Unpooled.wrappedBuffer(data));
+        final byte[] encoded = new byte[wrappedUpdatePacket.readableBytes()];
+        wrappedUpdatePacket.readBytes(encoded);
 
-        if (packetData.readVarInt() == 1) {
-            final int callbackId = packetData.readVarInt();
-            final UUID requestedPlayerUUID = packetData.readUUID();
-
-            final Player toScan = Objects.requireNonNull(Bukkit.getPlayer(requestedPlayerUUID));
-
-            final Set<UUID> result = new HashSet<>();
-
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.canSee(toScan)) {
-                    result.add(player.getUniqueId());
-                }
-            }
-
-            final CyanidinTrackerScanEvent trackerScanEvent = new CyanidinTrackerScanEvent(result, toScan);
-
-            // We need to schedule back to pass the dumb async catchers as it was firing from both netty threads and main threads
-            sender.getScheduler().execute(
-                    FreesiaBackend.INSTANCE,
-                    () -> {
-                        Bukkit.getPluginManager().callEvent(trackerScanEvent);
-
-                        final FriendlyByteBuf reply = new FriendlyByteBuf(Unpooled.buffer());
-
-                        reply.writeVarInt(0);
-                        reply.writeVarInt(callbackId);
-                        reply.writeVarInt(result.size());
-
-                        for (UUID uuid : result) {
-                            reply.writeUUID(uuid);
-                        }
-
-                        sender.sendPluginMessage(FreesiaBackend.INSTANCE, CHANNEL_NAME, reply.getBytes());
-                    },
-                    null,
-                    1
-            );
-        }
+        payload.sendPluginMessage(FreesiaBackend.INSTANCE, CHANNEL_NAME, encoded);
     }
-
 }

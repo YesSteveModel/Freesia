@@ -1,13 +1,13 @@
 package meow.kikir.freesia.common.communicating.message.w2m;
 
 import io.netty.buffer.ByteBuf;
-import meow.kikir.freesia.common.communicating.handler.NettyServerChannelHandlerLayer;
+import meow.kikir.freesia.common.communicating.handler.ServerChannelHandlerBase;
 import meow.kikir.freesia.common.communicating.message.IMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-public class W2MWorkerInfoMessage implements IMessage<NettyServerChannelHandlerLayer> {
+public class W2MWorkerInfoMessage implements IMessage<ServerChannelHandlerBase> {
     private UUID workerUUID;
     private String workerName;
 
@@ -35,7 +35,7 @@ public class W2MWorkerInfoMessage implements IMessage<NettyServerChannelHandlerL
     }
 
     @Override
-    public void process(@NotNull NettyServerChannelHandlerLayer handler) {
+    public void process(@NotNull ServerChannelHandlerBase handler) {
         handler.updateWorkerInfo(this.workerUUID, this.workerName);
     }
 }

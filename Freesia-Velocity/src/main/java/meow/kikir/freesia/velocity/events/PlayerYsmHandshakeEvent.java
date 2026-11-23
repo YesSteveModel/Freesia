@@ -9,10 +9,12 @@ import com.velocitypowered.api.proxy.Player;
  */
 public class PlayerYsmHandshakeEvent implements ResultedEvent<ResultedEvent.GenericResult> {
     private final Player player;
+    private final String clientYsmVersion;
     private GenericResult result = GenericResult.allowed();
 
-    public PlayerYsmHandshakeEvent(Player player) {
+    public PlayerYsmHandshakeEvent(Player player, String clientYsmVersion) {
         this.player = player;
+        this.clientYsmVersion = clientYsmVersion;
     }
 
     /**
@@ -22,6 +24,16 @@ public class PlayerYsmHandshakeEvent implements ResultedEvent<ResultedEvent.Gene
      */
     public Player getPlayer() {
         return this.player;
+    }
+
+
+    /**
+     * 获取客户端的YSM版本
+     *
+     * @return YSM版本字符串
+     */
+    public String getClientYsmVersion() {
+        return this.clientYsmVersion;
     }
 
     @Override

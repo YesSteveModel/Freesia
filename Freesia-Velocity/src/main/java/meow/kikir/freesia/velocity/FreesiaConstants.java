@@ -1,6 +1,18 @@
 package meow.kikir.freesia.velocity;
 
+import meow.kikir.freesia.velocity.network.ysm.protocol.YsmPacket;
+import meow.kikir.freesia.velocity.network.ysm.protocol.packets.c2s.C2SHandshakeRequestPacket;
+import meow.kikir.freesia.velocity.network.ysm.protocol.packets.c2s.C2SMolangExecuteRequestPacket;
+import meow.kikir.freesia.velocity.network.ysm.protocol.packets.c2s.C2SSetPlayAnimation;
+import meow.kikir.freesia.velocity.network.ysm.protocol.packets.s2c.S2CAnimationDataUpdatePacket;
+import meow.kikir.freesia.velocity.network.ysm.protocol.packets.s2c.S2CHandshakeConfirmedPacket;
+import meow.kikir.freesia.velocity.network.ysm.protocol.packets.s2c.S2CModelDataUpdatePacket;
+import meow.kikir.freesia.velocity.network.ysm.protocol.packets.s2c.S2CMolangExecutePacket;
+import meow.kikir.freesia.velocity.utils.Pair;
+
 import java.io.File;
+import java.nio.file.Path;
+import java.util.function.Supplier;
 
 public class FreesiaConstants {
     public static final class FileConstants {
@@ -13,6 +25,12 @@ public class FreesiaConstants {
         // player data
         public static final File PLAYER_DATA_DIR = new File(PLUGIN_DIR, "playerdata");
         public static final File VIRTUAL_PLAYER_DATA_DIR = new File(PLUGIN_DIR, "playerdata_virtual");
+
+        public static final String[] MODEL_FOLDERS_SUB = new String[]{
+                "auth",
+                "custom"
+        };
+        public static final Path YSM_MODELS_BASE_DIR = Path.of("config", "yes_steve_model");
 
         static {
             // plugin parent dir
@@ -27,7 +45,8 @@ public class FreesiaConstants {
     public static final class PermissionConstants {
         // permission nodes
         public static final String LIST_PLAYER_COMMAND = "freesia.commands.listysmplayers",
-                                   DISPATCH_WORKER_COMMAND = "freesia.commands.dworkerc";
+                                   DISPATCH_WORKER_COMMAND = "freesia.commands.dworkerc",
+                                   RELOAD_MODELS_COMMAND = "freesia.commands.reloadmodels";
     }
 
     public static final class LanguageConstants {
@@ -47,27 +66,22 @@ public class FreesiaConstants {
 
     }
 
-    public static final class MCProtocolConstants {
-        // protocol number of 1.20.2
-        public static final int PROTOCOL_NUM_V1202 = 764;
-    }
-
     public static class YsmProtocolMetaConstants {
         // C: Client | S: Server
 
         // C -> S
         public static final class Serverbound {
-            public static final String HAND_SHAKE_REQUEST = "handshake_request";
-            public static final String MOLANG_EXECUTE_REQ = "molang_execute_req";
+            public static final Pair<String, Pair<Class<? extends YsmPacket>, Supplier<YsmPacket>>> HAND_SHAKE_REQUEST = new Pair<>("handshake_request", new Pair<>(C2SHandshakeRequestPacket.class, C2SHandshakeRequestPacket::new));
+            public static final Pair<String, Pair<Class<? extends YsmPacket>, Supplier<YsmPacket>>> MOLANG_EXECUTE_REQ = new Pair<>("molang_execute_req", new Pair<>(C2SMolangExecuteRequestPacket.class, C2SMolangExecuteRequestPacket::new));
+            public static final Pair<String, Pair<Class<? extends YsmPacket>, Supplier<YsmPacket>>> SET_PLAY_ANIMATION = new Pair<>("set_play_animation", new Pair<>(C2SSetPlayAnimation.class, C2SSetPlayAnimation::new));
         }
 
         // S -> C
         public static final class Clientbound {
-            public static final String HAND_SHAKE_CONFIRMED = "handshake_confirmed";
-
-            public static final String ENTITY_DATA_UPDATE = "entity_data_update";
-
-            public static final String MOLANG_EXECUTE = "molang_execute";
+            public static final Pair<String, Pair<Class<? extends YsmPacket>, Supplier<YsmPacket>>> HAND_SHAKE_CONFIRMED = new Pair<>("handshake_confirmed", new Pair<>(S2CHandshakeConfirmedPacket.class, S2CHandshakeConfirmedPacket::new));
+            public static final Pair<String, Pair<Class<? extends YsmPacket>, Supplier<YsmPacket>>> MODEL_DATA_UPDATE = new Pair<>("model_data_update", new Pair<>(S2CModelDataUpdatePacket.class, S2CModelDataUpdatePacket::new));
+            public static final Pair<String, Pair<Class<? extends YsmPacket>, Supplier<YsmPacket>>> ANIMATION_DATA_UPDATE = new Pair<>("animation_data_update", new Pair<>(S2CAnimationDataUpdatePacket.class, S2CAnimationDataUpdatePacket::new));
+            public static final Pair<String, Pair<Class<? extends YsmPacket>, Supplier<YsmPacket>>> MOLANG_EXECUTE = new Pair<>("molang_execute", new Pair<>(S2CMolangExecutePacket.class, S2CMolangExecutePacket::new));
         }
     }
 }

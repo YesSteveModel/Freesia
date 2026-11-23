@@ -23,7 +23,7 @@ public abstract class ServerCommonPacketListenerImplMixin {
 
     @Inject(method = "handleKeepAlive", at = @At(value = "HEAD"), cancellable = true)
     public void onKeepaliveHandle(ServerboundKeepAlivePacket serverboundKeepAlivePacket, @NotNull CallbackInfo ci) {
-        //Do not check keepalive id
+        // Do not check keepalive id
         int i = (int) (Util.getMillis() - this.keepAliveTime);
         this.latency = (this.latency * 3 + i) / 4;
         this.keepAlivePending = false;

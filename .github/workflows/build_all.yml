@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '21'
+          java-version: '22'
       - name: Build projects
         run: chmod 777 gradlew && ./gradlew generateTemplates && ./gradlew build
       - name: Copy built jar

@@ -1,13 +1,13 @@
 package meow.kikir.freesia.common.communicating.message.w2m;
 
 import io.netty.buffer.ByteBuf;
-import meow.kikir.freesia.common.communicating.handler.NettyServerChannelHandlerLayer;
+import meow.kikir.freesia.common.communicating.handler.ServerChannelHandlerBase;
 import meow.kikir.freesia.common.communicating.message.IMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
 
-public class W2MCommandResultMessage implements IMessage<NettyServerChannelHandlerLayer> {
+public class W2MCommandResultMessage implements IMessage<ServerChannelHandlerBase> {
     private int traceId;
     private String result;
 
@@ -36,7 +36,7 @@ public class W2MCommandResultMessage implements IMessage<NettyServerChannelHandl
     }
 
     @Override
-    public void process(@NotNull NettyServerChannelHandlerLayer handler) {
+    public void process(@NotNull ServerChannelHandlerBase handler) {
         handler.onCommandDispatchResult(this.traceId, this.result);
     }
 }

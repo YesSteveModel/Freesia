@@ -28,11 +28,25 @@ public class NettySocketServer {
                 .childHandler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(@NotNull Channel channel) {
-                        DefaultChannelPipelineLoader.loadDefaultHandlers(channel);
+                        ChannelPipelineLoader.loadDefaultHandlers(channel);
                         channel.pipeline().addLast(NettySocketServer.this.handlerCreator.apply(channel));
                     }
                 })
                 .bind(this.bindAddress.getHostName(), this.bindAddress.getPort())
                 .awaitUninterruptibly();
+    }
+
+    public void close() {
+        final ChannelFuture cfLocal = this.channelFuture;
+        this.channelFuture = null;
+
+        if (cfLocal == null) {
+            return;
+        }
+
+        cfLocal.channel().close();
+
+        this.masterLoopGroup.shutdownGracefully();
+        this.workerLoopGroup.shutdownGracefully();
     }
 }

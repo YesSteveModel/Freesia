@@ -1,18 +1,18 @@
 package meow.kikir.freesia.velocity.network.ysm;
 
-import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import io.netty.buffer.ByteBuf;
+import meow.kikir.freesia.velocity.network.ysm.protocol.YsmPacket;
+import meow.kikir.freesia.velocity.network.ysm.protocol.YsmPacketCodec;
+import meow.kikir.freesia.common.utils.SimpleFriendlyByteBuf;
 import net.kyori.adventure.key.Key;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 
 public interface YsmPacketProxy {
-    default void setParentHandler(MapperSessionProcessor processor){
-        // No-op by default
-    }
+    void setParentHandler(MapperConnectionHandler processor);
 
     ProxyComputeResult processS2C(Key channelKey, ByteBuf copiedPacketData);
 
@@ -21,13 +21,17 @@ public interface YsmPacketProxy {
     @Nullable
     Player getOwner();
 
-    void sendEntityStateTo(@NotNull Player target);
+    void sendFullEntityDataTo(@NotNull Player target);
 
-    void setEntityDataRaw(NBTCompound data);
+    void setModelDataRaw(byte[] data);
+
+    byte[] getCurrentModelData();
+
+    void setAnimationDataRaw(byte[] data);
+
+    byte[] getCurrentAnimationDataRaw(byte[] data);
 
     void notifyFullTrackerUpdates();
-
-    NBTCompound getCurrentEntityState();
 
     void setPlayerWorkerEntityId(int id);
 
@@ -40,6 +44,31 @@ public interface YsmPacketProxy {
     default void executeMolang(String expression) {}
 
     default void executeMolang(int[] entityIds, String expression) {}
+
+    default void onProxyReadyCallback() {}
+
+
+    /*
+    下面的都是方便从 velocity 向玩家发包用的了(x)
+     */
+    default void sendYsmPacket(YsmPacket packet) {
+        final Player owner = this.getOwner();
+
+        if (owner == null) {
+            throw new UnsupportedOperationException();
+        }
+
+        this.sendYsmPacket(owner, packet);
+    }
+
+    default void sendYsmPacket(Player receiver, YsmPacket packet) {
+        if (receiver == null) {
+            throw new UnsupportedOperationException();
+        }
+
+        final SimpleFriendlyByteBuf encoded = YsmPacketCodec.encode(packet);
+        this.sendPluginMessageTo(receiver, MappersManager.YSM_CHANNEL_KEY_VELOCITY, encoded);
+    }
 
     default void sendPluginMessageToOwner(@NotNull MinecraftChannelIdentifier channel, byte[] data){
         final Player owner = this.getOwner();

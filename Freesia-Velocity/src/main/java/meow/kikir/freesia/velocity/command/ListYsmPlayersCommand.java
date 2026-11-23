@@ -31,7 +31,7 @@ public class ListYsmPlayersCommand {
                     final Collection<Player> ysmPlayers = Freesia.PROXY_SERVER
                             .getAllPlayers()
                             .stream()
-                            .filter(player -> Freesia.mapperManager.isPlayerInstalledYsm(player))
+                            .filter(player -> Freesia.mappersManager.isPlayerInstalledYsm(player))
                             .toList();
 
                     Component msg = Freesia.languageManager.i18n(FreesiaConstants.LanguageConstants.PLAYER_LIST_HEADER, List.of(), List.of()).appendNewline();

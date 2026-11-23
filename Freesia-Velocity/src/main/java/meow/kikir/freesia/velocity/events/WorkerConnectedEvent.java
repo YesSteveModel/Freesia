@@ -5,28 +5,25 @@ import java.util.UUID;
 /**
  * 当worker成功连接到master会触发该事件
  */
-public class WorkerConnectedEvent {
-    private final UUID workerUUID;
-    private final String workerName;
-
-    public WorkerConnectedEvent(UUID workerUUID, String workerName) {
-        this.workerUUID = workerUUID;
-        this.workerName = workerName;
-    }
+public record WorkerConnectedEvent(UUID workerUUID, String workerName) {
 
     /**
      * 获取worker的名字
+     *
      * @return worker的名字
      */
-    public String getWorkerName() {
+    @Override
+    public String workerName() {
         return this.workerName;
     }
 
     /**
      * 获取worker的UUID
+     *
      * @return worker的UUID
      */
-    public UUID getWorkerUUID() {
+    @Override
+    public UUID workerUUID() {
         return this.workerUUID;
     }
 }

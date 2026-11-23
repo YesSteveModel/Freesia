@@ -2,6 +2,7 @@ package meow.kikir.freesia.worker;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.mojang.logging.LogUtils;
+import meow.kikir.freesia.common.utils.DomainUtils;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -16,6 +17,7 @@ public class FreesiaWorkerConfig {
     public static int reconnectInterval = 1;
     public static int playerDataCacheInvalidateIntervalSeconds = 30;
     private static CommentedFileConfig CONFIG_INSTANCE;
+    public static boolean useUnixDomainSocket = false;
 
     static {
         CONFIG_FILE_DIR.mkdirs();
@@ -28,6 +30,11 @@ public class FreesiaWorkerConfig {
         );
         reconnectInterval = get("worker.controller_reconnect_interval", reconnectInterval);
         playerDataCacheInvalidateIntervalSeconds = get("worker.player_data_cache_invalidate_interval_seconds", playerDataCacheInvalidateIntervalSeconds);
+        useUnixDomainSocket = get("worker.use_unix_domain_socket", useUnixDomainSocket);
+
+        if (useUnixDomainSocket) {
+            DomainUtils.throwIfUDSIsUnavailable();
+        }
     }
 
     private static <T> T get(String key, T def) {
